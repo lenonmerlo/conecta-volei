@@ -1,0 +1,107 @@
+.game-detail {
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.game-detail__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.game-detail__day {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f97316;
+}
+
+.game-detail__info {
+  font-size: 0.875rem;
+  color: #94a3b8;
+}
+
+.game-detail__count {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin-top: 0.25rem;
+}
+
+.game-detail__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.game-detail__section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  border-bottom: 1px solid #334155;
+  padding-bottom: 0.4rem;
+}
+
+.game-detail__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.game-detail__item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: #1e293b;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+}
+
+.game-detail__position {
+  font-size: 0.75rem;
+  color: #64748b;
+  min-width: 1.25rem;
+  text-align: center;
+}
+
+.game-detail__name {
+  flex: 1;
+  font-size: 0.9rem;
+  color: #e2e8f0;
+}
+
+.game-detail__badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+}
+
+.game-detail__badge--guest {
+  background-color: #1e3a5f;
+  color: #93c5fd;
+}
+
+.game-detail__badge--penalized {
+  background-color: #7f1d1d;
+  color: #fecaca;
+}
+
+.game-detail__empty {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.game-detail__not-found {
+  color: #94a3b8;
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.game-detail__action {
+  margin-top: 0.5rem;
+}
