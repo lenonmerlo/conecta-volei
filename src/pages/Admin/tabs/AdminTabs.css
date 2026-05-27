@@ -5,6 +5,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  width: 100%;
+  min-width: 0;
 }
 
 .admin-tab__item {
@@ -19,6 +21,9 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .admin-tab__info {
@@ -32,6 +37,8 @@
   font-size: 0.9rem;
   color: var(--cv-text);
   flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .admin-tab__type {
