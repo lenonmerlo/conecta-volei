@@ -1,0 +1,132 @@
+.admin-draw {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.admin-draw__start {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem 0;
+}
+
+.admin-draw__hint {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.admin-draw__swap-hint {
+  font-size: 0.85rem;
+  color: #fde68a;
+  background-color: #1e293b;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  border-left: 3px solid #f97316;
+}
+
+.admin-draw__teams {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.admin-draw__team {
+  background-color: #1e293b;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-draw__team-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-draw__team-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f97316;
+}
+
+.admin-draw__team-level {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.admin-draw__player-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.admin-draw__player {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  background-color: #0f172a;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.admin-draw__player:hover {
+  background-color: #334155;
+}
+
+.admin-draw__player--selected {
+  background-color: #78350f;
+  border: 1px solid #f97316;
+}
+
+.admin-draw__player-name {
+  font-size: 0.85rem;
+  color: #e2e8f0;
+}
+
+.admin-draw__player-gender {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.admin-draw__actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.admin-draw__btn-draw,
+.admin-draw__btn-reset,
+.admin-draw__btn-confirm {
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.65rem 1.25rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.admin-draw__btn-draw {
+  background-color: #f97316;
+  color: #fff;
+}
+
+.admin-draw__btn-reset {
+  background-color: #334155;
+  color: #f1f5f9;
+}
+
+.admin-draw__btn-confirm {
+  background-color: #166534;
+  color: #bbf7d0;
+}

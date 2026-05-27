@@ -5,11 +5,13 @@ import './Admin.css'
 import AdminPlayers from './tabs/AdminPlayers'
 import AdminPresence from './tabs/AdminPresence'
 import AdminLevels from './tabs/AdminLevels'
+import AdminDraw from './tabs/AdminDraw'
 
 const TABS = [
   { key: 'players', label: 'Jogadores' },
   { key: 'presence', label: 'Presenças' },
   { key: 'levels', label: 'Níveis' },
+  { key: 'draw', label: 'Sorteio' },
 ]
 
 function Admin() {
@@ -47,6 +49,7 @@ function Admin() {
         {activeTab === 'players' && <AdminPlayers />}
         {activeTab === 'presence' && <AdminPresence />}
         {activeTab === 'levels' && <AdminLevels isSuperAdmin={isSuperAdmin} />}
+        {activeTab === 'draw' && <AdminDraw />}
       </div>
     </div>
   )
