@@ -1,10 +1,11 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import './App.css'
-import BottomNav from '../components/BottomNav/BottomNav'
-import Home from '../pages/Home/Home'
-import Rules from '../pages/Rules/Rules'
-import Profile from '../pages/Profile/Profile'
-import Admin from '../pages/Admin/Admin'
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import "./App.css";
+import BottomNav from "../components/BottomNav/BottomNav";
+import Home from "../pages/Home/Home";
+import Rules from "../pages/Rules/Rules";
+import Profile from "../pages/Profile/Profile";
+import Admin from "../pages/Admin/Admin";
+import GameDetail from "../pages/GameDetail/GameDetail";
 
 function App() {
   return (
@@ -19,12 +20,13 @@ function App() {
             <Route path="/rules" element={<Rules />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/game/:id" element={<GameDetail />} />
           </Routes>
         </main>
         <BottomNav />
       </div>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;
