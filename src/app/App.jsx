@@ -1,9 +1,9 @@
+import { useEffect } from "react";
 import {
   BrowserRouter,
   Navigate,
   Route,
   Routes,
-  useEffect,
   useNavigate,
 } from "react-router-dom";
 import escudoConecta from "../assets/escudo-conecta-prata.png";
