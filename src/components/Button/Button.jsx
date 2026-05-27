@@ -1,11 +1,39 @@
-function Button({ children, onClick, variant = "primary", disabled = false }) {
+import "./Button.css";
+
+function Button({
+  children,
+  onClick,
+  variant = "primary",
+  disabled = false,
+  type = "button",
+  fullWidth = false,
+  size = "md",
+  icon = null,
+  className = "",
+}) {
+  const classes = [
+    "btn",
+    `btn--${variant}`,
+    `btn--${size}`,
+    fullWidth ? "btn--full" : "",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <button
-      className={`btn btn--${variant}`}
+      className={classes}
       onClick={onClick}
       disabled={disabled}
+      type={type}
     >
-      {children}
+      {icon && (
+        <span className="btn__icon" aria-hidden="true">
+          {icon}
+        </span>
+      )}
+      <span className="btn__label">{children}</span>
     </button>
   );
 }

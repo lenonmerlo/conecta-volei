@@ -1,30 +1,37 @@
 .admin-draw {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 0.95rem;
 }
 
 .admin-draw__start {
+  border: 1px solid rgba(143, 215, 255, 0.2);
+  border-radius: 14px;
+  background: linear-gradient(
+    140deg,
+    rgba(13, 45, 74, 0.88),
+    rgba(8, 31, 52, 0.78)
+  );
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  padding: 2rem 0;
+  padding: 1.5rem 1rem;
 }
 
 .admin-draw__hint {
-  font-size: 0.9rem;
-  color: #94a3b8;
+  font-size: 0.86rem;
+  color: var(--cv-muted);
   text-align: center;
 }
 
 .admin-draw__swap-hint {
   font-size: 0.85rem;
-  color: #fde68a;
-  background-color: #1e293b;
+  color: #ffe6c3;
+  background-color: rgba(255, 156, 47, 0.12);
   padding: 0.6rem 0.75rem;
   border-radius: 8px;
-  border-left: 3px solid #f97316;
+  border-left: 3px solid var(--cv-energy);
 }
 
 .admin-draw__teams {
@@ -34,8 +41,13 @@
 }
 
 .admin-draw__team {
-  background-color: #1e293b;
-  border-radius: 10px;
+  border: 1px solid rgba(143, 215, 255, 0.18);
+  background: linear-gradient(
+    150deg,
+    rgba(15, 42, 69, 0.88),
+    rgba(8, 31, 52, 0.8)
+  );
+  border-radius: 12px;
   padding: 0.75rem 1rem;
   display: flex;
   flex-direction: column;
@@ -49,14 +61,15 @@
 }
 
 .admin-draw__team-name {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #f97316;
+  font-size: 1.25rem;
+  font-family: "Teko", "Barlow", sans-serif;
+  line-height: 1;
+  color: #ffffff;
 }
 
 .admin-draw__team-level {
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--cv-primary-soft);
 }
 
 .admin-draw__player-list {
@@ -73,29 +86,33 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-  background-color: #0f172a;
+  border-radius: 8px;
+  background-color: rgba(16, 54, 86, 0.56);
+  border: 1px solid rgba(143, 215, 255, 0.12);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .admin-draw__player:hover {
-  background-color: #334155;
+  background-color: rgba(16, 54, 86, 0.9);
+  border-color: rgba(143, 215, 255, 0.35);
 }
 
 .admin-draw__player--selected {
-  background-color: #78350f;
-  border: 1px solid #f97316;
+  background-color: rgba(255, 156, 47, 0.24);
+  border: 1px solid rgba(255, 156, 47, 0.6);
 }
 
 .admin-draw__player-name {
   font-size: 0.85rem;
-  color: #e2e8f0;
+  color: var(--cv-text);
 }
 
 .admin-draw__player-gender {
   font-size: 0.85rem;
-  color: #94a3b8;
+  color: var(--cv-muted);
 }
 
 .admin-draw__actions {
@@ -107,26 +124,36 @@
 .admin-draw__btn-draw,
 .admin-draw__btn-reset,
 .admin-draw__btn-confirm {
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-size: 0.86rem;
+  font-weight: 700;
   padding: 0.65rem 1.25rem;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.admin-draw__btn-draw:hover,
+.admin-draw__btn-reset:hover,
+.admin-draw__btn-confirm:hover {
+  transform: translateY(-1px);
 }
 
 .admin-draw__btn-draw {
-  background-color: #f97316;
-  color: #fff;
+  background: linear-gradient(120deg, #ff9c2f, #ffba4a);
+  color: #05213a;
 }
 
 .admin-draw__btn-reset {
-  background-color: #334155;
-  color: #f1f5f9;
+  background: rgba(16, 54, 86, 0.62);
+  border-color: rgba(143, 215, 255, 0.26);
+  color: var(--cv-primary-soft);
 }
 
 .admin-draw__btn-confirm {
-  background-color: #166534;
-  color: #bbf7d0;
+  background: rgba(46, 194, 126, 0.2);
+  border-color: rgba(46, 194, 126, 0.48);
+  color: #a5f3cc;
 }

@@ -1,45 +1,46 @@
 // Página de perfil e cadastro do atleta
 
-import { useState } from 'react'
-import './Profile.css'
-import Button from '../../components/Button/Button'
-import { saveMember, saveGuest } from '../../data/playerStorage'
-import { PLAYER_TYPE, PLAYER_STATUS } from '../../domain/constants'
+import { useState } from "react";
+import Button from "../../components/Button/Button";
+import { saveGuest, saveMember } from "../../data/playerStorage";
+import { PLAYER_STATUS, PLAYER_TYPE } from "../../domain/constants";
+import "./Profile.css";
 
 function Profile() {
   const [form, setForm] = useState({
-    name: '',
-    nickname: '',
-    whatsapp: '',
+    name: "",
+    nickname: "",
+    whatsapp: "",
     type: PLAYER_TYPE.MEMBER,
-    gender: 'M',
+    gender: "M",
     acceptedRules: false,
-  })
+  });
 
-  const [saved, setSaved] = useState(false)
-  const [errors, setErrors] = useState({})
+  const [saved, setSaved] = useState(false);
+  const [errors, setErrors] = useState({});
 
   function validate() {
-    const newErrors = {}
-    if (!form.name.trim()) newErrors.name = 'Nome é obrigatório'
-    if (!form.whatsapp.trim()) newErrors.whatsapp = 'WhatsApp é obrigatório'
-    if (!form.acceptedRules) newErrors.acceptedRules = 'Você precisa aceitar as regras'
-    return newErrors
+    const newErrors = {};
+    if (!form.name.trim()) newErrors.name = "Nome é obrigatório";
+    if (!form.whatsapp.trim()) newErrors.whatsapp = "WhatsApp é obrigatório";
+    if (!form.acceptedRules)
+      newErrors.acceptedRules = "Você precisa aceitar as regras";
+    return newErrors;
   }
 
   function handleChange(e) {
-    const { name, value, type, checked } = e.target
+    const { name, value, type, checked } = e.target;
     setForm((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }))
+      [name]: type === "checkbox" ? checked : value,
+    }));
   }
 
   function handleSubmit() {
-    const newErrors = validate()
+    const newErrors = validate();
     if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
-      return
+      setErrors(newErrors);
+      return;
     }
 
     const player = {
@@ -52,16 +53,16 @@ function Profile() {
       status: PLAYER_STATUS.ACTIVE,
       acceptedRules: true,
       createdAt: new Date().toISOString(),
-    }
+    };
 
     if (form.type === PLAYER_TYPE.MEMBER) {
-      saveMember(player)
+      saveMember(player);
     } else {
-      saveGuest(player)
+      saveGuest(player);
     }
 
-    setSaved(true)
-    setErrors({})
+    setSaved(true);
+    setErrors({});
   }
 
   if (saved) {
@@ -75,7 +76,7 @@ function Profile() {
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -112,7 +113,9 @@ function Profile() {
             onChange={handleChange}
             placeholder="Ex: 27999999999"
           />
-          {errors.whatsapp && <span className="profile__error">{errors.whatsapp}</span>}
+          {errors.whatsapp && (
+            <span className="profile__error">{errors.whatsapp}</span>
+          )}
         </div>
 
         <div className="profile__field">
@@ -140,13 +143,17 @@ function Profile() {
             id="acceptedRules"
           />
           <label htmlFor="acceptedRules">Li e aceito as regras do grupo</label>
-          {errors.acceptedRules && <span className="profile__error">{errors.acceptedRules}</span>}
+          {errors.acceptedRules && (
+            <span className="profile__error">{errors.acceptedRules}</span>
+          )}
         </div>
 
-        <Button onClick={handleSubmit}>Salvar cadastro</Button>
+        <Button onClick={handleSubmit} fullWidth>
+          Salvar cadastro
+        </Button>
       </div>
     </div>
-  )
+  );
 }
 
-export default Profile
+export default Profile;

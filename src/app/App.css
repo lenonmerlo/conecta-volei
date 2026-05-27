@@ -1,23 +1,112 @@
 .app {
-  min-height: 100vh;
-  background-color: #0f172a;
-  color: #f1f5f9;
-  max-width: 480px;
+  min-height: 100svh;
   margin: 0 auto;
+  padding: 0.75rem 0.75rem 6.5rem;
+  color: var(--cv-text);
 }
 
 .app__header {
-  padding: 1rem;
-  background-color: #1e293b;
-  border-bottom: 1px solid #334155;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(143, 215, 255, 0.28);
+  border-radius: 18px;
+  background:
+    linear-gradient(
+      130deg,
+      rgba(14, 51, 82, 0.95) 0%,
+      rgba(8, 29, 49, 0.92) 55%,
+      rgba(31, 167, 255, 0.18) 100%
+    ),
+    linear-gradient(90deg, rgba(255, 156, 47, 0.15), transparent);
+  box-shadow: var(--cv-shadow);
+}
+
+.app__header::after {
+  content: "";
+  position: absolute;
+  inset: auto -120px -120px auto;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 156, 47, 0.28),
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.app__brand {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem;
+}
+
+.app__brand-image {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.35));
+}
+
+.app__brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
 }
 
 .app__logo {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #f97316;
+  font-size: 1.8rem;
+  line-height: 0.95;
+  color: #ffffff;
+}
+
+.app__subtitle {
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: var(--cv-primary-soft);
 }
 
 .app__main {
-  padding-bottom: 5rem;
+  margin-top: 0.85rem;
+  border: 1px solid rgba(143, 215, 255, 0.22);
+  border-radius: 16px;
+  background: linear-gradient(
+    180deg,
+    rgba(9, 28, 46, 0.88) 0%,
+    rgba(8, 24, 40, 0.76) 100%
+  );
+  box-shadow: var(--cv-shadow-soft);
+}
+
+@media (min-width: 641px) {
+  .app {
+    padding: 1rem 1rem 6.75rem;
+  }
+
+  .app__brand {
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .app__brand-image {
+    width: 74px;
+    height: 74px;
+  }
+
+  .app__logo {
+    font-size: 2rem;
+  }
+
+  .app__subtitle {
+    font-size: 0.9rem;
+  }
+
+  .app__main {
+    margin-top: 1rem;
+    border-radius: 20px;
+  }
 }
