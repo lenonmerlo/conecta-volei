@@ -1,14 +1,13 @@
 .teams {
-  padding: 1.5rem 1rem;
+  padding: 1.3rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
 .teams__title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #f1f5f9;
+  font-size: 1.9rem;
+  line-height: 1;
 }
 
 .teams__list {
@@ -18,8 +17,13 @@
 }
 
 .teams__team {
-  background-color: #1e293b;
-  border-radius: 10px;
+  border: 1px solid rgba(143, 215, 255, 0.2);
+  background: linear-gradient(
+    150deg,
+    rgba(15, 42, 69, 0.88),
+    rgba(8, 31, 52, 0.8)
+  );
+  border-radius: 12px;
   padding: 0.75rem 1rem;
   display: flex;
   flex-direction: column;
@@ -30,14 +34,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #334155;
+  border-bottom: 1px solid rgba(143, 215, 255, 0.2);
   padding-bottom: 0.4rem;
 }
 
 .teams__team-name {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #f97316;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: #ffffff;
 }
 
 .teams__player-list {
@@ -54,43 +58,57 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.45rem 0.5rem;
-  border-radius: 6px;
-  background-color: #0f172a;
+  border-radius: 8px;
+  border: 1px solid rgba(143, 215, 255, 0.12);
+  background-color: rgba(16, 54, 86, 0.56);
 }
 
 .teams__player--female {
-  border-left: 3px solid #f472b6;
+  border-left: 3px solid #ff7abf;
 }
 
 .teams__player-name {
   font-size: 0.875rem;
-  color: #e2e8f0;
+  color: var(--cv-text);
 }
 
 .teams__player-gender {
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--cv-muted);
 }
 
 .teams__empty {
-  color: #94a3b8;
+  color: var(--cv-muted);
   text-align: center;
   margin-top: 2rem;
 }
 
 .teams__back {
-  background-color: #334155;
-  color: #f1f5f9;
-  border: none;
-  border-radius: 8px;
-  padding: 0.65rem 1.25rem;
-  font-size: 0.9rem;
-  font-weight: 600;
+  background: rgba(16, 54, 86, 0.62);
+  color: var(--cv-primary-soft);
+  border: 1px solid rgba(143, 215, 255, 0.3);
+  border-radius: 10px;
+  padding: 0.62rem 1.15rem;
+  font-size: 0.84rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
   align-self: flex-start;
 }
 
 .teams__back:hover {
-  opacity: 0.85;
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .teams {
+    padding: 1rem;
+  }
+
+  .teams__title {
+    font-size: 1.7rem;
+  }
 }

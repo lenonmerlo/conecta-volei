@@ -44,6 +44,16 @@ function GameDetail() {
           {game.date} às {game.time}
         </p>
         <p className="game-detail__info">{game.location}</p>
+        {game.mapUrl && (
+          <a
+            className="game-detail__map-link"
+            href={game.mapUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Abrir no mapa
+          </a>
+        )}
         <span className="game-detail__count">
           {players.length}/21 inscritos
         </span>
@@ -113,7 +123,7 @@ function GameDetail() {
       )}
 
       <div className="game-detail__action">
-        <Button>Entrar na lista</Button>
+        <Button fullWidth>Entrar na lista</Button>
       </div>
     </div>
   );

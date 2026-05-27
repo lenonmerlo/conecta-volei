@@ -1,18 +1,25 @@
 .profile {
-  padding: 1.5rem 1rem;
+  padding: 1.3rem;
 }
 
 .profile__title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #f1f5f9;
-  margin-bottom: 1.5rem;
+  font-size: 1.95rem;
+  line-height: 0.95;
+  margin-bottom: 1rem;
 }
 
 .profile__form {
+  border: 1px solid rgba(143, 215, 255, 0.2);
+  border-radius: var(--cv-radius);
+  background: linear-gradient(
+    155deg,
+    rgba(15, 42, 69, 0.92),
+    rgba(8, 31, 52, 0.85)
+  );
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
 .profile__field {
@@ -22,25 +29,29 @@
 }
 
 .profile__field label {
-  font-size: 0.875rem;
-  color: #94a3b8;
+  font-size: 0.82rem;
+  color: var(--cv-muted);
+  font-weight: 600;
 }
 
 .profile__field input,
 .profile__field select {
-  background-color: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  color: #f1f5f9;
-  font-size: 1rem;
+  background-color: rgba(16, 54, 86, 0.58);
+  border: 1px solid rgba(143, 215, 255, 0.25);
+  border-radius: 10px;
+  padding: 0.72rem 0.85rem;
+  color: var(--cv-text);
+  font-size: 0.9rem;
   outline: none;
-  transition: border-color 0.2s;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .profile__field input:focus,
 .profile__field select:focus {
-  border-color: #f97316;
+  border-color: var(--cv-primary);
+  box-shadow: 0 0 0 3px rgba(30, 167, 255, 0.15);
 }
 
 .profile__field--checkbox {
@@ -50,39 +61,56 @@
 }
 
 .profile__field--checkbox label {
-  color: #e2e8f0;
-  font-size: 0.9rem;
+  color: var(--cv-text);
+  font-size: 0.86rem;
 }
 
-.profile__field--checkbox input[type='checkbox'] {
+.profile__field--checkbox input[type="checkbox"] {
   width: 18px;
   height: 18px;
-  accent-color: #f97316;
+  accent-color: var(--cv-energy);
   cursor: pointer;
   padding: 0;
 }
 
 .profile__error {
   font-size: 0.775rem;
-  color: #f87171;
+  color: #ffc0c0;
 }
 
 .profile__success {
+  border: 1px solid rgba(143, 215, 255, 0.2);
+  border-radius: var(--cv-radius);
+  background: linear-gradient(
+    150deg,
+    rgba(13, 45, 74, 0.95),
+    rgba(9, 27, 45, 0.88)
+  );
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  padding: 2rem 1rem;
+  padding: 1.5rem 1rem;
   text-align: center;
 }
 
 .profile__success h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #f1f5f9;
+  font-size: 1.8rem;
+  line-height: 1;
+  color: #ffffff;
 }
 
 .profile__success p {
-  color: #94a3b8;
-  font-size: 1rem;
+  color: var(--cv-primary-soft);
+  font-size: 0.94rem;
+}
+
+@media (max-width: 640px) {
+  .profile {
+    padding: 1rem;
+  }
+
+  .profile__title {
+    font-size: 1.75rem;
+  }
 }
