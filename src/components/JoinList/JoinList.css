@@ -1,0 +1,103 @@
+.join-list {
+  border: 1px solid rgba(143, 215, 255, 0.2);
+  border-radius: 14px;
+  background: linear-gradient(
+    155deg,
+    rgba(15, 42, 69, 0.88),
+    rgba(8, 31, 52, 0.8)
+  );
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.join-list__info {
+  font-size: 0.88rem;
+  color: var(--cv-text);
+  font-weight: 600;
+}
+
+.join-list__error {
+  font-size: 0.8rem;
+  color: #ffd2d2;
+}
+
+.join-list__empty {
+  font-size: 0.8rem;
+  color: var(--cv-muted);
+}
+
+.join-list__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.join-list__search,
+.join-list__guest {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.join-list__search input,
+.join-list__guest input {
+  min-height: 44px;
+  background-color: color-mix(in srgb, var(--cv-surface) 72%, black);
+  border: 1px solid color-mix(in srgb, var(--cv-border) 72%, white);
+  border-radius: 10px;
+  padding: 0.72rem 0.85rem;
+  color: var(--cv-text);
+  font-size: 0.9rem;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.join-list__search input:focus,
+.join-list__guest input:focus {
+  border-color: var(--cv-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cv-primary) 18%, transparent);
+}
+
+.join-list__results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 190px;
+  overflow-y: auto;
+}
+
+.join-list__result {
+  border: 1px solid rgba(143, 215, 255, 0.18);
+  border-radius: 10px;
+  background-color: rgba(16, 54, 86, 0.62);
+  color: var(--cv-text);
+  font-size: 0.85rem;
+  padding: 0.55rem 0.65rem;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.join-list__result:hover {
+  border-color: rgba(30, 167, 255, 0.5);
+  background-color: rgba(24, 71, 109, 0.66);
+}
+
+.join-list__result--selected {
+  border-color: color-mix(in srgb, var(--cv-primary) 72%, white);
+  background-color: color-mix(in srgb, var(--cv-primary) 22%, var(--cv-bg-1));
+}
+
+@media (min-width: 641px) {
+  .join-list {
+    padding: 1rem;
+  }
+}

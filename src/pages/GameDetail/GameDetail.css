@@ -113,6 +113,12 @@
   color: var(--cv-text);
 }
 
+.game-detail__invited-by {
+  font-size: 0.68rem;
+  color: var(--cv-primary-soft);
+  opacity: 0.95;
+}
+
 .game-detail__badge {
   font-size: 0.7rem;
   font-weight: 700;
