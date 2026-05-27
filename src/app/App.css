@@ -1,0 +1,23 @@
+.app {
+  min-height: 100vh;
+  background-color: #0f172a;
+  color: #f1f5f9;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.app__header {
+  padding: 1rem;
+  background-color: #1e293b;
+  border-bottom: 1px solid #334155;
+}
+
+.app__logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f97316;
+}
+
+.app__main {
+  padding-bottom: 2rem;
+}
