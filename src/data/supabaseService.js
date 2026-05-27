@@ -1,0 +1,143 @@
+// Serviço de integração com o Supabase
+
+import { supabase } from "../lib/supabase";
+
+// ── Players ──────────────────────────────────────────
+
+export async function registerPlayer(player) {
+  const { data, error } = await supabase
+    .from("players")
+    .insert({
+      name: player.name,
+      nickname: player.nickname || null,
+      whatsapp: player.whatsapp,
+      gender: player.gender,
+      type: "member",
+      status: "active",
+      accepted_rules: true,
+    })
+    .select()
+    .single();
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, player: data };
+}
+
+export async function getPlayerByWhatsapp(whatsapp) {
+  const { data, error } = await supabase
+    .from("players")
+    .select("*")
+    .eq("whatsapp", whatsapp)
+    .single();
+
+  if (error) return null;
+  return data;
+}
+
+export async function getAllPlayers() {
+  const { data, error } = await supabase
+    .from("players")
+    .select("*")
+    .order("name");
+
+  if (error) return [];
+  return data;
+}
+
+export async function updatePlayerStatus(playerId, status) {
+  const { error } = await supabase
+    .from("players")
+    .update({ status })
+    .eq("id", playerId);
+
+  return !error;
+}
+
+export async function updatePlayerLevel(playerId, skillLevel) {
+  const { error } = await supabase
+    .from("players")
+    .update({ skill_level: skillLevel })
+    .eq("id", playerId);
+
+  return !error;
+}
+
+// ── Games ──────────────────────────────────────────
+
+export async function getGames() {
+  const { data, error } = await supabase
+    .from("games")
+    .select("*")
+    .order("date");
+
+  if (error) return [];
+  return data;
+}
+
+export async function getGameById(gameId) {
+  const { data, error } = await supabase
+    .from("games")
+    .select("*")
+    .eq("id", gameId)
+    .single();
+
+  if (error) return null;
+  return data;
+}
+
+// ── Registrations ──────────────────────────────────
+
+export async function getGameRegistrations(gameId) {
+  const { data, error } = await supabase
+    .from("game_registrations")
+    .select(
+      "*, player:players!game_registrations_player_id_fkey(*), inviter:players!game_registrations_invited_by_fkey(id, name, nickname)",
+    )
+    .eq("game_id", gameId)
+    .order("registered_at");
+
+  if (error) {
+    console.error("[Supabase] Falha ao carregar inscricoes do jogo:", error);
+    return [];
+  }
+  return data;
+}
+
+export async function joinGame(
+  gameId,
+  playerId,
+  slot,
+  guestName = null,
+  invitedBy = null,
+) {
+  const { error } = await supabase.from("game_registrations").insert({
+    game_id: gameId,
+    player_id: playerId || null,
+    guest_name: guestName || null,
+    invited_by: invitedBy || null,
+    slot,
+  });
+
+  return !error;
+}
+
+export async function leaveGame(gameId, playerId) {
+  const { error } = await supabase
+    .from("game_registrations")
+    .delete()
+    .eq("game_id", gameId)
+    .eq("player_id", playerId);
+
+  return !error;
+}
+
+export async function isPlayerRegistered(gameId, playerId) {
+  const { data } = await supabase
+    .from("game_registrations")
+    .select("id")
+    .eq("game_id", gameId)
+    .eq("player_id", playerId)
+    .single();
+
+  return !!data;
+}

@@ -1,8 +1,11 @@
 // Aba de jogadores do painel admin
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "../../../components/Button/Button";
-import { mockPlayers } from "../../../data/mockGames";
+import {
+  getAllPlayers,
+  updatePlayerStatus,
+} from "../../../data/supabaseService";
 import { PLAYER_STATUS, PLAYER_TYPE } from "../../../domain/constants";
 import "./AdminTabs.css";
 
@@ -17,42 +20,88 @@ function statusLabel(status) {
 }
 
 function AdminPlayers() {
-  const [players, setPlayers] = useState(mockPlayers);
+  const [players, setPlayers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  function togglePenalized(id) {
+  useEffect(() => {
+    let active = true;
+
+    async function loadPlayers() {
+      setLoading(true);
+      setError("");
+
+      const data = await getAllPlayers();
+      if (!active) return;
+
+      setPlayers(data || []);
+      setLoading(false);
+    }
+
+    loadPlayers();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function togglePenalized(id) {
+    const current = players.find((player) => player.id === id);
+    if (!current) return;
+
+    const nextStatus =
+      current.status === PLAYER_STATUS.PENALIZED
+        ? PLAYER_STATUS.ACTIVE
+        : PLAYER_STATUS.PENALIZED;
+
+    const success = await updatePlayerStatus(id, nextStatus);
+    if (!success) {
+      setError("Nao foi possivel atualizar o status do jogador.");
+      return;
+    }
+
+    setError("");
     setPlayers((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? {
-              ...p,
-              status:
-                p.status === PLAYER_STATUS.PENALIZED
-                  ? PLAYER_STATUS.ACTIVE
-                  : PLAYER_STATUS.PENALIZED,
-            }
-          : p,
+      prev.map((player) =>
+        player.id === id ? { ...player, status: nextStatus } : player,
       ),
     );
   }
 
-  function toggleBlocked(id) {
+  async function toggleBlocked(id) {
+    const current = players.find((player) => player.id === id);
+    if (!current) return;
+
+    const nextStatus =
+      current.status === PLAYER_STATUS.BLOCKED
+        ? PLAYER_STATUS.ACTIVE
+        : PLAYER_STATUS.BLOCKED;
+
+    const success = await updatePlayerStatus(id, nextStatus);
+    if (!success) {
+      setError("Nao foi possivel atualizar o status do jogador.");
+      return;
+    }
+
+    setError("");
     setPlayers((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? {
-              ...p,
-              status:
-                p.status === PLAYER_STATUS.BLOCKED
-                  ? PLAYER_STATUS.ACTIVE
-                  : PLAYER_STATUS.BLOCKED,
-            }
-          : p,
+      prev.map((player) =>
+        player.id === id ? { ...player, status: nextStatus } : player,
       ),
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="admin-tab">
+        <p className="admin-tab__restricted">Carregando jogadores...</p>
+      </div>
     );
   }
 
   return (
     <div className="admin-tab">
+      {error && <p className="admin-tab__restricted">{error}</p>}
       <ul className="admin-tab__list">
         {players.map((p) => (
           <li key={p.id} className="admin-tab__item">

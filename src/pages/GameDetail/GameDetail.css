@@ -143,6 +143,12 @@
   color: var(--cv-muted);
 }
 
+.game-detail__state {
+  color: var(--cv-muted);
+  text-align: center;
+  margin-top: 1.2rem;
+}
+
 .game-detail__not-found {
   color: var(--cv-muted);
   text-align: center;

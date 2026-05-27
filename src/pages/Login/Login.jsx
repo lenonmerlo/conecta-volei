@@ -12,12 +12,12 @@ function LoginForm() {
   const [whatsapp, setWhatsapp] = useState("");
   const [error, setError] = useState("");
 
-  function handleLogin() {
+  async function handleLogin() {
     if (!whatsapp.trim()) {
       setError("Informe seu WhatsApp.");
       return;
     }
-    const result = login(whatsapp.trim());
+    const result = await login(whatsapp.trim());
     if (!result.success) setError(result.error);
   }
 

@@ -1,22 +1,63 @@
 // Aba de níveis técnicos — exclusivo para super admin
 
-import { useState } from "react";
-import { mockPlayers } from "../../../data/mockGames";
+import { useEffect, useState } from "react";
+import {
+  getAllPlayers,
+  updatePlayerLevel,
+} from "../../../data/supabaseService";
 import { SKILL_LEVELS } from "../../../domain/constants";
+import "./AdminTabs.css";
 
 function AdminLevels() {
-  const [players, setPlayers] = useState(mockPlayers);
+  const [players, setPlayers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  function updateLevel(id, level) {
+  useEffect(() => {
+    let active = true;
+
+    async function loadPlayers() {
+      setLoading(true);
+      setError("");
+      const data = await getAllPlayers();
+      if (!active) return;
+      setPlayers(data || []);
+      setLoading(false);
+    }
+
+    loadPlayers();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function updateLevel(id, level) {
+    const parsedLevel = parseFloat(level);
+    const success = await updatePlayerLevel(id, parsedLevel);
+
+    if (!success) {
+      setError("Nao foi possivel atualizar o nivel tecnico.");
+      return;
+    }
+
+    setError("");
     setPlayers((prev) =>
-      prev.map((p) =>
-        p.id === id ? { ...p, skillLevel: parseFloat(level) } : p,
-      ),
+      prev.map((p) => (p.id === id ? { ...p, skill_level: parsedLevel } : p)),
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="admin-tab">
+        <p className="admin-tab__restricted">Carregando niveis...</p>
+      </div>
     );
   }
 
   return (
     <div className="admin-tab">
+      {error && <p className="admin-tab__restricted">{error}</p>}
       <ul className="admin-tab__list">
         {players.map((p) => (
           <li key={p.id} className="admin-tab__item">
@@ -29,7 +70,7 @@ function AdminLevels() {
             <div className="admin-tab__actions">
               <select
                 className="admin-tab__select"
-                value={p.skillLevel}
+                value={p.skill_level ?? p.skillLevel ?? SKILL_LEVELS[0]}
                 onChange={(e) => updateLevel(p.id, e.target.value)}
               >
                 {SKILL_LEVELS.map((level) => (
