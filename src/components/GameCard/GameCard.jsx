@@ -1,6 +1,7 @@
 // Componente de card de jogo — exibido na Home
 
 import { useNavigate } from "react-router-dom";
+import { isListOpen } from "../../domain/gameRules";
 import "./GameCard.css";
 
 function GameCard({ game }) {
@@ -8,12 +9,16 @@ function GameCard({ game }) {
   const dayLabel = game.day === "wednesday" ? "Quarta-feira" : "Domingo";
   const spotsLeft = 21 - game.players.length;
   const isFull = spotsLeft <= 0;
+  const listOpen = isListOpen(game.day);
+  const isInteractive = listOpen;
 
   function openGame() {
+    if (!isInteractive) return;
     navigate(`/game/${game.id}`);
   }
 
   function handleKeyDown(e) {
+    if (!isInteractive) return;
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       openGame();
@@ -22,11 +27,14 @@ function GameCard({ game }) {
 
   return (
     <div
-      className={`game-card ${isFull ? "game-card--full" : ""}`}
-      onClick={openGame}
+      className={`game-card ${isFull ? "game-card--full" : ""} ${
+        !listOpen ? "game-card--list-closed" : ""
+      } ${isInteractive ? "game-card--interactive" : "game-card--disabled"}`}
+      onClick={isInteractive ? openGame : undefined}
       onKeyDown={handleKeyDown}
       role="button"
-      tabIndex={0}
+      tabIndex={isInteractive ? 0 : -1}
+      aria-disabled={!isInteractive}
     >
       <div className="game-card__header">
         <span className="game-card__day">{dayLabel}</span>
@@ -50,6 +58,15 @@ function GameCard({ game }) {
       <div className="game-card__footer">
         <span className="game-card__spots">
           {game.players.length}/21 inscritos
+        </span>
+        <span
+          className={`game-card__list-pill ${
+            listOpen
+              ? "game-card__list-pill--open"
+              : "game-card__list-pill--closed"
+          }`}
+        >
+          {listOpen ? "Lista aberta" : "Lista fechada"}
         </span>
         {!isFull ? (
           <span className="game-card__badge game-card__badge--open">

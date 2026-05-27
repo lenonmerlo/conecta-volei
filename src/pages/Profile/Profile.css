@@ -201,3 +201,13 @@
     font-size: 1.75rem;
   }
 }
+
+.profile__logged-type--admin {
+  background-color: #1e3a5f;
+  color: #93c5fd;
+}
+
+.profile__logged-type--super {
+  background-color: #4c1d95;
+  color: #d8b4fe;
+}

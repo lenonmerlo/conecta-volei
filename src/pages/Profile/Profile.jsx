@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAuth } from "../../app/AuthContext";
 import Button from "../../components/Button/Button";
 import { register } from "../../data/authStorage";
+import { isAdmin, isSuperAdmin } from "../../domain/admins";
 import { PLAYER_STATUS, PLAYER_TYPE } from "../../domain/constants";
 import "./Profile.css";
 
@@ -163,6 +164,17 @@ function RegisterForm({ onRegister }) {
 }
 
 function LoggedIn({ user, onLogout }) {
+  const role = isSuperAdmin(user)
+    ? "Super Admin"
+    : isAdmin(user)
+      ? "Admin"
+      : "Membro";
+  const roleClass = isSuperAdmin(user)
+    ? "profile__logged-type--super"
+    : isAdmin(user)
+      ? "profile__logged-type--admin"
+      : "";
+
   return (
     <div className="profile__logged">
       <div className="profile__avatar">{user.name.charAt(0).toUpperCase()}</div>
@@ -171,7 +183,7 @@ function LoggedIn({ user, onLogout }) {
         <p className="profile__logged-nickname">({user.nickname})</p>
       )}
       <p className="profile__logged-info">{user.whatsapp}</p>
-      <p className="profile__logged-type">Membro</p>
+      <span className={`profile__logged-type ${roleClass}`}>{role}</span>
       <Button variant="secondary" onClick={onLogout}>
         Sair
       </Button>

@@ -84,6 +84,36 @@
   margin-top: 0.1rem;
 }
 
+.rules__actions {
+  border: 1px solid rgba(143, 215, 255, 0.22);
+  border-radius: 14px;
+  background: linear-gradient(
+    150deg,
+    rgba(13, 45, 74, 0.92),
+    rgba(8, 31, 52, 0.82)
+  );
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.rules__pending {
+  font-size: 0.84rem;
+  color: var(--cv-text);
+}
+
+.rules__error {
+  font-size: 0.8rem;
+  color: #ffd2d2;
+}
+
+.rules__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 @media (max-width: 640px) {
   .rules {
     padding: 1rem;
