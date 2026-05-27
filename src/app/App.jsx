@@ -6,6 +6,7 @@ import Rules from "../pages/Rules/Rules";
 import Profile from "../pages/Profile/Profile";
 import Admin from "../pages/Admin/Admin";
 import GameDetail from "../pages/GameDetail/GameDetail";
+import Teams from "../pages/Teams/Teams";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/game/:id" element={<GameDetail />} />
+            <Route path="/teams" element={<Teams />} />
           </Routes>
         </main>
         <BottomNav />
