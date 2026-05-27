@@ -1,26 +1,18 @@
 // Aba de níveis técnicos — exclusivo para super admin
 
-import { useState } from 'react'
-import { mockPlayers } from '../../../data/mockGames'
-import { SKILL_LEVELS } from '../../../domain/constants'
+import { useState } from "react";
+import { mockPlayers } from "../../../data/mockGames";
+import { SKILL_LEVELS } from "../../../domain/constants";
 
-function AdminLevels({ isSuperAdmin }) {
-  const [players, setPlayers] = useState(mockPlayers)
+function AdminLevels() {
+  const [players, setPlayers] = useState(mockPlayers);
 
   function updateLevel(id, level) {
     setPlayers((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, skillLevel: parseFloat(level) } : p))
-    )
-  }
-
-  if (!isSuperAdmin) {
-    return (
-      <div className="admin-tab">
-        <p className="admin-tab__restricted">
-          Acesso restrito. Apenas super admins podem visualizar e editar os níveis técnicos.
-        </p>
-      </div>
-    )
+      prev.map((p) =>
+        p.id === id ? { ...p, skillLevel: parseFloat(level) } : p,
+      ),
+    );
   }
 
   return (
@@ -30,7 +22,8 @@ function AdminLevels({ isSuperAdmin }) {
           <li key={p.id} className="admin-tab__item">
             <div className="admin-tab__info">
               <span className="admin-tab__name">
-                {p.name}{p.nickname ? ` (${p.nickname})` : ''}
+                {p.name}
+                {p.nickname ? ` (${p.nickname})` : ""}
               </span>
             </div>
             <div className="admin-tab__actions">
@@ -50,7 +43,7 @@ function AdminLevels({ isSuperAdmin }) {
         ))}
       </ul>
     </div>
-  )
+  );
 }
 
-export default AdminLevels
+export default AdminLevels;

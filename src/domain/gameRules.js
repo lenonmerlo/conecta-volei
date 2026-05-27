@@ -1,7 +1,37 @@
-import { MAX_PLAYERS, PLAYER_STATUS, PLAYER_TYPE } from "./constants";
+import {
+  GAME_DAYS,
+  MAX_PLAYERS,
+  PLAYER_STATUS,
+  PLAYER_TYPE,
+} from "./constants";
 
 export function hasSpotAvailable(currentCount) {
   return currentCount < MAX_PLAYERS;
+}
+
+// Verifica se a lista de um jogo esta aberta agora
+export function isListOpen(gameDay, now = new Date()) {
+  const day = now.getDay(); // 0=dom, 1=seg, 2=ter, 3=qua, 4=qui, 5=sex, 6=sab
+  const hour = now.getHours();
+
+  if (gameDay === GAME_DAYS.WEDNESDAY) {
+    // Abre segunda as 19h, fecha na quarta a meia-noite
+    if (day === 1 && hour >= 19) return true; // segunda apos 19h
+    if (day === 2) return true; // terca
+    if (day === 3) return true; // quarta
+    return false;
+  }
+
+  if (gameDay === GAME_DAYS.SUNDAY) {
+    // Abre quinta as 19h, fecha no domingo a meia-noite
+    if (day === 4 && hour >= 19) return true; // quinta apos 19h
+    if (day === 5) return true; // sexta
+    if (day === 6) return true; // sabado
+    if (day === 0) return true; // domingo
+    return false;
+  }
+
+  return false;
 }
 
 export function isMemberPriorityWindow(date) {

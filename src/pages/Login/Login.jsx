@@ -1,12 +1,10 @@
 // Tela de entrada — login e cadastro antes de acessar o app
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../app/AuthContext";
 import escudoConecta from "../../assets/escudo-conecta-prata.png";
 import Button from "../../components/Button/Button";
-import { register } from "../../data/authStorage";
-import { PLAYER_STATUS, PLAYER_TYPE } from "../../domain/constants";
 import "./Login.css";
 
 function LoginForm() {
@@ -42,25 +40,23 @@ function LoginForm() {
   );
 }
 
-function RegisterForm({ onRegister }) {
-  const hasOpenedRules = sessionStorage.getItem("cv_rules_opened") === "true";
-  const [form, setForm] = useState({
-    name: "",
-    nickname: "",
-    whatsapp: "",
-    gender: "M",
-    acceptedRules: false,
-  });
+function RegisterForm() {
+  const navigate = useNavigate();
+  const { pendingRegister, savePendingRegister } = useAuth();
+  const [form, setForm] = useState(
+    pendingRegister || {
+      name: "",
+      nickname: "",
+      whatsapp: "",
+      gender: "M",
+    },
+  );
   const [errors, setErrors] = useState({});
 
   function validate() {
     const newErrors = {};
     if (!form.name.trim()) newErrors.name = "Nome é obrigatório";
     if (!form.whatsapp.trim()) newErrors.whatsapp = "WhatsApp é obrigatório";
-    if (!hasOpenedRules)
-      newErrors.acceptedRules = "Abra e leia as regras antes de aceitar";
-    if (!form.acceptedRules)
-      newErrors.acceptedRules = "Você precisa aceitar as regras";
     return newErrors;
   }
 
@@ -79,25 +75,9 @@ function RegisterForm({ onRegister }) {
       return;
     }
 
-    const player = {
-      id: crypto.randomUUID(),
-      name: form.name.trim(),
-      nickname: form.nickname.trim() || null,
-      whatsapp: form.whatsapp.trim(),
-      type: PLAYER_TYPE.MEMBER,
-      gender: form.gender,
-      status: PLAYER_STATUS.ACTIVE,
-      acceptedRules: true,
-      createdAt: new Date().toISOString(),
-    };
-
-    const result = register(player);
-    if (!result.success) {
-      setErrors({ whatsapp: result.error });
-      return;
-    }
-
-    onRegister();
+    savePendingRegister(form);
+    setErrors({});
+    navigate("/rules");
   }
 
   return (
@@ -146,44 +126,27 @@ function RegisterForm({ onRegister }) {
         </select>
       </div>
 
-      <div className="login__field login__field--checkbox">
-        <input
-          type="checkbox"
-          name="acceptedRules"
-          checked={form.acceptedRules}
-          onChange={handleChange}
-          id="acceptedRules"
-          disabled={!hasOpenedRules}
-        />
-        <label htmlFor="acceptedRules">Li e aceito as regras do grupo</label>
-        {!hasOpenedRules && (
-          <span className="login__hint">
-            Leia as regras para liberar o aceite.
-          </span>
-        )}
-        {errors.acceptedRules && (
-          <span className="login__error">{errors.acceptedRules}</span>
-        )}
-      </div>
-
-      <Link className="login__rules-link" to="/rules">
-        {hasOpenedRules
-          ? "Regras abertas. Se quiser, revisar novamente"
-          : "Abrir regras para liberar o aceite"}
-      </Link>
+      <p className="login__hint">
+        Depois de preencher, você vai para as regras e conclui o cadastro com o
+        aceite.
+      </p>
 
       <Button onClick={handleSubmit} fullWidth>
-        Cadastrar
+        Continuar para regras
       </Button>
     </div>
   );
 }
 
 function Login() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const query = new URLSearchParams(location.search);
+  const registeredFromQuery = query.get("registered") === "1";
   const [mode, setMode] = useState("login");
   const [registered, setRegistered] = useState(false);
 
-  if (registered) {
+  if (registered || registeredFromQuery) {
     return (
       <div className="login">
         <div className="login__shell">
@@ -204,6 +167,9 @@ function Login() {
               onClick={() => {
                 setRegistered(false);
                 setMode("login");
+                if (registeredFromQuery) {
+                  navigate("/", { replace: true });
+                }
               }}
               fullWidth
             >
@@ -246,11 +212,7 @@ function Login() {
             </button>
           </div>
 
-          {mode === "login" ? (
-            <LoginForm />
-          ) : (
-            <RegisterForm onRegister={() => setRegistered(true)} />
-          )}
+          {mode === "login" ? <LoginForm /> : <RegisterForm />}
         </div>
       </div>
     </div>
