@@ -1,16 +1,29 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
+import BottomNav from '../components/BottomNav/BottomNav'
 import Home from '../pages/Home/Home'
+import Rules from '../pages/Rules/Rules'
+import Profile from '../pages/Profile/Profile'
+import Admin from '../pages/Admin/Admin'
 
 function App() {
   return (
-    <div className="app">
-      <header className="app__header">
-        <h1 className="app__logo">Conecta Vôlei</h1>
-      </header>
-      <main className="app__main">
-        <Home />
-      </main>
-    </div>
+    <BrowserRouter>
+      <div className="app">
+        <header className="app__header">
+          <h1 className="app__logo">Conecta Vôlei</h1>
+        </header>
+        <main className="app__main">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/rules" element={<Rules />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/admin" element={<Admin />} />
+          </Routes>
+        </main>
+        <BottomNav />
+      </div>
+    </BrowserRouter>
   )
 }
 
