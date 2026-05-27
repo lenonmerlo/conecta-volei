@@ -1,0 +1,18 @@
+.home {
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.home__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.home__list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}

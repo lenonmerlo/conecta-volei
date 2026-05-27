@@ -1,16 +1,26 @@
-# React + Vite
+# Conecta Vôlei
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+PWA mobile-first para gerenciamento do grupo de vôlei de quadra **Conecta Vôlei**.
 
-Currently, two official plugins are available:
+## Sobre
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Aplicativo para controle de listas de jogos, cadastro de atletas, sorteio equilibrado de times e painel administrativo.
 
-## React Compiler
+## Tecnologias
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React + Vite
+- PWA (mobile-first)
+- Supabase (em breve)
+- Vercel/Netlify
 
-## Expanding the ESLint configuration
+## Dias de jogo
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- Quarta-feira — lista abre segunda às 19h
+- Domingo — lista abre quinta às 19h
+
+## Rodando localmente
+
+```bash
+npm install
+npm run dev
+```
