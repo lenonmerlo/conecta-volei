@@ -81,8 +81,8 @@ function Rules() {
   const { user, pendingRegister, commitRegister } = useAuth();
   const [error, setError] = useState("");
 
-  function handleAcceptAndFinish() {
-    const result = commitRegister();
+  async function handleAcceptAndFinish() {
+    const result = await commitRegister();
     if (!result.success) {
       setError(result.error);
       return;

@@ -1,10 +1,10 @@
 // Página de detalhe do jogo — lista de inscritos, espera e regras de entrada
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import JoinList from "../../components/JoinList/JoinList";
-import { getGameList } from "../../data/listStorage";
-import { mockGames, mockPlayers } from "../../data/mockGames";
+import { mockGames } from "../../data/mockGames";
+import { getGameById, getGameRegistrations } from "../../data/supabaseService";
 import { GAME_DAYS, PLAYER_STATUS, PLAYER_TYPE } from "../../domain/constants";
 import "./GameDetail.css";
 
@@ -13,14 +13,101 @@ function formatName(player) {
   return player.name;
 }
 
-function getPlayerById(id) {
-  return mockPlayers.find((p) => p.id === id);
+function normalizeGame(game) {
+  if (!game) return null;
+
+  return {
+    ...game,
+    mapUrl: game.map_url ?? game.mapUrl ?? null,
+  };
+}
+
+function buildListsFromRegistrations(registrations) {
+  const list = { main: [], waitlist: [], guests: [] };
+
+  registrations.forEach((registration) => {
+    const slot = registration.slot || "main";
+    const player = registration.player;
+    const inviterName = registration.inviter?.name || null;
+
+    if (player) {
+      const normalizedPlayer = {
+        id: player.id,
+        name: player.name,
+        nickname: player.nickname || null,
+        whatsapp: player.whatsapp,
+        type: player.type,
+        gender: player.gender,
+        status: player.status,
+      };
+
+      if (slot === "waitlist") {
+        list.waitlist.push(normalizedPlayer);
+      } else if (slot === "guests" || player.type === PLAYER_TYPE.GUEST) {
+        list.guests.push({ ...normalizedPlayer, invitedBy: inviterName });
+      } else {
+        list.main.push(normalizedPlayer);
+      }
+      return;
+    }
+
+    if (registration.guest_name) {
+      list.guests.push({
+        id: registration.id,
+        name: registration.guest_name,
+        nickname: null,
+        type: PLAYER_TYPE.GUEST,
+        gender: null,
+        status: PLAYER_STATUS.ACTIVE,
+        invitedBy: inviterName,
+      });
+    }
+  });
+
+  return list;
 }
 
 function GameDetail() {
   const { id } = useParams();
-  const [, setListVersion] = useState(0);
-  const game = mockGames.find((g) => g.id === id);
+  const [reloadVersion, setReloadVersion] = useState(0);
+  const [game, setGame] = useState(() => mockGames.find((g) => g.id === id));
+  const [registrations, setRegistrations] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadGameDetail() {
+      setLoading(true);
+
+      const [supabaseGame, supabaseRegistrations] = await Promise.all([
+        getGameById(id),
+        getGameRegistrations(id),
+      ]);
+
+      if (!active) return;
+
+      setGame(
+        normalizeGame(supabaseGame) || mockGames.find((g) => g.id === id),
+      );
+      setRegistrations(supabaseRegistrations || []);
+      setLoading(false);
+    }
+
+    loadGameDetail();
+
+    return () => {
+      active = false;
+    };
+  }, [id, reloadVersion]);
+
+  if (loading) {
+    return (
+      <div className="game-detail">
+        <p className="game-detail__state">Carregando detalhes do jogo...</p>
+      </div>
+    );
+  }
 
   if (!game) {
     return (
@@ -31,20 +118,10 @@ function GameDetail() {
   }
 
   const isSunday = game.day === GAME_DAYS.SUNDAY;
-  const storedList = getGameList(game.id);
-  const hasStoredEntries =
-    storedList.main.length > 0 ||
-    storedList.waitlist.length > 0 ||
-    storedList.guests.length > 0;
-
-  const fallbackPlayers = game.players.map(getPlayerById).filter(Boolean);
-  const fallbackWaitlist = game.waitlist.map(getPlayerById).filter(Boolean);
-
-  const mainPlayers = hasStoredEntries ? storedList.main : fallbackPlayers;
-  const waitlist = hasStoredEntries ? storedList.waitlist : fallbackWaitlist;
-  const guests = hasStoredEntries
-    ? storedList.guests
-    : fallbackPlayers.filter((p) => p.type === PLAYER_TYPE.GUEST);
+  const supabaseList = buildListsFromRegistrations(registrations);
+  const mainPlayers = supabaseList.main;
+  const waitlist = supabaseList.waitlist;
+  const guests = supabaseList.guests;
   const members = mainPlayers.filter((p) => p.type === PLAYER_TYPE.MEMBER);
 
   const dayLabel = isSunday ? "Domingo" : "Quarta-feira";
@@ -143,7 +220,7 @@ function GameDetail() {
       <div className="game-detail__action">
         <JoinList
           game={game}
-          onUpdate={() => setListVersion((prev) => prev + 1)}
+          onUpdate={() => setReloadVersion((prev) => prev + 1)}
         />
       </div>
     </div>

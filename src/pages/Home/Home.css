@@ -29,6 +29,12 @@
   gap: 1rem;
 }
 
+.home__state {
+  font-size: 0.9rem;
+  color: var(--cv-muted);
+  padding: 0.35rem 0.15rem;
+}
+
 @media (min-width: 860px) {
   .home__list {
     grid-template-columns: repeat(2, minmax(0, 1fr));

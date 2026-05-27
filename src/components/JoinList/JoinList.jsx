@@ -1,12 +1,24 @@
 // Componente de inscricao na lista de um jogo
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../app/AuthContext";
-import { getRegisteredMembers } from "../../data/authStorage";
-import { isPlayerInGame, joinList, leaveList } from "../../data/listStorage";
+import {
+  getAllPlayers,
+  getGameRegistrations,
+  joinGame,
+  leaveGame,
+} from "../../data/supabaseService";
 import { PLAYER_TYPE } from "../../domain/constants";
 import Button from "../Button/Button";
 import "./JoinList.css";
+
+const MAX_MAIN_LIST = 21;
+
+function getRegistrationSlot(registration) {
+  if (registration.slot) return registration.slot;
+  if (registration.guest_name) return "guests";
+  return "main";
+}
 
 function JoinList({ game, onUpdate }) {
   const { user } = useAuth();
@@ -16,11 +28,64 @@ function JoinList({ game, onUpdate }) {
   const [selectedMember, setSelectedMember] = useState(null);
   const [guestName, setGuestName] = useState("");
   const [error, setError] = useState("");
+  const [players, setPlayers] = useState([]);
+  const [registrations, setRegistrations] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const alreadyIn = isPlayerInGame(game.id, user.id);
+  useEffect(() => {
+    let active = true;
 
-  const registeredMembers = getRegisteredMembers().filter(
-    (m) => m.id !== user.id && !isPlayerInGame(game.id, m.id),
+    async function loadData() {
+      setLoading(true);
+      const [allPlayers, allRegistrations] = await Promise.all([
+        getAllPlayers(),
+        getGameRegistrations(game.id),
+      ]);
+
+      if (!active) return;
+
+      setPlayers(allPlayers || []);
+      setRegistrations(allRegistrations || []);
+      setLoading(false);
+    }
+
+    loadData();
+
+    return () => {
+      active = false;
+    };
+  }, [game.id]);
+
+  async function refreshData() {
+    const updatedRegistrations = await getGameRegistrations(game.id);
+    setRegistrations(updatedRegistrations || []);
+  }
+
+  const registeredPlayerIds = useMemo(
+    () =>
+      new Set(
+        registrations
+          .map((registration) => registration.player_id)
+          .filter(Boolean),
+      ),
+    [registrations],
+  );
+
+  const mainListCount = useMemo(
+    () =>
+      registrations.filter(
+        (registration) => getRegistrationSlot(registration) === "main",
+      ).length,
+    [registrations],
+  );
+
+  const alreadyIn = Boolean(user?.id && registeredPlayerIds.has(user.id));
+
+  const registeredMembers = players.filter(
+    (player) =>
+      player.id !== user.id &&
+      player.type === PLAYER_TYPE.MEMBER &&
+      !registeredPlayerIds.has(player.id),
   );
 
   const filteredMembers = searchTerm.trim()
@@ -31,82 +96,112 @@ function JoinList({ game, onUpdate }) {
       )
     : [];
 
-  function handleJoinSelf() {
-    const result = joinList(game.id, {
-      id: user.id,
-      name: user.name,
-      nickname: user.nickname || null,
-      type: PLAYER_TYPE.MEMBER,
-      gender: user.gender,
-    });
-    if (!result.success) {
-      setError(result.error);
+  async function handleJoinSelf() {
+    if (alreadyIn) {
+      setError("Jogador ja esta na lista.");
       return;
     }
+
+    const slot = mainListCount < MAX_MAIN_LIST ? "main" : "waitlist";
+    const success = await joinGame(game.id, user.id, slot);
+    if (!success) {
+      setError("Nao foi possivel entrar na lista.");
+      return;
+    }
+
     setStep("adding");
     setError("");
+    await refreshData();
     onUpdate();
   }
 
-  function handleLeave() {
-    leaveList(game.id, user.id);
+  async function handleLeave() {
+    const success = await leaveGame(game.id, user.id);
+    if (!success) {
+      setError("Nao foi possivel sair da lista.");
+      return;
+    }
+
     setStep("idle");
     setAddMode(null);
     setSelectedMember(null);
     setGuestName("");
+    setError("");
+    await refreshData();
     onUpdate();
   }
 
-  function handleAddMember() {
+  async function handleAddMember() {
     if (!selectedMember) {
       setError("Selecione um membro.");
       return;
     }
-    const result = joinList(game.id, {
-      id: selectedMember.id,
-      name: selectedMember.name,
-      nickname: selectedMember.nickname || null,
-      type: PLAYER_TYPE.MEMBER,
-      gender: selectedMember.gender,
-    });
-    if (!result.success) {
-      setError(result.error);
+
+    if (registeredPlayerIds.has(selectedMember.id)) {
+      setError("Jogador ja esta na lista.");
       return;
     }
+
+    const slot = mainListCount < MAX_MAIN_LIST ? "main" : "waitlist";
+    const success = await joinGame(game.id, selectedMember.id, slot);
+    if (!success) {
+      setError("Nao foi possivel adicionar o membro.");
+      return;
+    }
+
     setStep("idle");
     setAddMode(null);
     setSelectedMember(null);
     setSearchTerm("");
     setError("");
+    await refreshData();
     onUpdate();
   }
 
-  function handleAddGuest() {
+  async function handleAddGuest() {
     if (!guestName.trim()) {
       setError("Informe o nome do convidado.");
       return;
     }
-    const result = joinList(
-      game.id,
-      {
-        id: crypto.randomUUID(),
-        name: guestName.trim(),
-        nickname: null,
-        type: PLAYER_TYPE.GUEST,
-        gender: "M",
-      },
-      true,
-      user.name,
+
+    const guestAlreadyIn = registrations.some(
+      (registration) =>
+        (registration.guest_name || "").trim().toLowerCase() ===
+        guestName.trim().toLowerCase(),
     );
-    if (!result.success) {
-      setError(result.error);
+
+    if (guestAlreadyIn) {
+      setError("Convidado ja esta na lista.");
       return;
     }
+
+    const success = await joinGame(
+      game.id,
+      null,
+      "guests",
+      guestName.trim(),
+      user.id,
+    );
+
+    if (!success) {
+      setError("Nao foi possivel adicionar o convidado.");
+      return;
+    }
+
     setStep("idle");
     setAddMode(null);
     setGuestName("");
     setError("");
+    await refreshData();
     onUpdate();
+  }
+
+  if (loading) {
+    return (
+      <div className="join-list">
+        <p className="join-list__info">Carregando lista...</p>
+      </div>
+    );
   }
 
   if (alreadyIn && step === "idle") {

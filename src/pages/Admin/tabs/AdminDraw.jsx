@@ -1,22 +1,73 @@
 // Aba de sorteio de times do painel admin
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../components/Button/Button";
-import { mockPlayers } from "../../../data/mockGames";
+import { getAllPlayers } from "../../../data/supabaseService";
+import { PLAYER_STATUS, PLAYER_TYPE } from "../../../domain/constants";
 import { drawTeams, swapPlayers } from "../../../domain/teamDraw";
 import "./AdminDraw.css";
 import "./AdminTabs.css";
+
+function normalizePlayer(player) {
+  return {
+    id: player.id,
+    name: player.name,
+    nickname: player.nickname || null,
+    gender: player.gender,
+    skillLevel: Number(player.skill_level ?? player.skillLevel ?? 3),
+    status: player.status,
+    type: player.type,
+  };
+}
 
 function AdminDraw() {
   const navigate = useNavigate();
   const [teams, setTeams] = useState(null);
   const [swap, setSwap] = useState(null); // { teamIndex, playerId }
+  const [players, setPlayers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadPlayers() {
+      setLoading(true);
+      setError("");
+
+      const data = await getAllPlayers();
+      if (!active) return;
+
+      const eligiblePlayers = (data || [])
+        .map(normalizePlayer)
+        .filter(
+          (player) =>
+            player.type === PLAYER_TYPE.MEMBER &&
+            player.status === PLAYER_STATUS.ACTIVE,
+        );
+
+      setPlayers(eligiblePlayers);
+      setLoading(false);
+    }
+
+    loadPlayers();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function handleDraw() {
-    const eligible = mockPlayers.slice(0, 21);
+    if (players.length === 0) {
+      setError("Nenhum jogador elegivel para sorteio.");
+      return;
+    }
+
+    const eligible = players.slice(0, 21);
     setTeams(drawTeams(eligible));
     setSwap(null);
+    setError("");
   }
 
   function handleSelectForSwap(teamIndex, playerId) {
@@ -40,12 +91,28 @@ function AdminDraw() {
     navigate("/teams", { state: { teams } });
   }
 
+  if (loading) {
+    return (
+      <div className="admin-draw">
+        <div className="admin-draw__start">
+          <p className="admin-draw__hint">
+            Carregando jogadores para sorteio...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="admin-draw">
       {!teams ? (
         <div className="admin-draw__start">
           <p className="admin-draw__hint">
             Clique em sortear para montar os 3 times equilibrados.
+          </p>
+          {error && <p className="admin-tab__restricted">{error}</p>}
+          <p className="admin-draw__hint">
+            Jogadores elegiveis: {players.length}
           </p>
           <Button onClick={handleDraw}>Sortear times</Button>
         </div>
