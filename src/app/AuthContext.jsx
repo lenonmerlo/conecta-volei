@@ -24,6 +24,7 @@ function normalizePlayer(player) {
       typeof player.accepted_rules === "boolean"
         ? player.accepted_rules
         : player.acceptedRules,
+    avatarUrl: player.avatar_url ?? player.avatarUrl ?? null,
     skillLevel: player.skill_level ?? player.skillLevel ?? null,
     createdAt: player.created_at ?? player.createdAt ?? null,
   };
@@ -77,6 +78,12 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
+  function updateUser(nextUser) {
+    const normalized = normalizePlayer(nextUser);
+    localStorage.setItem(SESSION_KEY, JSON.stringify(normalized));
+    setUser(normalized);
+  }
+
   function savePendingRegister(formData) {
     setPendingRegister(formData);
   }
@@ -106,6 +113,7 @@ export function AuthProvider({ children }) {
         user,
         login,
         logout,
+        updateUser,
         pendingRegister,
         savePendingRegister,
         commitRegister,
