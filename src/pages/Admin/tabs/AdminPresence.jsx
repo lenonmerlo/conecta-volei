@@ -6,6 +6,7 @@ import {
   getGamePresences,
   getGameRegistrations,
   getGames,
+  migrateGuestsToWaitlist,
   penalizePlayer,
   upsertPresence,
 } from "../../../data/supabaseService";
@@ -42,8 +43,41 @@ function AdminPresence() {
   const [presences, setPresences] = useState({});
   const [loadingGames, setLoadingGames] = useState(true);
   const [loadingRegistrations, setLoadingRegistrations] = useState(false);
+  const [migratingGuests, setMigratingGuests] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+
+  const isSaturday = new Date().getDay() === 6;
+  const selectedGameData = games.find((game) => game.id === selectedGame);
+  const canMigrateGuests =
+    isSaturday && selectedGameData?.day === GAME_DAYS.SUNDAY;
+
+  async function loadRegistrationsForGame(gameId) {
+    if (!gameId) {
+      setRegistrations([]);
+      setPresences({});
+      return;
+    }
+
+    setLoadingRegistrations(true);
+    setError("");
+    setNotice("");
+
+    const [registrationsData, presencesData] = await Promise.all([
+      getGameRegistrations(gameId),
+      getGamePresences(gameId),
+    ]);
+
+    const initialPresences = (presencesData || []).reduce((acc, presence) => {
+      // Default is present; only explicit false should mark the player absent.
+      acc[presence.player_id] = presence.present === false ? false : true;
+      return acc;
+    }, {});
+
+    setRegistrations(registrationsData || []);
+    setPresences(initialPresences);
+    setLoadingRegistrations(false);
+  }
 
   useEffect(() => {
     let active = true;
@@ -72,32 +106,8 @@ function AdminPresence() {
     let active = true;
 
     async function loadRegistrations() {
-      if (!selectedGame) {
-        setRegistrations([]);
-        setPresences({});
-        return;
-      }
-
-      setLoadingRegistrations(true);
-      setError("");
-      setNotice("");
-
-      const [registrationsData, presencesData] = await Promise.all([
-        getGameRegistrations(selectedGame),
-        getGamePresences(selectedGame),
-      ]);
-
       if (!active) return;
-
-      const initialPresences = (presencesData || []).reduce((acc, presence) => {
-        // Default is present; only explicit false should mark the player absent.
-        acc[presence.player_id] = presence.present === false ? false : true;
-        return acc;
-      }, {});
-
-      setRegistrations(registrationsData || []);
-      setPresences(initialPresences);
-      setLoadingRegistrations(false);
+      await loadRegistrationsForGame(selectedGame);
     }
 
     loadRegistrations();
@@ -106,6 +116,22 @@ function AdminPresence() {
       active = false;
     };
   }, [selectedGame]);
+
+  async function handleMigrateGuests() {
+    if (!selectedGame || !canMigrateGuests) return;
+
+    setMigratingGuests(true);
+    const success = await migrateGuestsToWaitlist(selectedGame);
+    setMigratingGuests(false);
+
+    if (!success) {
+      setError("Nao foi possivel migrar convidados para lista de espera.");
+      return;
+    }
+
+    await loadRegistrationsForGame(selectedGame);
+    setNotice("Convidados migrados para lista de espera.");
+  }
 
   const participants = useMemo(
     () =>
@@ -181,6 +207,20 @@ function AdminPresence() {
           ))}
         </select>
       </div>
+
+      {canMigrateGuests && (
+        <div className="admin-tab__actions">
+          <Button
+            size="sm"
+            variant="secondary"
+            className="admin-tab__btn"
+            onClick={handleMigrateGuests}
+            disabled={migratingGuests}
+          >
+            Migrar convidados para lista de espera
+          </Button>
+        </div>
+      )}
 
       {loadingRegistrations && (
         <p className="admin-tab__restricted">Carregando inscritos...</p>

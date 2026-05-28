@@ -215,7 +215,13 @@ function JoinList({ game, onUpdate }) {
     }
 
     const slot = mainListCount < MAX_MAIN_LIST ? "main" : "waitlist";
-    const success = await joinGame(game.id, selectedMember.id, slot, null, user.id);
+    const success = await joinGame(
+      game.id,
+      selectedMember.id,
+      slot,
+      null,
+      user.id,
+    );
     if (!success) {
       setError("Nao foi possivel adicionar o membro.");
       return;

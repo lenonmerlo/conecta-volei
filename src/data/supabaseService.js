@@ -122,20 +122,91 @@ export async function joinGame(
 }
 
 export async function leaveGame(gameId, playerId) {
-  const { error: playerError } = await supabase
+  const { data: removedPlayerRows, error: playerError } = await supabase
     .from("game_registrations")
     .delete()
     .eq("game_id", gameId)
-    .eq("player_id", playerId);
+    .eq("player_id", playerId)
+    .select("id, slot");
 
-  const { error: invitedGuestsError } = await supabase
+  console.log("[leaveGame] delete results", {
+    gameId,
+    playerId,
+    removedPlayerRows: removedPlayerRows || [],
+    playerError,
+  });
+
+  if (playerError) {
+    console.error("[leaveGame] delete failed, skipping promotion", {
+      gameId,
+      playerId,
+      playerError,
+    });
+    return false;
+  }
+
+  const removedMainCount = (removedPlayerRows || []).filter(
+    (row) => (row.slot || "main") === "main",
+  ).length;
+
+  console.log("[leaveGame] removed main slots", {
+    gameId,
+    playerId,
+    removedMainCount,
+  });
+
+  for (let i = 0; i < removedMainCount; i += 1) {
+    const promoted = await promoteFromWaitlist(gameId);
+    console.log("[leaveGame] promoteFromWaitlist call", {
+      gameId,
+      iteration: i + 1,
+      promoted,
+    });
+  }
+
+  return true;
+}
+
+export async function promoteFromWaitlist(gameId) {
+  const { data: firstWaitlist, error: selectError } = await supabase
     .from("game_registrations")
-    .delete()
+    .select("id")
     .eq("game_id", gameId)
-    .eq("invited_by", playerId)
-    .is("player_id", null);
+    .eq("slot", "waitlist")
+    .order("registered_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
 
-  return !playerError && !invitedGuestsError;
+  console.log("[promoteFromWaitlist] waitlist lookup", {
+    gameId,
+    firstWaitlist,
+    selectError,
+  });
+
+  if (selectError || !firstWaitlist?.id) return false;
+
+  const { error: updateError } = await supabase
+    .from("game_registrations")
+    .update({ slot: "main" })
+    .eq("id", firstWaitlist.id);
+
+  console.log("[promoteFromWaitlist] update to main", {
+    gameId,
+    promotedRegistrationId: firstWaitlist.id,
+    updateError,
+  });
+
+  return !updateError;
+}
+
+export async function migrateGuestsToWaitlist(gameId) {
+  const { error } = await supabase
+    .from("game_registrations")
+    .update({ slot: "waitlist" })
+    .eq("game_id", gameId)
+    .eq("slot", "guests");
+
+  return !error;
 }
 
 export async function isPlayerRegistered(gameId, playerId) {
@@ -144,7 +215,7 @@ export async function isPlayerRegistered(gameId, playerId) {
     .select("id")
     .eq("game_id", gameId)
     .eq("player_id", playerId)
-    .single();
+    .maybeSingle();
 
   return !!data;
 }
