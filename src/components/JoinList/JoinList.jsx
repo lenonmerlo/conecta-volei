@@ -110,6 +110,20 @@ function JoinList({ game, onUpdate }) {
     [registrations, userId],
   );
 
+  const myAddedMembersOnMainCount = useMemo(
+    () =>
+      registrations.filter(
+        (registration) =>
+          getRegistrationSlot(registration) === "main" &&
+          registration.player_id &&
+          registration.player_id !== userId &&
+          registration.invited_by === userId,
+      ).length,
+    [registrations, userId],
+  );
+
+  const canAddRegisteredMember = myAddedMembersOnMainCount < 1;
+
   const registeredMembers = players.filter(
     (player) =>
       player.id !== user.id &&
@@ -184,6 +198,12 @@ function JoinList({ game, onUpdate }) {
   }
 
   async function handleAddMember() {
+    if (!canAddRegisteredMember) {
+      setError("Voce ja adicionou 1 membro cadastrado nesta lista.");
+      setAddMode(null);
+      return;
+    }
+
     if (!selectedMember) {
       setError("Selecione um membro.");
       return;
@@ -195,7 +215,7 @@ function JoinList({ game, onUpdate }) {
     }
 
     const slot = mainListCount < MAX_MAIN_LIST ? "main" : "waitlist";
-    const success = await joinGame(game.id, selectedMember.id, slot);
+    const success = await joinGame(game.id, selectedMember.id, slot, null, user.id);
     if (!success) {
       setError("Nao foi possivel adicionar o membro.");
       return;
@@ -364,9 +384,11 @@ function JoinList({ game, onUpdate }) {
 
         {!addMode && (
           <div className="join-list__actions">
-            <Button onClick={() => setAddMode("member")} variant="secondary">
-              + Membro cadastrado
-            </Button>
+            {canAddRegisteredMember && (
+              <Button onClick={() => setAddMode("member")} variant="secondary">
+                + Membro cadastrado
+              </Button>
+            )}
             <Button onClick={() => setAddMode("guest")} variant="secondary">
               + Convidado externo
             </Button>
