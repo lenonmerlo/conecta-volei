@@ -225,3 +225,37 @@ export async function getGameTeams(gameId) {
   if (error) return [];
   return data;
 }
+
+// ── Presences ───────────────────────────────────────
+
+export async function getGamePresences(gameId) {
+  const { data, error } = await supabase
+    .from("game_presences")
+    .select("*")
+    .eq("game_id", gameId);
+
+  if (error) return [];
+  return data || [];
+}
+
+export async function upsertPresence(gameId, playerId, present) {
+  const { error } = await supabase.from("game_presences").upsert(
+    {
+      game_id: gameId,
+      player_id: playerId,
+      present,
+    },
+    { onConflict: "game_id,player_id" },
+  );
+
+  return !error;
+}
+
+export async function penalizePlayer(playerId) {
+  const { error } = await supabase
+    .from("players")
+    .update({ status: "penalized" })
+    .eq("id", playerId);
+
+  return !error;
+}

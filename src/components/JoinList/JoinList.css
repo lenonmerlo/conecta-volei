@@ -125,6 +125,38 @@
   border-color: rgba(241, 95, 95, 0.6);
 }
 
+.join-list__modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 14, 22, 0.72);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  z-index: 150;
+}
+
+.join-list__modal {
+  width: min(100%, 420px);
+  border: 1px solid rgba(143, 215, 255, 0.24);
+  border-radius: 14px;
+  background: linear-gradient(
+    150deg,
+    rgba(13, 45, 74, 0.96),
+    rgba(8, 31, 52, 0.92)
+  );
+  box-shadow: 0 18px 34px rgba(2, 12, 22, 0.5);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.join-list__modal-text {
+  font-size: 0.88rem;
+  color: var(--cv-text);
+  line-height: 1.45;
+}
+
 @media (min-width: 641px) {
   .join-list {
     padding: 1rem;

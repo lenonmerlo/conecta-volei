@@ -2,7 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Button from "../../../components/Button/Button";
-import { getGameRegistrations, getGames } from "../../../data/supabaseService";
+import {
+  getGamePresences,
+  getGameRegistrations,
+  getGames,
+  penalizePlayer,
+  upsertPresence,
+} from "../../../data/supabaseService";
 import { GAME_DAYS } from "../../../domain/constants";
 
 function normalizeGame(game) {
@@ -16,17 +22,9 @@ function normalizeGame(game) {
 function participantFromRegistration(registration) {
   if (registration.player) {
     return {
-      id: `player-${registration.player.id}`,
+      id: registration.player.id,
       name: registration.player.name,
       nickname: registration.player.nickname || null,
-    };
-  }
-
-  if (registration.guest_name) {
-    return {
-      id: `guest-${registration.id}`,
-      name: registration.guest_name,
-      nickname: null,
     };
   }
 
@@ -45,6 +43,7 @@ function AdminPresence() {
   const [loadingGames, setLoadingGames] = useState(true);
   const [loadingRegistrations, setLoadingRegistrations] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -75,17 +74,29 @@ function AdminPresence() {
     async function loadRegistrations() {
       if (!selectedGame) {
         setRegistrations([]);
+        setPresences({});
         return;
       }
 
       setLoadingRegistrations(true);
       setError("");
+      setNotice("");
 
-      const data = await getGameRegistrations(selectedGame);
+      const [registrationsData, presencesData] = await Promise.all([
+        getGameRegistrations(selectedGame),
+        getGamePresences(selectedGame),
+      ]);
+
       if (!active) return;
 
-      setRegistrations(data || []);
-      setPresences({});
+      const initialPresences = (presencesData || []).reduce((acc, presence) => {
+        // Default is present; only explicit false should mark the player absent.
+        acc[presence.player_id] = presence.present === false ? false : true;
+        return acc;
+      }, {});
+
+      setRegistrations(registrationsData || []);
+      setPresences(initialPresences);
       setLoadingRegistrations(false);
     }
 
@@ -108,11 +119,33 @@ function AdminPresence() {
     [registrations],
   );
 
-  function togglePresence(playerId) {
+  async function togglePresence(playerId) {
+    const nextPresent = !(presences[playerId] ?? true);
+
+    const saved = await upsertPresence(selectedGame, playerId, nextPresent);
+    if (!saved) {
+      setError("Nao foi possivel salvar a presenca.");
+      return;
+    }
+
     setPresences((prev) => ({
       ...prev,
-      [playerId]: !prev[playerId],
+      [playerId]: nextPresent,
     }));
+    setError("");
+
+    if (!nextPresent) {
+      const penalized = await penalizePlayer(playerId);
+      if (!penalized) {
+        setError("Presenca salva, mas nao foi possivel penalizar o jogador.");
+        return;
+      }
+
+      setNotice("Jogador penalizado.");
+      return;
+    }
+
+    setNotice("");
   }
 
   if (loadingGames) {
@@ -134,6 +167,7 @@ function AdminPresence() {
   return (
     <div className="admin-tab">
       {error && <p className="admin-tab__restricted">{error}</p>}
+      {notice && <p className="admin-tab__restricted">{notice}</p>}
       <div className="admin-tab__select-wrap">
         <select
           className="admin-tab__select"
@@ -158,7 +192,7 @@ function AdminPresence() {
 
       <ul className="admin-tab__list">
         {participants.map((p) => {
-          const present = presences[p.id] ?? false;
+          const present = presences[p.id] ?? true;
           return (
             <li key={p.id} className="admin-tab__item">
               <div className="admin-tab__info">
