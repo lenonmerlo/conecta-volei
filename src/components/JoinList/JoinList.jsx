@@ -5,8 +5,10 @@ import { useAuth } from "../../app/AuthContext";
 import {
   getAllPlayers,
   getGameRegistrations,
+  isPlayerRegistered,
   joinGame,
   leaveGame,
+  removeGuest,
 } from "../../data/supabaseService";
 import { PLAYER_TYPE } from "../../domain/constants";
 import Button from "../Button/Button";
@@ -31,6 +33,7 @@ function JoinList({ game, onUpdate }) {
   const [players, setPlayers] = useState([]);
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -80,6 +83,18 @@ function JoinList({ game, onUpdate }) {
   );
 
   const alreadyIn = Boolean(user?.id && registeredPlayerIds.has(user.id));
+  const userId = user?.id;
+
+  const myGuests = useMemo(
+    () =>
+      registrations.filter(
+        (registration) =>
+          registration.invited_by === userId &&
+          !registration.player_id &&
+          registration.guest_name,
+      ),
+    [registrations, userId],
+  );
 
   const registeredMembers = players.filter(
     (player) =>
@@ -102,8 +117,19 @@ function JoinList({ game, onUpdate }) {
       return;
     }
 
+    setActionLoading(true);
+
+    const playerAlreadyRegistered = await isPlayerRegistered(game.id, user.id);
+    if (playerAlreadyRegistered) {
+      setActionLoading(false);
+      setError("Jogador ja esta na lista.");
+      return;
+    }
+
     const slot = mainListCount < MAX_MAIN_LIST ? "main" : "waitlist";
     const success = await joinGame(game.id, user.id, slot);
+    setActionLoading(false);
+
     if (!success) {
       setError("Nao foi possivel entrar na lista.");
       return;
@@ -116,7 +142,10 @@ function JoinList({ game, onUpdate }) {
   }
 
   async function handleLeave() {
+    setActionLoading(true);
     const success = await leaveGame(game.id, user.id);
+    setActionLoading(false);
+
     if (!success) {
       setError("Nao foi possivel sair da lista.");
       return;
@@ -208,11 +237,56 @@ function JoinList({ game, onUpdate }) {
     return (
       <div className="join-list">
         <p className="join-list__info">Voce esta inscrito neste jogo.</p>
+
+        {myGuests.length > 0 && (
+          <div className="join-list__my-guests">
+            <p className="join-list__info">Seus convidados:</p>
+            <ul className="join-list__results">
+              {myGuests.map((guest) => (
+                <li
+                  key={guest.id}
+                  className="join-list__result join-list__result--guest"
+                >
+                  <span>{guest.guest_name}</span>
+                  <button
+                    className="join-list__remove-guest"
+                    onClick={async () => {
+                      setActionLoading(true);
+                      const success = await removeGuest(guest.id);
+                      setActionLoading(false);
+
+                      if (!success) {
+                        setError("Nao foi possivel remover o convidado.");
+                        return;
+                      }
+
+                      setError("");
+                      await refreshData();
+                      onUpdate();
+                    }}
+                  >
+                    Remover
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {error && <p className="join-list__error">{error}</p>}
         <div className="join-list__actions">
-          <Button variant="secondary" onClick={() => setStep("adding")}>
+          <Button
+            variant="secondary"
+            onClick={() => setStep("adding")}
+            disabled={actionLoading}
+          >
             Adicionar pessoa
           </Button>
-          <Button variant="danger" onClick={handleLeave}>
+          <Button
+            variant="danger"
+            onClick={handleLeave}
+            disabled={actionLoading}
+          >
             Sair da lista
           </Button>
         </div>
