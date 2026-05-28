@@ -7,7 +7,7 @@ import { getPlayerByWhatsapp, registerPlayer } from "../data/supabaseService";
 
 const SESSION_KEY = "conecta_volei_session";
 
-const AuthContext = createContext(null);
+const AuthContext = createContext({});
 
 function normalizePlayer(player) {
   if (!player) return null;
@@ -125,5 +125,7 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
+  return context;
 }

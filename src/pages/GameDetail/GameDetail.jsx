@@ -224,6 +224,28 @@ function GameDetail() {
 
       <div className="game-detail__section">
         <h3 className="game-detail__section-title">
+          Lista de Espera ({waitlist.length})
+        </h3>
+        {waitlist.length === 0 && (
+          <p className="game-detail__empty">Nenhum jogador na lista de espera.</p>
+        )}
+        <ul className="game-detail__list">
+          {waitlist.map((p, i) => (
+            <li key={p.id} className="game-detail__item">
+              <span className="game-detail__position">{i + 1}</span>
+              <span className="game-detail__name">{formatName(p)}</span>
+              {p.type === PLAYER_TYPE.GUEST && (
+                <span className="game-detail__badge game-detail__badge--guest">
+                  Convidado
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="game-detail__section">
+        <h3 className="game-detail__section-title">
           Convidados ({guests.length})
         </h3>
         {guests.length === 0 && (
@@ -246,27 +268,6 @@ function GameDetail() {
           ))}
         </ul>
       </div>
-
-      {waitlist.length > 0 && (
-        <div className="game-detail__section">
-          <h3 className="game-detail__section-title">
-            Lista de Espera ({waitlist.length})
-          </h3>
-          <ul className="game-detail__list">
-            {waitlist.map((p, i) => (
-              <li key={p.id} className="game-detail__item">
-                <span className="game-detail__position">{i + 1}</span>
-                <span className="game-detail__name">{formatName(p)}</span>
-                {p.type === PLAYER_TYPE.GUEST && (
-                  <span className="game-detail__badge game-detail__badge--guest">
-                    Convidado
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
 
       {teams.length > 0 && (
         <div className="game-detail__section">
