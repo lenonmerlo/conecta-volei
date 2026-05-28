@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../components/Button/Button";
-import { getAllPlayers } from "../../../data/supabaseService";
-import { PLAYER_STATUS, PLAYER_TYPE } from "../../../domain/constants";
+import { getGameRegistrations, getGames } from "../../../data/supabaseService";
 import { drawTeams, swapPlayers } from "../../../domain/teamDraw";
 import "./AdminDraw.css";
 import "./AdminTabs.css";
@@ -21,46 +20,91 @@ function normalizePlayer(player) {
   };
 }
 
+function normalizeGame(game) {
+  return {
+    id: game.id,
+    day: game.day,
+    date: game.date,
+    time: game.time,
+  };
+}
+
 function AdminDraw() {
   const navigate = useNavigate();
   const [teams, setTeams] = useState(null);
   const [swap, setSwap] = useState(null); // { teamIndex, playerId }
+  const [games, setGames] = useState([]);
+  const [selectedGameId, setSelectedGameId] = useState("");
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingPlayers, setLoadingPlayers] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let active = true;
 
-    async function loadPlayers() {
+    async function loadGames() {
       setLoading(true);
       setError("");
 
-      const data = await getAllPlayers();
+      const data = await getGames();
       if (!active) return;
 
-      const eligiblePlayers = (data || [])
-        .map(normalizePlayer)
-        .filter(
-          (player) =>
-            player.type === PLAYER_TYPE.MEMBER &&
-            player.status === PLAYER_STATUS.ACTIVE,
-        );
-
-      setPlayers(eligiblePlayers);
+      const normalizedGames = (data || []).map(normalizeGame);
+      setGames(normalizedGames);
+      setSelectedGameId((prev) => prev || normalizedGames[0]?.id || "");
       setLoading(false);
     }
 
-    loadPlayers();
+    loadGames();
 
     return () => {
       active = false;
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    async function loadMainListPlayers() {
+      if (!selectedGameId) {
+        setPlayers([]);
+        return;
+      }
+
+      setLoadingPlayers(true);
+      setError("");
+
+      const registrations = await getGameRegistrations(selectedGameId);
+      if (!active) return;
+
+      const mainPlayers = (registrations || [])
+        .filter((registration) => registration.slot === "main")
+        .map((registration) => registration.player)
+        .filter(Boolean)
+        .map(normalizePlayer);
+
+      setPlayers(mainPlayers);
+      setTeams(null);
+      setSwap(null);
+      setLoadingPlayers(false);
+    }
+
+    loadMainListPlayers();
+
+    return () => {
+      active = false;
+    };
+  }, [selectedGameId]);
+
   function handleDraw() {
-    if (players.length === 0) {
-      setError("Nenhum jogador elegivel para sorteio.");
+    if (!selectedGameId) {
+      setError("Selecione um jogo para sortear.");
+      return;
+    }
+
+    if (players.length < 8) {
+      setError("Jogadores insuficientes para sortear");
       return;
     }
 
@@ -105,16 +149,38 @@ function AdminDraw() {
 
   return (
     <div className="admin-draw">
+      <div className="admin-tab__select-wrap">
+        <select
+          className="admin-tab__select"
+          value={selectedGameId}
+          onChange={(event) => setSelectedGameId(event.target.value)}
+        >
+          {games.map((game) => (
+            <option key={game.id} value={game.id}>
+              {game.date} - {game.time}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {!teams ? (
         <div className="admin-draw__start">
           <p className="admin-draw__hint">
-            Clique em sortear para montar os 3 times equilibrados.
+            Clique em sortear para montar os times com base na lista principal.
           </p>
           {error && <p className="admin-tab__restricted">{error}</p>}
+          {loadingPlayers && (
+            <p className="admin-draw__hint">Carregando inscritos do jogo...</p>
+          )}
           <p className="admin-draw__hint">
-            Jogadores elegiveis: {players.length}
+            Jogadores na lista principal: {players.length}
           </p>
-          <Button onClick={handleDraw}>Sortear times</Button>
+          <Button
+            onClick={handleDraw}
+            disabled={loadingPlayers || !selectedGameId}
+          >
+            Sortear times
+          </Button>
         </div>
       ) : (
         <>
