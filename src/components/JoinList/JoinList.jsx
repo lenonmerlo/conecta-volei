@@ -22,6 +22,19 @@ function getRegistrationSlot(registration) {
   return "main";
 }
 
+function isAfterSaturday19ForSundayGame(game) {
+  if (game?.day !== "sunday" || !game?.date) return false;
+
+  const sundayDate = new Date(`${game.date}T00:00:00`);
+  if (Number.isNaN(sundayDate.getTime())) return false;
+
+  const cutoff = new Date(sundayDate);
+  cutoff.setDate(cutoff.getDate() - 1);
+  cutoff.setHours(19, 0, 0, 0);
+
+  return Date.now() >= cutoff.getTime();
+}
+
 function JoinList({ game, onUpdate }) {
   const { user } = useAuth();
   const [step, setStep] = useState("idle"); // idle | adding | confirm
@@ -34,6 +47,7 @@ function JoinList({ game, onUpdate }) {
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showLateLeaveModal, setShowLateLeaveModal] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -141,7 +155,7 @@ function JoinList({ game, onUpdate }) {
     onUpdate();
   }
 
-  async function handleLeave() {
+  async function executeLeave() {
     setActionLoading(true);
     const success = await leaveGame(game.id, user.id);
     setActionLoading(false);
@@ -158,6 +172,15 @@ function JoinList({ game, onUpdate }) {
     setError("");
     await refreshData();
     onUpdate();
+  }
+
+  async function handleLeave() {
+    if (isAfterSaturday19ForSundayGame(game)) {
+      setShowLateLeaveModal(true);
+      return;
+    }
+
+    await executeLeave();
   }
 
   async function handleAddMember() {
@@ -290,6 +313,36 @@ function JoinList({ game, onUpdate }) {
             Sair da lista
           </Button>
         </div>
+
+        {showLateLeaveModal && (
+          <div className="join-list__modal-backdrop">
+            <div className="join-list__modal" role="dialog" aria-modal="true">
+              <p className="join-list__modal-text">
+                Atencao: ao sair da lista agora voce sera penalizado e nao tera
+                prioridade no proximo domingo. Deseja continuar?
+              </p>
+              <div className="join-list__actions">
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowLateLeaveModal(false)}
+                  disabled={actionLoading}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="danger"
+                  onClick={async () => {
+                    setShowLateLeaveModal(false);
+                    await executeLeave();
+                  }}
+                  disabled={actionLoading}
+                >
+                  Confirmar e sair
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
