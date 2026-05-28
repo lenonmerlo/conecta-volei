@@ -73,6 +73,12 @@
   overflow-y: auto;
 }
 
+.join-list__my-guests {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
 .join-list__result {
   border: 1px solid rgba(143, 215, 255, 0.18);
   border-radius: 10px;
@@ -94,6 +100,29 @@
 .join-list__result--selected {
   border-color: color-mix(in srgb, var(--cv-primary) 72%, white);
   background-color: color-mix(in srgb, var(--cv-primary) 22%, var(--cv-bg-1));
+}
+
+.join-list__result--guest {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.join-list__remove-guest {
+  border: 1px solid rgba(241, 95, 95, 0.42);
+  border-radius: 8px;
+  background: rgba(146, 76, 76, 0.3);
+  color: #fff2f2;
+  font-size: 0.73rem;
+  font-weight: 700;
+  padding: 0.28rem 0.5rem;
+  cursor: pointer;
+}
+
+.join-list__remove-guest:hover {
+  background: rgba(170, 93, 93, 0.46);
+  border-color: rgba(241, 95, 95, 0.6);
 }
 
 @media (min-width: 641px) {

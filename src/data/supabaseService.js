@@ -122,13 +122,20 @@ export async function joinGame(
 }
 
 export async function leaveGame(gameId, playerId) {
-  const { error } = await supabase
+  const { error: playerError } = await supabase
     .from("game_registrations")
     .delete()
     .eq("game_id", gameId)
     .eq("player_id", playerId);
 
-  return !error;
+  const { error: invitedGuestsError } = await supabase
+    .from("game_registrations")
+    .delete()
+    .eq("game_id", gameId)
+    .eq("invited_by", playerId)
+    .is("player_id", null);
+
+  return !playerError && !invitedGuestsError;
 }
 
 export async function isPlayerRegistered(gameId, playerId) {
@@ -140,4 +147,27 @@ export async function isPlayerRegistered(gameId, playerId) {
     .single();
 
   return !!data;
+}
+
+export async function getGuestsByInviter(gameId, inviterId) {
+  const { data, error } = await supabase
+    .from("game_registrations")
+    .select("id, guest_name")
+    .eq("game_id", gameId)
+    .eq("invited_by", inviterId)
+    .is("player_id", null)
+    .order("registered_at");
+
+  if (error) return [];
+  return data || [];
+}
+
+export async function removeGuest(registrationId) {
+  const { error } = await supabase
+    .from("game_registrations")
+    .delete()
+    .eq("id", registrationId)
+    .is("player_id", null);
+
+  return !error;
 }
