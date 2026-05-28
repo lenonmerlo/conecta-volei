@@ -155,13 +155,18 @@ export async function leaveGame(gameId, playerId) {
     removedMainCount,
   });
 
-  for (let i = 0; i < removedMainCount; i += 1) {
+  // Verifica quantos estao na lista principal agora
+  const { count } = await supabase
+    .from("game_registrations")
+    .select("*", { count: "exact", head: true })
+    .eq("game_id", gameId)
+    .eq("slot", "main");
+
+  let spotsAvailable = 21 - (count || 0);
+  while (spotsAvailable > 0) {
     const promoted = await promoteFromWaitlist(gameId);
-    console.log("[leaveGame] promoteFromWaitlist call", {
-      gameId,
-      iteration: i + 1,
-      promoted,
-    });
+    if (!promoted) break;
+    spotsAvailable -= 1;
   }
 
   return true;

@@ -227,7 +227,9 @@ function GameDetail() {
           Lista de Espera ({waitlist.length})
         </h3>
         {waitlist.length === 0 && (
-          <p className="game-detail__empty">Nenhum jogador na lista de espera.</p>
+          <p className="game-detail__empty">
+            Nenhum jogador na lista de espera.
+          </p>
         )}
         <ul className="game-detail__list">
           {waitlist.map((p, i) => (
