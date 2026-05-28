@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import JoinList from "../../components/JoinList/JoinList";
-import { getGameById, getGameRegistrations } from "../../data/supabaseService";
+import {
+  getGameById,
+  getGameRegistrations,
+  getGameTeams,
+} from "../../data/supabaseService";
 import { GAME_DAYS, PLAYER_STATUS, PLAYER_TYPE } from "../../domain/constants";
 import "./GameDetail.css";
 
@@ -71,6 +75,7 @@ function GameDetail() {
   const [reloadVersion, setReloadVersion] = useState(0);
   const [game, setGame] = useState(null);
   const [registrations, setRegistrations] = useState([]);
+  const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -79,15 +84,18 @@ function GameDetail() {
     async function loadGameDetail() {
       setLoading(true);
 
-      const [supabaseGame, supabaseRegistrations] = await Promise.all([
-        getGameById(id),
-        getGameRegistrations(id),
-      ]);
+      const [supabaseGame, supabaseRegistrations, supabaseTeams] =
+        await Promise.all([
+          getGameById(id),
+          getGameRegistrations(id),
+          getGameTeams(id),
+        ]);
 
       if (!active) return;
 
       setGame(normalizeGame(supabaseGame));
       setRegistrations(supabaseRegistrations || []);
+      setTeams(supabaseTeams || []);
       setLoading(false);
     }
 
@@ -211,6 +219,41 @@ function GameDetail() {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {teams.length > 0 && (
+        <div className="game-detail__section">
+          <h3 className="game-detail__section-title">Times</h3>
+          <div className="game-detail__teams">
+            {teams.map((team) => (
+              <div
+                key={team.id || team.team_name}
+                className="game-detail__team-card"
+              >
+                <div className="game-detail__team-head">
+                  <span className="game-detail__team-name">
+                    {team.team_name}
+                  </span>
+                </div>
+                <ul className="game-detail__list">
+                  {(team.players || []).map((player) => (
+                    <li
+                      key={`${team.team_name}-${player.id || player.name}`}
+                      className="game-detail__item"
+                    >
+                      <span className="game-detail__name">
+                        {formatName(player)}
+                      </span>
+                      <span className="game-detail__player-gender">
+                        {player.gender === "F" ? "♀" : "♂"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

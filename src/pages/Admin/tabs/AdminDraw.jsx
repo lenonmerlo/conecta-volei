@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../components/Button/Button";
-import { getGameRegistrations, getGames } from "../../../data/supabaseService";
+import {
+  getGameRegistrations,
+  getGames,
+  saveGameTeams,
+} from "../../../data/supabaseService";
 import { drawTeams, swapPlayers } from "../../../domain/teamDraw";
 import "./AdminDraw.css";
 import "./AdminTabs.css";
@@ -131,8 +135,17 @@ function AdminDraw() {
     setSwap(null);
   }
 
-  function handleConfirm() {
-    navigate("/teams", { state: { teams } });
+  async function handleConfirm() {
+    if (!selectedGameId || !teams) return;
+
+    const success = await saveGameTeams(selectedGameId, teams);
+    if (!success) {
+      setError("Nao foi possivel salvar os times.");
+      return;
+    }
+
+    setError("");
+    navigate("/teams", { state: { teams, gameId: selectedGameId } });
   }
 
   if (loading) {
@@ -235,6 +248,7 @@ function AdminDraw() {
           </div>
 
           <div className="admin-draw__actions">
+            {error && <p className="admin-tab__restricted">{error}</p>}
             <Button size="sm" variant="secondary" onClick={handleDraw}>
               Novo sorteio
             </Button>

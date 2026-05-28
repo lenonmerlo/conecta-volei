@@ -103,6 +103,12 @@
   transform: translateY(-1px);
 }
 
+.teams__actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
 @media (max-width: 640px) {
   .teams {
     padding: 1rem;

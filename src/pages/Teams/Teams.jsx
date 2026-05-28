@@ -1,22 +1,23 @@
 // Página pública de visualização dos times sorteados
 
-import { useLocation, useNavigate } from 'react-router-dom'
-import './Teams.css'
+import { useLocation, useNavigate } from "react-router-dom";
+import "./Teams.css";
 
 function Teams() {
-  const { state } = useLocation()
-  const navigate = useNavigate()
-  const teams = state?.teams
+  const { state } = useLocation();
+  const navigate = useNavigate();
+  const teams = state?.teams;
+  const gameId = state?.gameId;
 
   if (!teams) {
     return (
       <div className="teams">
         <p className="teams__empty">Nenhum time sorteado ainda.</p>
-        <button className="teams__back" onClick={() => navigate('/admin')}>
+        <button className="teams__back" onClick={() => navigate("/admin")}>
           Ir para o Admin
         </button>
       </div>
-    )
+    );
   }
 
   return (
@@ -25,8 +26,8 @@ function Teams() {
 
       <div className="teams__list">
         {teams.map((team) => {
-          const females = team.players.filter((p) => p.gender === 'F')
-          const males = team.players.filter((p) => p.gender === 'M')
+          const females = team.players.filter((p) => p.gender === "F");
+          const males = team.players.filter((p) => p.gender === "M");
 
           return (
             <div key={team.name} className="teams__team">
@@ -36,9 +37,13 @@ function Teams() {
 
               <ul className="teams__player-list">
                 {females.map((p) => (
-                  <li key={p.id} className="teams__player teams__player--female">
+                  <li
+                    key={p.id}
+                    className="teams__player teams__player--female"
+                  >
                     <span className="teams__player-name">
-                      {p.name}{p.nickname ? ` (${p.nickname})` : ''}
+                      {p.name}
+                      {p.nickname ? ` (${p.nickname})` : ""}
                     </span>
                     <span className="teams__player-gender">♀</span>
                   </li>
@@ -46,22 +51,33 @@ function Teams() {
                 {males.map((p) => (
                   <li key={p.id} className="teams__player">
                     <span className="teams__player-name">
-                      {p.name}{p.nickname ? ` (${p.nickname})` : ''}
+                      {p.name}
+                      {p.nickname ? ` (${p.nickname})` : ""}
                     </span>
                     <span className="teams__player-gender">♂</span>
                   </li>
                 ))}
               </ul>
             </div>
-          )
+          );
         })}
       </div>
 
-      <button className="teams__back" onClick={() => navigate(-1)}>
-        Voltar
-      </button>
+      <div className="teams__actions">
+        {gameId && (
+          <button
+            className="teams__back"
+            onClick={() => navigate(`/game/${gameId}`)}
+          >
+            Ver no jogo
+          </button>
+        )}
+        <button className="teams__back" onClick={() => navigate(-1)}>
+          Voltar
+        </button>
+      </div>
     </div>
-  )
+  );
 }
 
-export default Teams
+export default Teams;
