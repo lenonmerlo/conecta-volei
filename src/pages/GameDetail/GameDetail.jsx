@@ -11,6 +11,31 @@ import {
 import { GAME_DAYS, PLAYER_STATUS, PLAYER_TYPE } from "../../domain/constants";
 import "./GameDetail.css";
 
+function normalizeLocation(value) {
+  return (value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+function getFixedMapUrlByLocation(location) {
+  const normalized = normalizeLocation(location);
+
+  if (normalized.includes("jardim camburi")) {
+    return "https://maps.app.goo.gl/CrL7HdThrLErg3TQ7";
+  }
+
+  if (
+    normalized.includes("ilha de santa maria") ||
+    normalized.includes("ilha de sta maria")
+  ) {
+    return "https://maps.app.goo.gl/rQgsrSFC3WmMBci7A";
+  }
+
+  return null;
+}
+
 function formatName(player) {
   if (player.nickname) return `${player.name} (${player.nickname})`;
   return player.name;
@@ -19,9 +44,11 @@ function formatName(player) {
 function normalizeGame(game) {
   if (!game) return null;
 
+  const fixedUrl = getFixedMapUrlByLocation(game.location);
+
   return {
     ...game,
-    mapUrl: game.map_url ?? game.mapUrl ?? null,
+    mapUrl: fixedUrl || game.map_url || game.mapUrl || null,
   };
 }
 

@@ -5,6 +5,55 @@ import GameCard from "../../components/GameCard/GameCard";
 import { getGames } from "../../data/supabaseService";
 import "./Home.css";
 
+function normalizeLocation(value) {
+  return (value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+function getFixedMapUrlByLocation(location) {
+  const normalized = normalizeLocation(location);
+
+  if (normalized.includes("jardim camburi")) {
+    return "https://maps.app.goo.gl/CrL7HdThrLErg3TQ7";
+  }
+
+  if (
+    normalized.includes("ilha de santa maria") ||
+    normalized.includes("ilha de sta maria")
+  ) {
+    return "https://maps.app.goo.gl/rQgsrSFC3WmMBci7A";
+  }
+
+  return null;
+}
+
+function resolveMapUrl(game) {
+  const fixedUrl = getFixedMapUrlByLocation(game.location);
+  if (fixedUrl) return fixedUrl;
+
+  const directUrl =
+    game.map_url ??
+    game.mapUrl ??
+    game.maps_url ??
+    game.mapsUrl ??
+    game.location_url ??
+    game.locationUrl ??
+    null;
+
+  if (typeof directUrl === "string" && directUrl.trim()) {
+    return directUrl.trim();
+  }
+
+  if (typeof game.location === "string" && game.location.trim()) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(game.location.trim())}`;
+  }
+
+  return null;
+}
+
 function normalizeGame(game) {
   const registeredCount = Number.isFinite(game.registered_count)
     ? game.registered_count
@@ -18,7 +67,7 @@ function normalizeGame(game) {
     time: game.time,
     date: game.date,
     location: game.location,
-    mapUrl: game.map_url ?? game.mapUrl ?? null,
+    mapUrl: resolveMapUrl(game),
     players: Array.isArray(game.players)
       ? game.players
       : Array.from({ length: registeredCount }),
