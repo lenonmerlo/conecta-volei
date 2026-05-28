@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { RefreshCw } from "lucide-react";
 import escudoConecta from "../assets/escudo-conecta-prata.png";
 import BottomNav from "../components/BottomNav/BottomNav";
 import { isAdmin } from "../domain/admins";
@@ -44,6 +45,15 @@ function AppShell() {
               Agenda, presença e equilíbrio de times em clima de quadra.
             </p>
           </div>
+          <button
+            className="app__refresh-btn"
+            type="button"
+            onClick={() => window.location.reload()}
+            title="Atualizar página"
+            aria-label="Atualizar página"
+          >
+            <RefreshCw size={18} />
+          </button>
         </div>
       </header>
       <main className="app__main">
