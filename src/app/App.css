@@ -45,6 +45,36 @@
   padding: 0.9rem;
 }
 
+.app__refresh-btn {
+  margin-left: auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(143, 215, 255, 0.28);
+  background: rgba(16, 54, 86, 0.36);
+  color: var(--cv-primary-soft);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.app__refresh-btn:hover {
+  color: #ffffff;
+  border-color: rgba(30, 167, 255, 0.55);
+  background: rgba(30, 167, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.app__refresh-btn:focus-visible {
+  outline: 2px solid rgba(30, 167, 255, 0.65);
+  outline-offset: 2px;
+}
+
 .app__brand-image {
   width: 64px;
   height: 64px;
