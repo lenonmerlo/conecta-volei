@@ -76,3 +76,18 @@ export function canJoinWednesdayList(player) {
   if (player.status === PLAYER_STATUS.BLOCKED) return false;
   return true;
 }
+
+export function getNextGameDate(gameDay) {
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0=dom, 1=seg... 6=sab
+
+  const targetDay = gameDay === "wednesday" ? 3 : 0; // 3=quarta, 0=domingo
+
+  let daysUntilTarget = targetDay - dayOfWeek;
+  if (daysUntilTarget <= 0) daysUntilTarget += 7;
+
+  const nextDate = new Date(today);
+  nextDate.setDate(today.getDate() + daysUntilTarget);
+
+  return nextDate.toISOString().split("T")[0]; // formato YYYY-MM-DD
+}
