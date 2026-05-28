@@ -1,8 +1,9 @@
 // Página inicial — exibe os jogos da semana
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import GameCard from "../../components/GameCard/GameCard";
 import { getGameRegistrations, getGames } from "../../data/supabaseService";
+import { supabase } from "../../lib/supabase";
 import "./Home.css";
 
 function normalizeLocation(value) {
@@ -69,37 +70,63 @@ function Home() {
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchGames = useCallback(async () => {
+    setLoading(true);
+    const data = await getGames();
+
+    const normalizedGames = (data || []).map(normalizeGame);
+    const gamesWithCounts = await Promise.all(
+      normalizedGames.map(async (game) => {
+        const registrations = await getGameRegistrations(game.id);
+        const registeredCount = (registrations || []).filter(
+          (registration) => (registration.slot || "main") === "main",
+        ).length;
+
+        return { ...game, registeredCount };
+      }),
+    );
+
+    setGames(gamesWithCounts);
+    setLoading(false);
+  }, []);
+
   useEffect(() => {
-    let active = true;
-
-    async function loadGames() {
-      setLoading(true);
-      const data = await getGames();
-      if (!active) return;
-
-      const normalizedGames = (data || []).map(normalizeGame);
-      const gamesWithCounts = await Promise.all(
-        normalizedGames.map(async (game) => {
-          const registrations = await getGameRegistrations(game.id);
-          const registeredCount = (registrations || []).filter(
-            (registration) => (registration.slot || "main") === "main",
-          ).length;
-
-          return { ...game, registeredCount };
-        }),
-      );
-
-      if (!active) return;
-      setGames(gamesWithCounts);
-      setLoading(false);
-    }
-
-    loadGames();
+    const timeoutId = setTimeout(() => {
+      fetchGames();
+    }, 0);
 
     return () => {
-      active = false;
+      clearTimeout(timeoutId);
     };
-  }, []);
+  }, [fetchGames]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("home-game-registrations")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "game_registrations",
+        },
+        () => fetchGames(),
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "game_registrations",
+        },
+        () => fetchGames(),
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchGames]);
 
   return (
     <div className="home">

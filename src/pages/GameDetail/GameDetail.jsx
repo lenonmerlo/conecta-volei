@@ -1,6 +1,6 @@
 // Página de detalhe do jogo — lista de inscritos, espera e regras de entrada
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import JoinList from "../../components/JoinList/JoinList";
 import {
@@ -9,6 +9,7 @@ import {
   getGameTeams,
 } from "../../data/supabaseService";
 import { GAME_DAYS, PLAYER_STATUS, PLAYER_TYPE } from "../../domain/constants";
+import { supabase } from "../../lib/supabase";
 import "./GameDetail.css";
 
 function normalizeLocation(value) {
@@ -105,33 +106,51 @@ function GameDetail() {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+
+    const [supabaseGame, supabaseRegistrations, supabaseTeams] =
+      await Promise.all([
+        getGameById(id),
+        getGameRegistrations(id),
+        getGameTeams(id),
+      ]);
+
+    setGame(normalizeGame(supabaseGame));
+    setRegistrations(supabaseRegistrations || []);
+    setTeams(supabaseTeams || []);
+    setLoading(false);
+  }, [id]);
+
   useEffect(() => {
-    let active = true;
-
-    async function loadGameDetail() {
-      setLoading(true);
-
-      const [supabaseGame, supabaseRegistrations, supabaseTeams] =
-        await Promise.all([
-          getGameById(id),
-          getGameRegistrations(id),
-          getGameTeams(id),
-        ]);
-
-      if (!active) return;
-
-      setGame(normalizeGame(supabaseGame));
-      setRegistrations(supabaseRegistrations || []);
-      setTeams(supabaseTeams || []);
-      setLoading(false);
-    }
-
-    loadGameDetail();
+    const timeoutId = setTimeout(() => {
+      fetchData();
+    }, 0);
 
     return () => {
-      active = false;
+      clearTimeout(timeoutId);
     };
-  }, [id, reloadVersion]);
+  }, [fetchData, reloadVersion]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel(`game-${id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "game_registrations",
+          filter: `game_id=eq.${id}`,
+        },
+        () => fetchData(),
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id, fetchData]);
 
   if (loading) {
     return (
