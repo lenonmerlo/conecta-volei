@@ -1,0 +1,135 @@
+.athletes {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+}
+
+.athletes__title {
+  font-size: 1.8rem;
+  line-height: 0.95;
+}
+
+.athletes__loading {
+  color: var(--cv-muted);
+  font-size: 0.92rem;
+}
+
+.athletes__search input {
+  width: 100%;
+  background: rgba(16, 54, 86, 0.58);
+  border: 1px solid rgba(143, 215, 255, 0.25);
+  border-radius: 12px;
+  padding: 0.72rem 0.85rem;
+  color: var(--cv-text);
+  font-size: 0.92rem;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.athletes__search input:focus {
+  border-color: var(--cv-primary);
+  box-shadow: 0 0 0 3px rgba(30, 167, 255, 0.15);
+}
+
+.athletes__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.7rem;
+}
+
+.athletes__item {
+  border: 1px solid rgba(143, 215, 255, 0.2);
+  border-radius: 12px;
+  background: linear-gradient(
+    145deg,
+    rgba(13, 45, 74, 0.92),
+    rgba(8, 31, 52, 0.85)
+  );
+  padding: 0.7rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.athletes__avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0a1622;
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--cv-primary) 88%, white),
+    color-mix(in srgb, var(--cv-primary-soft) 88%, white)
+  );
+}
+
+.athletes__avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.athletes__info {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.athletes__name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f3fbff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.athletes__gender {
+  font-size: 0.92rem;
+  color: var(--cv-primary-soft);
+}
+
+.athlete__badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 0.16rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.athlete__badge--penalized {
+  background: rgba(195, 126, 53, 0.24);
+  border-color: rgba(233, 176, 89, 0.38);
+  color: #ffdca9;
+}
+
+.athlete__badge--blocked {
+  background: rgba(158, 67, 67, 0.28);
+  border-color: rgba(235, 115, 115, 0.42);
+  color: #ffd0d0;
+}
+
+@media (min-width: 700px) {
+  .athletes {
+    padding: 1.35rem;
+  }
+
+  .athletes__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
