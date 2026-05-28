@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import GameCard from "../../components/GameCard/GameCard";
-import { getGameRegistrations, getGames } from "../../data/supabaseService";
+import {
+  getGameRegistrations,
+  getGames,
+  updateGameDates,
+} from "../../data/supabaseService";
 import { supabase } from "../../lib/supabase";
 import "./Home.css";
 
@@ -72,6 +76,7 @@ function Home() {
 
   const fetchGames = useCallback(async () => {
     setLoading(true);
+    await updateGameDates();
     const data = await getGames();
 
     const normalizedGames = (data || []).map(normalizeGame);
