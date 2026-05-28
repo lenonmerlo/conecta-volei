@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import GameCard from "../../components/GameCard/GameCard";
-import { getGames } from "../../data/supabaseService";
+import { getGameRegistrations, getGames } from "../../data/supabaseService";
 import "./Home.css";
 
 function normalizeLocation(value) {
@@ -55,12 +55,6 @@ function resolveMapUrl(game) {
 }
 
 function normalizeGame(game) {
-  const registeredCount = Number.isFinite(game.registered_count)
-    ? game.registered_count
-    : Number.isFinite(game.registeredCount)
-      ? game.registeredCount
-      : 0;
-
   return {
     id: game.id,
     day: game.day,
@@ -68,9 +62,6 @@ function normalizeGame(game) {
     date: game.date,
     location: game.location,
     mapUrl: resolveMapUrl(game),
-    players: Array.isArray(game.players)
-      ? game.players
-      : Array.from({ length: registeredCount }),
   };
 }
 
@@ -85,7 +76,21 @@ function Home() {
       setLoading(true);
       const data = await getGames();
       if (!active) return;
-      setGames((data || []).map(normalizeGame));
+
+      const normalizedGames = (data || []).map(normalizeGame);
+      const gamesWithCounts = await Promise.all(
+        normalizedGames.map(async (game) => {
+          const registrations = await getGameRegistrations(game.id);
+          const registeredCount = (registrations || []).filter(
+            (registration) => (registration.slot || "main") === "main",
+          ).length;
+
+          return { ...game, registeredCount };
+        }),
+      );
+
+      if (!active) return;
+      setGames(gamesWithCounts);
       setLoading(false);
     }
 
@@ -110,7 +115,13 @@ function Home() {
           <p className="home__state">Nenhum jogo disponível no momento.</p>
         )}
         {!loading &&
-          games.map((game) => <GameCard key={game.id} game={game} />)}
+          games.map((game) => (
+            <GameCard
+              key={game.id}
+              game={game}
+              registeredCount={game.registeredCount || 0}
+            />
+          ))}
       </div>
     </div>
   );

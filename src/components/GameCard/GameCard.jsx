@@ -4,10 +4,10 @@ import { useNavigate } from "react-router-dom";
 import { isListOpen } from "../../domain/gameRules";
 import "./GameCard.css";
 
-function GameCard({ game }) {
+function GameCard({ game, registeredCount = 0 }) {
   const navigate = useNavigate();
   const dayLabel = game.day === "wednesday" ? "Quarta-feira" : "Domingo";
-  const spotsLeft = 21 - game.players.length;
+  const spotsLeft = 21 - registeredCount;
   const isFull = spotsLeft <= 0;
   const listOpen = isListOpen(game.day);
   const isInteractive = listOpen;
@@ -56,9 +56,7 @@ function GameCard({ game }) {
         )}
       </div>
       <div className="game-card__footer">
-        <span className="game-card__spots">
-          {game.players.length}/21 inscritos
-        </span>
+        <span className="game-card__spots">{registeredCount}/21 inscritos</span>
         <span
           className={`game-card__list-pill ${
             listOpen
