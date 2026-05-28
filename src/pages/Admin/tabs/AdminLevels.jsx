@@ -60,16 +60,14 @@ function AdminLevels() {
       {error && <p className="admin-tab__restricted">{error}</p>}
       <ul className="admin-tab__list">
         {players.map((p) => (
-          <li key={p.id} className="admin-tab__item">
-            <div className="admin-tab__info">
+          <li key={p.id} className="admin-tab__item admin-tab__item--level">
+            <div className="admin-tab__info admin-tab__info--level">
               <span className="admin-tab__name">
                 {p.name}
                 {p.nickname ? ` (${p.nickname})` : ""}
               </span>
-            </div>
-            <div className="admin-tab__actions">
               <select
-                className="admin-tab__select"
+                className="admin-tab__select admin-tab__select--level"
                 value={p.skill_level ?? p.skillLevel ?? SKILL_LEVELS[0]}
                 onChange={(e) => updateLevel(p.id, e.target.value)}
               >

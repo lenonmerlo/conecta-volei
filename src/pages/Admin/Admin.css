@@ -9,6 +9,12 @@
   gap: 1rem;
 }
 
+.admin,
+.admin * {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
 .admin__header {
   border: 1px solid rgba(143, 215, 255, 0.22);
   border-radius: var(--cv-radius);
@@ -52,7 +58,8 @@
 .admin__tabs {
   display: flex;
   gap: 0.5rem;
-  overflow-x: auto;
+  flex-wrap: wrap;
+  overflow-x: hidden;
   max-width: 100%;
   padding-bottom: 0.2rem;
   scrollbar-width: none;
@@ -90,7 +97,27 @@
   display: flex;
   flex-direction: column;
   width: 100%;
+  max-width: 100%;
   min-width: 0;
+  overflow-x: hidden;
+}
+
+@media (max-width: 640px) {
+  .admin__tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+    overflow-x: hidden;
+    padding-bottom: 0;
+  }
+
+  .admin__tab {
+    width: 100%;
+    min-width: 0;
+    white-space: normal;
+    text-align: center;
+    padding: 0.45rem 0.4rem;
+  }
 }
 
 @media (min-width: 641px) {
