@@ -197,3 +197,31 @@ export async function updatePlayerAvatar(playerId, avatarUrl) {
 
   return !error;
 }
+
+// ── Teams ──────────────────────────────────────────
+
+export async function saveGameTeams(gameId, teams) {
+  await supabase.from("game_teams").delete().eq("game_id", gameId);
+
+  const rows = teams.map((team) => ({
+    game_id: gameId,
+    team_name: team.name,
+    players: team.players,
+    total_level: team.totalLevel,
+  }));
+
+  const { error } = await supabase.from("game_teams").insert(rows);
+
+  return !error;
+}
+
+export async function getGameTeams(gameId) {
+  const { data, error } = await supabase
+    .from("game_teams")
+    .select("*")
+    .eq("game_id", gameId)
+    .order("team_name");
+
+  if (error) return [];
+  return data;
+}

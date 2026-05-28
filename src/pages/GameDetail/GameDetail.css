@@ -159,9 +159,43 @@
   margin-top: 0.3rem;
 }
 
+.game-detail__teams {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.7rem;
+}
+
+.game-detail__team-card {
+  border: 1px solid rgba(143, 215, 255, 0.18);
+  border-radius: 12px;
+  background-color: rgba(13, 45, 74, 0.55);
+  padding: 0.7rem;
+}
+
+.game-detail__team-head {
+  border-bottom: 1px solid rgba(143, 215, 255, 0.2);
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.3rem;
+}
+
+.game-detail__team-name {
+  font-size: 1.05rem;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.game-detail__player-gender {
+  font-size: 0.86rem;
+  color: var(--cv-primary-soft);
+}
+
 @media (min-width: 641px) {
   .game-detail {
     padding: 1.35rem;
+  }
+
+  .game-detail__teams {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .game-detail__day {

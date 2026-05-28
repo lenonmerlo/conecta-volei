@@ -4,6 +4,7 @@ export const SUPER_ADMIN_WHATSAPP = [
   '27997343401', // Lenon
   '27999272688', // Massaru
   '27999157866', // Miltom
+  '27999362306', // Paulo Gabriel
 ]
 
 export const ADMIN_WHATSAPP = [
