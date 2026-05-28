@@ -1,19 +1,112 @@
-// Aba de presenças do painel admin
+// Aba de presencas do painel admin
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Button from "../../../components/Button/Button";
-import { mockGames, mockPlayers } from "../../../data/mockGames";
+import { getGameRegistrations, getGames } from "../../../data/supabaseService";
+import { GAME_DAYS } from "../../../domain/constants";
 
-function getPlayerById(id) {
-  return mockPlayers.find((p) => p.id === id);
+function normalizeGame(game) {
+  return {
+    id: game.id,
+    day: game.day,
+    date: game.date,
+  };
+}
+
+function participantFromRegistration(registration) {
+  if (registration.player) {
+    return {
+      id: `player-${registration.player.id}`,
+      name: registration.player.name,
+      nickname: registration.player.nickname || null,
+    };
+  }
+
+  if (registration.guest_name) {
+    return {
+      id: `guest-${registration.id}`,
+      name: registration.guest_name,
+      nickname: null,
+    };
+  }
+
+  return null;
+}
+
+function dayLabel(day) {
+  return day === GAME_DAYS.SUNDAY ? "Domingo" : "Quarta";
 }
 
 function AdminPresence() {
-  const [selectedGame, setSelectedGame] = useState(mockGames[0].id);
+  const [games, setGames] = useState([]);
+  const [selectedGame, setSelectedGame] = useState("");
+  const [registrations, setRegistrations] = useState([]);
   const [presences, setPresences] = useState({});
+  const [loadingGames, setLoadingGames] = useState(true);
+  const [loadingRegistrations, setLoadingRegistrations] = useState(false);
+  const [error, setError] = useState("");
 
-  const game = mockGames.find((g) => g.id === selectedGame);
-  const players = game.players.map(getPlayerById).filter(Boolean);
+  useEffect(() => {
+    let active = true;
+
+    async function loadGames() {
+      setLoadingGames(true);
+      setError("");
+
+      const data = await getGames();
+      if (!active) return;
+
+      const normalizedGames = (data || []).map(normalizeGame);
+      setGames(normalizedGames);
+      setSelectedGame((prev) => prev || normalizedGames[0]?.id || "");
+      setLoadingGames(false);
+    }
+
+    loadGames();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadRegistrations() {
+      if (!selectedGame) {
+        setRegistrations([]);
+        return;
+      }
+
+      setLoadingRegistrations(true);
+      setError("");
+
+      const data = await getGameRegistrations(selectedGame);
+      if (!active) return;
+
+      setRegistrations(data || []);
+      setPresences({});
+      setLoadingRegistrations(false);
+    }
+
+    loadRegistrations();
+
+    return () => {
+      active = false;
+    };
+  }, [selectedGame]);
+
+  const participants = useMemo(
+    () =>
+      registrations
+        .map(participantFromRegistration)
+        .filter(Boolean)
+        .filter(
+          (participant, index, arr) =>
+            arr.findIndex((item) => item.id === participant.id) === index,
+        ),
+    [registrations],
+  );
 
   function togglePresence(playerId) {
     setPresences((prev) => ({
@@ -22,24 +115,49 @@ function AdminPresence() {
     }));
   }
 
+  if (loadingGames) {
+    return (
+      <div className="admin-tab">
+        <p className="admin-tab__restricted">Carregando jogos...</p>
+      </div>
+    );
+  }
+
+  if (games.length === 0) {
+    return (
+      <div className="admin-tab">
+        <p className="admin-tab__restricted">Nenhum jogo encontrado.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="admin-tab">
+      {error && <p className="admin-tab__restricted">{error}</p>}
       <div className="admin-tab__select-wrap">
         <select
           className="admin-tab__select"
           value={selectedGame}
           onChange={(e) => setSelectedGame(e.target.value)}
         >
-          {mockGames.map((g) => (
+          {games.map((g) => (
             <option key={g.id} value={g.id}>
-              {g.day === "wednesday" ? "Quarta" : "Domingo"} — {g.date}
+              {dayLabel(g.day)} - {g.date}
             </option>
           ))}
         </select>
       </div>
 
+      {loadingRegistrations && (
+        <p className="admin-tab__restricted">Carregando inscritos...</p>
+      )}
+
+      {!loadingRegistrations && participants.length === 0 && (
+        <p className="admin-tab__restricted">Nenhum inscrito para este jogo.</p>
+      )}
+
       <ul className="admin-tab__list">
-        {players.map((p) => {
+        {participants.map((p) => {
           const present = presences[p.id] ?? false;
           return (
             <li key={p.id} className="admin-tab__item">
