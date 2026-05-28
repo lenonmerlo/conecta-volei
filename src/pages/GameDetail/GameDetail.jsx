@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import JoinList from "../../components/JoinList/JoinList";
-import { mockGames } from "../../data/mockGames";
 import { getGameById, getGameRegistrations } from "../../data/supabaseService";
 import { GAME_DAYS, PLAYER_STATUS, PLAYER_TYPE } from "../../domain/constants";
 import "./GameDetail.css";
@@ -70,7 +69,7 @@ function buildListsFromRegistrations(registrations) {
 function GameDetail() {
   const { id } = useParams();
   const [reloadVersion, setReloadVersion] = useState(0);
-  const [game, setGame] = useState(() => mockGames.find((g) => g.id === id));
+  const [game, setGame] = useState(null);
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -87,9 +86,7 @@ function GameDetail() {
 
       if (!active) return;
 
-      setGame(
-        normalizeGame(supabaseGame) || mockGames.find((g) => g.id === id),
-      );
+      setGame(normalizeGame(supabaseGame));
       setRegistrations(supabaseRegistrations || []);
       setLoading(false);
     }
