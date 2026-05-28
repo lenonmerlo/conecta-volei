@@ -24,6 +24,7 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  overflow-x: hidden;
 }
 
 .admin-tab__info {
@@ -81,6 +82,13 @@
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+  width: 100%;
+  min-width: 0;
+}
+
+.admin-tab__actions .admin-tab__btn {
+  flex: 1 1 calc(50% - 0.25rem);
+  min-width: 0;
 }
 
 .admin-tab__btn.btn--sm {
@@ -133,4 +141,37 @@
   font-size: 0.9rem;
   text-align: center;
   margin-top: 1rem;
+}
+
+.admin-tab__item--level {
+  gap: 0;
+}
+
+.admin-tab__info--level {
+  width: 100%;
+  flex-wrap: nowrap;
+}
+
+.admin-tab__select--level {
+  flex: 0 0 62px;
+  min-width: 62px;
+  margin-left: 0.65rem;
+}
+
+.admin-tab__info--level .admin-tab__name {
+  flex: 1;
+}
+
+@media (max-width: 380px) {
+  .admin-tab__actions .admin-tab__btn {
+    flex-basis: 100%;
+  }
+
+  .admin-tab__select--level {
+    flex-basis: 58px;
+    min-width: 58px;
+    margin-left: 0.5rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
 }
