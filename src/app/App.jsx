@@ -4,6 +4,7 @@ import escudoConecta from "../assets/escudo-conecta-prata.png";
 import BottomNav from "../components/BottomNav/BottomNav";
 import { isAdmin } from "../domain/admins";
 import Admin from "../pages/Admin/Admin";
+import AthleteProfile from "../pages/AthleteProfile/AthleteProfile";
 import Athletes from "../pages/Athletes/Athletes";
 import GameDetail from "../pages/GameDetail/GameDetail";
 import Home from "../pages/Home/Home";
@@ -23,6 +24,7 @@ function AppShell() {
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/athletes" element={<Athletes />} />
+          <Route path="/athlete/:id" element={<AthleteProfile />} />
           <Route path="/rules" element={<Rules />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -60,6 +62,7 @@ function AppShell() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/athletes" element={<Athletes />} />
+          <Route path="/athlete/:id" element={<AthleteProfile />} />
           <Route path="/rules" element={<Rules />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/game/:id" element={<GameDetail />} />
