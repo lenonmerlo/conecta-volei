@@ -1,6 +1,6 @@
 // Navegação inferior mobile
 
-import { BookOpen, Home, Shield, User, Users } from "lucide-react";
+import { BookOpen, Home, ScrollText, Shield, User, Users } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../app/AuthContext";
 import { isAdmin } from "../../domain/admins";
@@ -29,6 +29,15 @@ function BottomNav() {
       >
         <BookOpen size={22} />
         <span>Regras</span>
+      </NavLink>
+      <NavLink
+        to="/scrapbook"
+        className={({ isActive }) =>
+          `bottom-nav__item ${isActive ? "bottom-nav__item--active" : ""}`
+        }
+      >
+        <ScrollText size={22} />
+        <span>Scrapbook</span>
       </NavLink>
       <NavLink
         to="/athletes"
