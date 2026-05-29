@@ -87,6 +87,70 @@ export async function getGames() {
   return data;
 }
 
+export async function createGame(game) {
+  const dayNames = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ];
+  const dateObj = new Date(`${game.date}T12:00:00Z`);
+  const day = dayNames[dateObj.getUTCDay()];
+  const id = `${day}-${game.date}`;
+
+  const payload = {
+    id,
+    day,
+    date: game.date,
+    location: game.location,
+    time: game.time,
+    status: game.status || "active",
+    notes: game.notes || null,
+  };
+
+  const { data, error } = await supabase
+    .from("games")
+    .insert(payload)
+    .select()
+    .single();
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, game: data };
+}
+
+export async function updateGame(gameId, data) {
+  const payload = {
+    location: data.location,
+    time: data.time,
+    date: data.date,
+    status: data.status,
+    notes: data.notes,
+  };
+
+  const cleanPayload = Object.fromEntries(
+    Object.entries(payload).filter(([, value]) => value !== undefined),
+  );
+
+  const { error } = await supabase
+    .from("games")
+    .update(cleanPayload)
+    .eq("id", gameId);
+
+  return !error;
+}
+
+export async function cancelGame(gameId) {
+  const { error } = await supabase
+    .from("games")
+    .update({ status: "cancelled" })
+    .eq("id", gameId);
+
+  return !error;
+}
+
 export async function updateGameDates() {
   const { data, error } = await supabase.from("games").select("id, day, date");
 
@@ -96,6 +160,7 @@ export async function updateGameDates() {
   }
 
   const updates = (data || [])
+    .filter((game) => game.day === "wednesday" || game.day === "sunday")
     .map((game) => {
       const nextDate = getNextGameDate(game.day);
       const currentDate = (game.date || "").toString().split("T")[0];

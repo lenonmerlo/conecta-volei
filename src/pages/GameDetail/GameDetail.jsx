@@ -8,9 +8,25 @@ import {
   getGameRegistrations,
   getGameTeams,
 } from "../../data/supabaseService";
-import { GAME_DAYS, PLAYER_STATUS, PLAYER_TYPE } from "../../domain/constants";
+import { PLAYER_STATUS, PLAYER_TYPE } from "../../domain/constants";
 import { supabase } from "../../lib/supabase";
 import "./GameDetail.css";
+
+function getDayLabel(dateStr) {
+  const days = [
+    "Domingo",
+    "Segunda-feira",
+    "Terça-feira",
+    "Quarta-feira",
+    "Quinta-feira",
+    "Sexta-feira",
+    "Sábado",
+  ];
+
+  const date = new Date(`${dateStr}T12:00:00Z`);
+  if (Number.isNaN(date.getTime())) return "Data inválida";
+  return days[date.getUTCDay()];
+}
 
 function normalizeLocation(value) {
   return (value || "")
@@ -179,14 +195,12 @@ function GameDetail() {
     );
   }
 
-  const isSunday = game.day === GAME_DAYS.SUNDAY;
   const supabaseList = buildListsFromRegistrations(registrations);
   const mainPlayers = supabaseList.main;
   const waitlist = supabaseList.waitlist;
   const guests = supabaseList.guests;
   const members = mainPlayers.filter((p) => p.type === PLAYER_TYPE.MEMBER);
-
-  const dayLabel = isSunday ? "Domingo" : "Quarta-feira";
+  const dayLabel = getDayLabel(game.date);
 
   return (
     <div className="game-detail">

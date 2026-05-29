@@ -186,6 +186,116 @@
   min-width: 130px;
 }
 
+.admin-games {
+  gap: 0.9rem;
+}
+
+.admin-games__create {
+  border: 1px solid rgba(143, 215, 255, 0.2);
+  border-radius: 12px;
+  padding: 0.8rem;
+  background: linear-gradient(
+    145deg,
+    rgba(13, 45, 74, 0.7),
+    rgba(8, 31, 52, 0.68)
+  );
+}
+
+.admin-games__section-title {
+  font-size: 1rem;
+  margin-bottom: 0.6rem;
+}
+
+.admin-games__form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-bottom: 0.6rem;
+}
+
+.admin-games__input {
+  background-color: rgba(16, 54, 86, 0.58);
+  border: 1px solid rgba(143, 215, 255, 0.25);
+  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
+  color: var(--cv-text);
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.admin-games__input:focus {
+  border-color: rgba(30, 167, 255, 0.55);
+  box-shadow: 0 0 0 2px rgba(30, 167, 255, 0.14);
+}
+
+.admin-games__input--full {
+  grid-column: 1 / -1;
+}
+
+.admin-games__textarea {
+  resize: vertical;
+}
+
+.admin-games__meta {
+  font-size: 0.82rem;
+  color: var(--cv-muted);
+}
+
+.admin-games__edit-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.admin-games__modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(4, 10, 18, 0.62);
+  backdrop-filter: blur(2px);
+  display: grid;
+  place-items: center;
+  z-index: 30;
+  padding: 1rem;
+}
+
+.admin-games__modal {
+  width: min(92vw, 420px);
+  border-radius: 14px;
+  border: 1px solid rgba(143, 215, 255, 0.3);
+  background: linear-gradient(
+    145deg,
+    rgba(13, 45, 74, 0.96),
+    rgba(8, 31, 52, 0.94)
+  );
+  box-shadow: 0 16px 32px rgba(1, 8, 15, 0.5);
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.admin-games__modal-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.admin-games__modal-text {
+  font-size: 0.88rem;
+  color: var(--cv-text);
+}
+
+.admin-games__modal-meta {
+  font-size: 0.76rem;
+  color: var(--cv-muted);
+}
+
+.admin-games__modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
 @media (max-width: 380px) {
   .admin-tab__actions .admin-tab__btn {
     flex-basis: 100%;
@@ -197,5 +307,13 @@
     margin-left: 0.5rem;
     padding-left: 0.5rem;
     padding-right: 0.5rem;
+  }
+
+  .admin-games__form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-games__modal-actions {
+    flex-direction: column-reverse;
   }
 }
