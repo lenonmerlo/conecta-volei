@@ -5,6 +5,7 @@ import { useAuth } from "../../app/AuthContext";
 import { isSuperAdmin } from "../../domain/admins";
 import "./Admin.css";
 import AdminDraw from "./tabs/AdminDraw";
+import AdminGames from "./tabs/AdminGames";
 import AdminLevels from "./tabs/AdminLevels";
 import AdminPlayers from "./tabs/AdminPlayers";
 import AdminPresence from "./tabs/AdminPresence";
@@ -15,6 +16,7 @@ function Admin() {
 
   const TABS = [
     { key: "players", label: "Jogadores" },
+    { key: "games", label: "Jogos" },
     { key: "presence", label: "Presenças" },
     ...(userIsSuperAdmin ? [{ key: "levels", label: "Níveis" }] : []),
     { key: "draw", label: "Sorteio" },
@@ -42,6 +44,7 @@ function Admin() {
 
       <div className="admin__content">
         {activeTab === "players" && <AdminPlayers />}
+        {activeTab === "games" && <AdminGames />}
         {activeTab === "presence" && <AdminPresence />}
         {activeTab === "levels" && userIsSuperAdmin && <AdminLevels />}
         {activeTab === "draw" && <AdminDraw />}

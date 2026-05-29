@@ -66,8 +66,34 @@ function normalizeGame(game) {
     time: game.time,
     date: game.date,
     location: game.location,
+    status: game.status || "active",
+    notes: game.notes || null,
     mapUrl: resolveMapUrl(game),
   };
+}
+
+function isGameVisible(game) {
+  const isFixed = game.day === "wednesday" || game.day === "sunday";
+  if (isFixed) return true;
+
+  if (game.status === "cancelled") return false;
+
+  if (game.status !== "active") return false;
+  if (!game.date || !game.time) return false;
+
+  const [hours, minutes] = game.time.split(":");
+  const gameStart = new Date(`${game.date}T${game.time}:00Z`);
+
+  if (Number.isNaN(gameStart.getTime())) return false;
+
+  gameStart.setUTCHours(
+    Number.parseInt(hours || "0", 10) + 2,
+    Number.parseInt(minutes || "0", 10),
+    0,
+    0,
+  );
+
+  return new Date() < gameStart;
 }
 
 function Home() {
@@ -79,7 +105,9 @@ function Home() {
     await updateGameDates();
     const data = await getGames();
 
-    const normalizedGames = (data || []).map(normalizeGame);
+    const normalizedGames = (data || [])
+      .map(normalizeGame)
+      .filter(isGameVisible);
     const gamesWithCounts = await Promise.all(
       normalizedGames.map(async (game) => {
         const registrations = await getGameRegistrations(game.id);

@@ -88,6 +88,11 @@
   font-weight: 600;
 }
 
+.game-card__notes {
+  font-size: 0.77rem;
+  color: #ffd9d9;
+}
+
 .game-card__date {
   font-size: 0.8rem;
   color: var(--cv-muted);
@@ -183,6 +188,12 @@
   border: 1px solid rgba(241, 95, 95, 0.52);
 }
 
+.game-card__badge--cancelled {
+  background-color: rgba(241, 95, 95, 0.24);
+  color: #ffd4d4;
+  border: 1px solid rgba(241, 95, 95, 0.6);
+}
+
 .game-card--full {
   border-color: rgba(241, 95, 95, 0.34);
 }
@@ -207,6 +218,23 @@
 .game-card--list-closed .game-card__map-link,
 .game-card--list-closed .game-card__badge {
   opacity: 0.72;
+}
+
+.game-card--cancelled {
+  border-color: rgba(241, 95, 95, 0.34);
+  background: linear-gradient(
+    145deg,
+    rgba(57, 29, 42, 0.86),
+    rgba(40, 21, 33, 0.9)
+  );
+}
+
+.game-card--cancelled .game-card__day,
+.game-card--cancelled .game-card__location,
+.game-card--cancelled .game-card__time,
+.game-card--cancelled .game-card__date,
+.game-card--cancelled .game-card__spots {
+  opacity: 0.9;
 }
 
 @keyframes game-card-pill-pulse {
