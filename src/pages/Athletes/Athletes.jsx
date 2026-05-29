@@ -21,6 +21,19 @@ function statusBadge(status) {
   return null;
 }
 
+function positionBadges(player) {
+  return (
+    <span className="athletes__role-badges">
+      {player.is_captain && (
+        <span className="athletes__badge athletes__badge--captain">C</span>
+      )}
+      {player.is_setter && (
+        <span className="athletes__badge athletes__badge--setter">L</span>
+      )}
+    </span>
+  );
+}
+
 function Athletes() {
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -76,12 +89,17 @@ function Athletes() {
               )}
             </div>
             <div className="athletes__info">
-              <span className="athletes__name">
-                {p.name}
-                {p.nickname ? ` (${p.nickname})` : ""}
+              <span className="athletes__name-wrap">
+                <span className="athletes__name">
+                  {p.name}
+                  {p.nickname ? ` (${p.nickname})` : ""}
+                </span>
               </span>
-              <span className="athletes__gender">
-                {p.gender === "F" ? "♀" : "♂"}
+              <span className="athletes__meta">
+                {(p.is_captain || p.is_setter) && positionBadges(p)}
+                <span className="athletes__gender">
+                  {p.gender === "F" ? "♀" : "♂"}
+                </span>
               </span>
             </div>
             {statusBadge(p.status)}

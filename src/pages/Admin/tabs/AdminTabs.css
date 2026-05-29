@@ -162,6 +162,30 @@
   flex: 1;
 }
 
+.admin-tab__position-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  margin-top: 0.55rem;
+}
+
+.admin-tab__check-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--cv-muted);
+}
+
+.admin-tab__check-label input {
+  accent-color: #6ecdfd;
+}
+
+.admin-tab__select--position {
+  min-width: 130px;
+}
+
 @media (max-width: 380px) {
   .admin-tab__actions .admin-tab__btn {
     flex-basis: 100%;

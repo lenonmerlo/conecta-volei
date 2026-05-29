@@ -8,9 +8,23 @@ import {
   getGames,
   saveGameTeams,
 } from "../../../data/supabaseService";
+import { isListOpen } from "../../../domain/gameRules";
 import { drawTeams, swapPlayers } from "../../../domain/teamDraw";
 import "./AdminDraw.css";
 import "./AdminTabs.css";
+
+function renderRoleBadges(player) {
+  return (
+    <span className="admin-draw__role-badges">
+      {player.is_captain && (
+        <span className="admin-draw__badge admin-draw__badge--captain">C</span>
+      )}
+      {player.is_setter && (
+        <span className="admin-draw__badge admin-draw__badge--setter">L</span>
+      )}
+    </span>
+  );
+}
 
 function normalizePlayer(player) {
   return {
@@ -19,6 +33,9 @@ function normalizePlayer(player) {
     nickname: player.nickname || null,
     gender: player.gender,
     skillLevel: Number(player.skill_level ?? player.skillLevel ?? 3),
+    is_captain: Boolean(player.is_captain),
+    is_setter: Boolean(player.is_setter),
+    position: player.position || "all-around",
     status: player.status,
     type: player.type,
   };
@@ -31,6 +48,44 @@ function normalizeGame(game) {
     date: game.date,
     time: game.time,
   };
+}
+
+function getGameDateTime(game) {
+  if (!game?.date) return null;
+
+  const timeRaw = (game.time || "00:00").toString();
+  const hhmm = timeRaw.length >= 5 ? timeRaw.slice(0, 5) : "00:00";
+  const dateTime = new Date(`${game.date}T${hhmm}:00`);
+
+  if (Number.isNaN(dateTime.getTime())) return null;
+  return dateTime;
+}
+
+function getDefaultGameId(games) {
+  if (!games || games.length === 0) return "";
+
+  const now = new Date();
+
+  const activeGames = games.filter((game) => isListOpen(game.day, now));
+  if (activeGames.length > 0) {
+    const sortedActive = [...activeGames].sort((a, b) => {
+      const aTime = getGameDateTime(a)?.getTime() || Number.MAX_SAFE_INTEGER;
+      const bTime = getGameDateTime(b)?.getTime() || Number.MAX_SAFE_INTEGER;
+      return aTime - bTime;
+    });
+    return sortedActive[0].id;
+  }
+
+  const upcomingGames = games
+    .map((game) => ({ game, dateTime: getGameDateTime(game) }))
+    .filter(
+      (entry) => entry.dateTime && entry.dateTime.getTime() >= now.getTime(),
+    )
+    .sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
+
+  if (upcomingGames.length > 0) return upcomingGames[0].game.id;
+
+  return games[0].id;
 }
 
 function AdminDraw() {
@@ -56,7 +111,13 @@ function AdminDraw() {
 
       const normalizedGames = (data || []).map(normalizeGame);
       setGames(normalizedGames);
-      setSelectedGameId((prev) => prev || normalizedGames[0]?.id || "");
+      setSelectedGameId((prev) => {
+        const prevExists = normalizedGames.some(
+          (game) => String(game.id) === String(prev),
+        );
+        if (prev && prevExists) return prev;
+        return getDefaultGameId(normalizedGames);
+      });
       setLoading(false);
     }
 
@@ -236,8 +297,12 @@ function AdminDraw() {
                           {player.name}
                           {player.nickname ? ` (${player.nickname})` : ""}
                         </span>
-                        <span className="admin-draw__player-gender">
-                          {player.gender === "F" ? "♀" : "♂"}
+                        <span className="admin-draw__player-meta">
+                          {(player.is_captain || player.is_setter) &&
+                            renderRoleBadges(player)}
+                          <span className="admin-draw__player-gender">
+                            {player.gender === "F" ? "♀" : "♂"}
+                          </span>
                         </span>
                       </li>
                     );

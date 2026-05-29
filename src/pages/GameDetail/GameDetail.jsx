@@ -42,6 +42,14 @@ function formatName(player) {
   return player.name;
 }
 
+function hasCaptainBadge(player) {
+  return Boolean(player.is_captain ?? player.isCaptain);
+}
+
+function hasSetterBadge(player) {
+  return Boolean(player.is_setter ?? player.isSetter);
+}
+
 function normalizeGame(game) {
   if (!game) return null;
 
@@ -70,6 +78,9 @@ function buildListsFromRegistrations(registrations) {
         type: player.type,
         gender: player.gender,
         status: player.status,
+        is_captain: Boolean(player.is_captain),
+        is_setter: Boolean(player.is_setter),
+        position: player.position || "all-around",
       };
 
       if (slot === "waitlist") {
@@ -212,6 +223,16 @@ function GameDetail() {
             <li key={p.id} className="game-detail__item">
               <span className="game-detail__position">{i + 1}</span>
               <span className="game-detail__name">{formatName(p)}</span>
+              {p.is_captain && (
+                <span className="game-detail__badge game-detail__badge--captain">
+                  C
+                </span>
+              )}
+              {p.is_setter && (
+                <span className="game-detail__badge game-detail__badge--setter">
+                  L
+                </span>
+              )}
               {p.status === PLAYER_STATUS.PENALIZED && (
                 <span className="game-detail__badge game-detail__badge--penalized">
                   Penalizado
@@ -294,8 +315,20 @@ function GameDetail() {
                       <span className="game-detail__name">
                         {formatName(player)}
                       </span>
-                      <span className="game-detail__player-gender">
-                        {player.gender === "F" ? "♀" : "♂"}
+                      <span className="game-detail__player-meta">
+                        {hasCaptainBadge(player) && (
+                          <span className="game-detail__badge game-detail__badge--captain">
+                            C
+                          </span>
+                        )}
+                        {hasSetterBadge(player) && (
+                          <span className="game-detail__badge game-detail__badge--setter">
+                            L
+                          </span>
+                        )}
+                        <span className="game-detail__player-gender">
+                          {player.gender === "F" ? "♀" : "♂"}
+                        </span>
                       </span>
                     </li>
                   ))}
