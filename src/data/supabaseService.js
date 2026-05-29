@@ -75,6 +75,85 @@ export async function updatePlayerPosition(
   return !error;
 }
 
+export async function getPlayerStats(playerId) {
+  const [
+    { data: presences, error: presencesError },
+    { data: guestRows, error: guestsError },
+    { data: player, error: playerError },
+    { data: sundayGames, error: sundayGamesError },
+  ] = await Promise.all([
+    supabase
+      .from("game_presences")
+      .select("game_id, present")
+      .eq("player_id", playerId),
+    supabase
+      .from("game_registrations")
+      .select("id")
+      .eq("invited_by", playerId)
+      .is("player_id", null),
+    supabase
+      .from("players")
+      .select("is_captain, is_setter")
+      .eq("id", playerId)
+      .maybeSingle(),
+    supabase
+      .from("games")
+      .select("id, date, time")
+      .eq("day", "sunday")
+      .order("date", { ascending: false })
+      .order("time", { ascending: false }),
+  ]);
+
+  if (presencesError || guestsError || playerError || sundayGamesError) {
+    console.error("[getPlayerStats] erro ao buscar estatisticas", {
+      presencesError,
+      guestsError,
+      playerError,
+      sundayGamesError,
+    });
+  }
+
+  const safePresences = presences || [];
+  const totalGames = safePresences.filter((row) => row.present === true).length;
+  const totalAbsences = safePresences.filter(
+    (row) => row.present === false,
+  ).length;
+  const totalGuests = (guestRows || []).length;
+
+  const presenceMap = new Map(
+    safePresences.map((row) => [String(row.game_id), row.present === true]),
+  );
+
+  const now = Date.now();
+  const playedSundays = (sundayGames || []).filter((game) => {
+    const dateTime = new Date(
+      `${game.date}T${(game.time || "00:00").slice(0, 5)}:00Z`,
+    );
+    return !Number.isNaN(dateTime.getTime()) && dateTime.getTime() <= now;
+  });
+
+  let currentStreak = 0;
+  for (const game of playedSundays) {
+    const present = presenceMap.get(String(game.id)) === true;
+    if (!present) break;
+    currentStreak += 1;
+  }
+
+  const sundayAbsences = playedSundays.filter(
+    (game) => presenceMap.get(String(game.id)) === false,
+  ).length;
+
+  return {
+    totalGames,
+    totalAbsences,
+    totalPenalties: sundayAbsences,
+    totalGuests,
+    currentStreak,
+    isCaptain: Boolean(player?.is_captain),
+    isSetter: Boolean(player?.is_setter),
+  };
+}
+
 // ── Games ──────────────────────────────────────────
 
 export async function getGames() {

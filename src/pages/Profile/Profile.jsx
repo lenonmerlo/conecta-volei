@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useAuth } from "../../app/AuthContext";
 import Button from "../../components/Button/Button";
+import PlayerStats from "../../components/PlayerStats/PlayerStats";
 import { updatePlayerAvatar, uploadAvatar } from "../../data/supabaseService";
 import { isAdmin, isSuperAdmin } from "../../domain/admins";
 import "./Profile.css";
@@ -96,6 +97,10 @@ function LoggedIn({ user, onLogout, onUpdateUser }) {
       <Button variant="secondary" onClick={onLogout}>
         Sair
       </Button>
+
+      <div className="profile__stats">
+        <PlayerStats playerId={user.id} />
+      </div>
     </div>
   );
 }
