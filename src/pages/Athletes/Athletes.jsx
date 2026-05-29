@@ -1,7 +1,7 @@
 // Pagina publica de atletas do grupo
 
 import { useEffect, useState } from "react";
-import PlayerStats from "../../components/PlayerStats/PlayerStats";
+import { useNavigate } from "react-router-dom";
 import { getAllPlayers } from "../../data/supabaseService";
 import { PLAYER_STATUS } from "../../domain/constants";
 import "./Athletes.css";
@@ -36,10 +36,10 @@ function positionBadges(player) {
 }
 
 function Athletes() {
+  const navigate = useNavigate();
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [selectedPlayer, setSelectedPlayer] = useState(null);
 
   useEffect(() => {
     async function fetchPlayers() {
@@ -81,13 +81,13 @@ function Athletes() {
           <li
             key={p.id}
             className="athletes__item"
-            onClick={() => setSelectedPlayer(p)}
+            onClick={() => navigate(`/athlete/${p.id}`)}
             role="button"
             tabIndex={0}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
-                setSelectedPlayer(p);
+                navigate(`/athlete/${p.id}`);
               }
             }}
           >
@@ -120,26 +120,6 @@ function Athletes() {
           </li>
         ))}
       </ul>
-
-      {selectedPlayer && (
-        <div className="athletes__modal-backdrop">
-          <div className="athletes__modal" role="dialog" aria-modal="true">
-            <div className="athletes__modal-header">
-              <h3>
-                {selectedPlayer.name}
-                {selectedPlayer.nickname ? ` (${selectedPlayer.nickname})` : ""}
-              </h3>
-              <button
-                className="athletes__modal-close"
-                onClick={() => setSelectedPlayer(null)}
-              >
-                Fechar
-              </button>
-            </div>
-            <PlayerStats playerId={selectedPlayer.id} compact />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
