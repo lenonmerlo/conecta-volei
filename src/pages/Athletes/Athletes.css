@@ -85,7 +85,8 @@
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .athletes__name {
@@ -97,7 +98,54 @@
   text-overflow: ellipsis;
 }
 
+.athletes__name-wrap {
+  flex: 1;
+  min-width: 0;
+  display: block;
+}
+
+.athletes__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.athletes__role-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.athletes__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 0.12rem 0.42rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.athletes__badge--captain {
+  background-color: rgba(255, 204, 51, 0.2);
+  color: #ffe08a;
+  border-color: rgba(255, 204, 51, 0.52);
+}
+
+.athletes__badge--setter {
+  background-color: rgba(111, 207, 255, 0.2);
+  color: #cceeff;
+  border-color: rgba(111, 207, 255, 0.52);
+}
+
 .athletes__gender {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1rem;
   font-size: 0.92rem;
   color: var(--cv-primary-soft);
 }

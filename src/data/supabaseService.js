@@ -1,7 +1,7 @@
 // Serviço de integração com o Supabase
 
-import { supabase } from "../lib/supabase";
 import { getNextGameDate } from "../domain/gameRules";
+import { supabase } from "../lib/supabase";
 
 // ── Players ──────────────────────────────────────────
 
@@ -58,6 +58,18 @@ export async function updatePlayerLevel(playerId, skillLevel) {
   const { error } = await supabase
     .from("players")
     .update({ skill_level: skillLevel })
+    .eq("id", playerId);
+
+  return !error;
+}
+
+export async function updatePlayerPosition(
+  playerId,
+  { is_captain, is_setter, position },
+) {
+  const { error } = await supabase
+    .from("players")
+    .update({ is_captain, is_setter, position })
     .eq("id", playerId);
 
   return !error;

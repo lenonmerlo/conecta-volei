@@ -3,6 +3,46 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  position: relative;
+}
+
+.teams__notice {
+  position: sticky;
+  top: 0.55rem;
+  z-index: 4;
+  align-self: center;
+  width: min(92%, 460px);
+  border-radius: 12px;
+  padding: 0.62rem 0.88rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: center;
+  border: 1px solid transparent;
+  box-shadow: 0 8px 24px rgba(2, 9, 20, 0.45);
+  animation: teams-notice-in 0.2s ease-out;
+}
+
+.teams__notice--success {
+  background-color: rgba(46, 194, 126, 0.22);
+  border-color: rgba(46, 194, 126, 0.52);
+  color: #b9f5d8;
+}
+
+.teams__notice--error {
+  background-color: rgba(241, 95, 95, 0.2);
+  border-color: rgba(241, 95, 95, 0.48);
+  color: #ffd2d2;
+}
+
+@keyframes teams-notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .teams__title {
@@ -70,6 +110,32 @@
 .teams__player-name {
   font-size: 0.875rem;
   color: var(--cv-text);
+}
+
+.teams__player-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.teams__badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.16rem 0.42rem;
+  border-radius: 999px;
+  line-height: 1;
+}
+
+.teams__badge--captain {
+  background-color: rgba(255, 204, 51, 0.2);
+  color: #ffe08a;
+  border: 1px solid rgba(255, 204, 51, 0.52);
+}
+
+.teams__badge--setter {
+  background-color: rgba(111, 207, 255, 0.2);
+  color: #cceeff;
+  border: 1px solid rgba(111, 207, 255, 0.52);
 }
 
 .teams__player-gender {

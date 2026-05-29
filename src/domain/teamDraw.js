@@ -10,7 +10,7 @@ function shuffleArray(array) {
 }
 
 function sumLevels(team) {
-  return team.reduce((acc, p) => acc + p.skillLevel, 0);
+  return team.reduce((acc, p) => acc + Number(p.skillLevel || 0), 0);
 }
 
 function getTeamCount(totalPlayers) {
@@ -22,32 +22,114 @@ function getTeamCount(totalPlayers) {
 export function drawTeams(players) {
   const teamCount = getTeamCount(players.length);
   if (teamCount === 0) return [];
-
-  const females = shuffleArray(players.filter((p) => p.gender === "F"));
-  const males = shuffleArray(players.filter((p) => p.gender === "M"));
-
   const teams = Array.from({ length: teamCount }, () => []);
   const maxPerTeam = Math.ceil(players.length / teamCount);
 
-  // Distribui meninas o mais igualmente possível
-  females.forEach((p, i) => {
-    teams[i % teamCount].push(p);
-  });
+  const assignedIds = new Set();
 
-  // Distribui homens equilibrando nível
-  males.forEach((player) => {
-    // Encontra o time com menor soma de níveis que ainda tem vaga
-    const target = teams
+  function canAddToTeam(teamIndex) {
+    return teams[teamIndex].length < maxPerTeam;
+  }
+
+  function tryAdd(teamIndex, player) {
+    if (!player || assignedIds.has(player.id) || !canAddToTeam(teamIndex)) {
+      return false;
+    }
+    teams[teamIndex].push(player);
+    assignedIds.add(player.id);
+    return true;
+  }
+
+  function getSortedTargets() {
+    return teams
       .map((team, index) => ({
         index,
-        sum: sumLevels(team),
         size: team.length,
+        sum: sumLevels(team),
+        femaleCount: team.filter((p) => p.gender === "F").length,
       }))
-      .filter((t) => t.size < maxPerTeam)
-      .sort((a, b) => a.sum - b.sum)[0];
+      .filter((meta) => meta.size < maxPerTeam)
+      .sort((a, b) => {
+        if (a.size !== b.size) return a.size - b.size;
+        if (a.sum !== b.sum) return a.sum - b.sum;
+        return a.femaleCount - b.femaleCount;
+      });
+  }
 
-    if (target) teams[target.index].push(player);
-  });
+  function assignToBestTeam(player, options = {}) {
+    const { preferFemaleBalance = false } = options;
+
+    const targets = getSortedTargets();
+    if (targets.length === 0) return false;
+
+    const sortedTargets = preferFemaleBalance
+      ? [...targets].sort((a, b) => {
+          if (a.size !== b.size) return a.size - b.size;
+          if (a.femaleCount !== b.femaleCount)
+            return a.femaleCount - b.femaleCount;
+          return a.sum - b.sum;
+        })
+      : targets;
+
+    return tryAdd(sortedTargets[0].index, player);
+  }
+
+  const captains = shuffleArray(players.filter((p) => p.is_captain));
+  const fixedSetters = shuffleArray(
+    players.filter((p) => p.position === "setter" && !p.is_captain),
+  );
+  const optionalSetters = shuffleArray(
+    players.filter(
+      (p) => p.is_setter && p.position !== "setter" && !p.is_captain,
+    ),
+  );
+  const attackers = shuffleArray(
+    players.filter(
+      (p) => p.position === "attacker" && !p.is_captain && !p.is_setter,
+    ),
+  );
+  const remaining = shuffleArray(
+    players.filter(
+      (p) =>
+        !p.is_captain &&
+        p.position !== "setter" &&
+        !p.is_setter &&
+        p.position !== "attacker",
+    ),
+  );
+
+  // 1) Distribui capitaes (1 por time quando houver quantidade suficiente)
+  for (let teamIndex = 0; teamIndex < teamCount; teamIndex += 1) {
+    const captain = captains.shift();
+    if (!captain) break;
+    tryAdd(teamIndex, captain);
+  }
+
+  // Capitaes restantes entram no balanceamento geral
+  captains.forEach((player) => assignToBestTeam(player));
+
+  // 2) Distribui levantadores (1 por time, priorizando fixos)
+  for (let teamIndex = 0; teamIndex < teamCount; teamIndex += 1) {
+    let setter = fixedSetters.shift();
+    if (!setter) setter = optionalSetters.shift();
+    if (!setter) continue;
+    tryAdd(teamIndex, setter);
+  }
+
+  fixedSetters.forEach((player) => assignToBestTeam(player));
+  optionalSetters.forEach((player) => assignToBestTeam(player));
+
+  // 3) Distribui atacantes equilibrando entre os times
+  attackers.forEach((player) => assignToBestTeam(player));
+
+  // 4) Completa com os demais equilibrando nivel e genero
+  remaining.forEach((player) =>
+    assignToBestTeam(player, { preferFemaleBalance: player.gender === "F" }),
+  );
+
+  // Garantia: adiciona qualquer jogador nao distribuido por limite/parcial
+  const notAssigned = players.filter((p) => !assignedIds.has(p.id));
+  notAssigned.forEach((player) => assignToBestTeam(player));
 
   return teams.map((team, i) => ({
     name: `Time ${String.fromCharCode(65 + i)}`, // Time A, B, C

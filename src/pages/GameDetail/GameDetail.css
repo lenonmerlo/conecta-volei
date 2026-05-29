@@ -132,6 +132,18 @@
   border: 1px solid rgba(30, 167, 255, 0.4);
 }
 
+.game-detail__badge--captain {
+  background-color: rgba(255, 204, 51, 0.2);
+  color: #ffe08a;
+  border: 1px solid rgba(255, 204, 51, 0.52);
+}
+
+.game-detail__badge--setter {
+  background-color: rgba(111, 207, 255, 0.2);
+  color: #cceeff;
+  border: 1px solid rgba(111, 207, 255, 0.52);
+}
+
 .game-detail__badge--penalized {
   background-color: rgba(241, 95, 95, 0.18);
   color: #fecaca;
@@ -182,6 +194,12 @@
   font-size: 1.05rem;
   color: #ffffff;
   font-weight: 700;
+}
+
+.game-detail__player-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .game-detail__player-gender {
