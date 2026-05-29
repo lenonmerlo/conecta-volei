@@ -178,6 +178,18 @@ export async function getScraps(playerId) {
   return data || [];
 }
 
+export async function getAllScraps() {
+  const { data, error } = await supabase
+    .from("scraps")
+    .select(
+      "id, from_player_id, to_player_id, message, created_at, from_player:players!scraps_from_player_id_fkey(id, name, nickname, avatar_url), to_player:players!scraps_to_player_id_fkey(id, name, nickname, avatar_url)",
+    )
+    .order("created_at", { ascending: false });
+
+  if (error) return [];
+  return data || [];
+}
+
 export async function createScrap(fromPlayerId, toPlayerId, message) {
   const { data, error } = await supabase
     .from("scraps")

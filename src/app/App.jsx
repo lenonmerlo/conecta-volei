@@ -11,6 +11,7 @@ import Home from "../pages/Home/Home";
 import Login from "../pages/Login/Login";
 import Profile from "../pages/Profile/Profile";
 import Rules from "../pages/Rules/Rules";
+import Scrapbook from "../pages/Scrapbook/Scrapbook";
 import Teams from "../pages/Teams/Teams";
 import "./App.css";
 import { AuthProvider, useAuth } from "./AuthContext";
@@ -25,6 +26,7 @@ function AppShell() {
           <Route path="/" element={<Login />} />
           <Route path="/athletes" element={<Athletes />} />
           <Route path="/athlete/:id" element={<AthleteProfile />} />
+          <Route path="/scrapbook" element={<Scrapbook />} />
           <Route path="/rules" element={<Rules />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -63,6 +65,7 @@ function AppShell() {
           <Route path="/" element={<Home />} />
           <Route path="/athletes" element={<Athletes />} />
           <Route path="/athlete/:id" element={<AthleteProfile />} />
+          <Route path="/scrapbook" element={<Scrapbook />} />
           <Route path="/rules" element={<Rules />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/game/:id" element={<GameDetail />} />
