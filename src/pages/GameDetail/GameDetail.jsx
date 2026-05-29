@@ -77,7 +77,7 @@ function normalizeGame(game) {
   };
 }
 
-function buildListsFromRegistrations(registrations) {
+function buildListsFromRegistrations(registrations, isSundayGame) {
   const list = { main: [], waitlist: [], guests: [] };
 
   registrations.forEach((registration) => {
@@ -101,7 +101,10 @@ function buildListsFromRegistrations(registrations) {
 
       if (slot === "waitlist") {
         list.waitlist.push(normalizedPlayer);
-      } else if (slot === "guests" || player.type === PLAYER_TYPE.GUEST) {
+      } else if (
+        isSundayGame &&
+        (slot === "guests" || player.type === PLAYER_TYPE.GUEST)
+      ) {
         list.guests.push({ ...normalizedPlayer, invitedBy: inviterName });
       } else {
         list.main.push(normalizedPlayer);
@@ -110,7 +113,7 @@ function buildListsFromRegistrations(registrations) {
     }
 
     if (registration.guest_name) {
-      list.guests.push({
+      const normalizedGuest = {
         id: registration.id,
         name: registration.guest_name,
         nickname: null,
@@ -118,7 +121,15 @@ function buildListsFromRegistrations(registrations) {
         gender: null,
         status: PLAYER_STATUS.ACTIVE,
         invitedBy: inviterName,
-      });
+      };
+
+      if (isSundayGame && slot === "guests") {
+        list.guests.push(normalizedGuest);
+      } else if (slot === "waitlist") {
+        list.waitlist.push(normalizedGuest);
+      } else {
+        list.main.push(normalizedGuest);
+      }
     }
   });
 
@@ -195,11 +206,13 @@ function GameDetail() {
     );
   }
 
-  const supabaseList = buildListsFromRegistrations(registrations);
+  const isSundayGame = game.day === "sunday";
+  const supabaseList = buildListsFromRegistrations(registrations, isSundayGame);
   const mainPlayers = supabaseList.main;
   const waitlist = supabaseList.waitlist;
   const guests = supabaseList.guests;
   const members = mainPlayers.filter((p) => p.type === PLAYER_TYPE.MEMBER);
+  const mainListDisplay = isSundayGame ? members : mainPlayers;
   const dayLabel = getDayLabel(game.date);
 
   return (
@@ -227,13 +240,19 @@ function GameDetail() {
 
       <div className="game-detail__section">
         <h3 className="game-detail__section-title">
-          Membros ({members.length})
+          {isSundayGame
+            ? `Membros (${members.length})`
+            : `Lista Principal (${mainListDisplay.length})`}
         </h3>
-        {members.length === 0 && (
-          <p className="game-detail__empty">Nenhum membro inscrito.</p>
+        {mainListDisplay.length === 0 && (
+          <p className="game-detail__empty">
+            {isSundayGame
+              ? "Nenhum membro inscrito."
+              : "Nenhum jogador na lista principal."}
+          </p>
         )}
         <ul className="game-detail__list">
-          {members.map((p, i) => (
+          {mainListDisplay.map((p, i) => (
             <li key={p.id} className="game-detail__item">
               <span className="game-detail__position">{i + 1}</span>
               <span className="game-detail__name">{formatName(p)}</span>
@@ -250,6 +269,11 @@ function GameDetail() {
               {p.status === PLAYER_STATUS.PENALIZED && (
                 <span className="game-detail__badge game-detail__badge--penalized">
                   Penalizado
+                </span>
+              )}
+              {p.type === PLAYER_TYPE.GUEST && !isSundayGame && (
+                <span className="game-detail__badge game-detail__badge--guest">
+                  Convidado
                 </span>
               )}
             </li>
@@ -281,30 +305,32 @@ function GameDetail() {
         </ul>
       </div>
 
-      <div className="game-detail__section">
-        <h3 className="game-detail__section-title">
-          Convidados ({guests.length})
-        </h3>
-        {guests.length === 0 && (
-          <p className="game-detail__empty">Nenhum convidado inscrito.</p>
-        )}
-        <ul className="game-detail__list">
-          {guests.map((p, i) => (
-            <li key={p.id} className="game-detail__item">
-              <span className="game-detail__position">{i + 1}</span>
-              <span className="game-detail__name">{formatName(p)}</span>
-              {p.invitedBy && (
-                <span className="game-detail__invited-by">
-                  por {p.invitedBy}
+      {isSundayGame && (
+        <div className="game-detail__section">
+          <h3 className="game-detail__section-title">
+            Convidados ({guests.length})
+          </h3>
+          {guests.length === 0 && (
+            <p className="game-detail__empty">Nenhum convidado inscrito.</p>
+          )}
+          <ul className="game-detail__list">
+            {guests.map((p, i) => (
+              <li key={p.id} className="game-detail__item">
+                <span className="game-detail__position">{i + 1}</span>
+                <span className="game-detail__name">{formatName(p)}</span>
+                {p.invitedBy && (
+                  <span className="game-detail__invited-by">
+                    por {p.invitedBy}
+                  </span>
+                )}
+                <span className="game-detail__badge game-detail__badge--guest">
+                  Convidado
                 </span>
-              )}
-              <span className="game-detail__badge game-detail__badge--guest">
-                Convidado
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {teams.length > 0 && (
         <div className="game-detail__section">

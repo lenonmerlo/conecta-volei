@@ -37,6 +37,7 @@ function isAfterSaturday19ForSundayGame(game) {
 
 function JoinList({ game, onUpdate }) {
   const { user } = useAuth();
+  const isSundayGame = game?.day === "sunday";
   const [step, setStep] = useState("idle"); // idle | adding | confirm
   const [addMode, setAddMode] = useState(null); // 'member' | 'guest'
   const [searchTerm, setSearchTerm] = useState("");
@@ -253,10 +254,16 @@ function JoinList({ game, onUpdate }) {
       return;
     }
 
+    const slot = isSundayGame
+      ? "guests"
+      : mainListCount < MAX_MAIN_LIST
+        ? "main"
+        : "waitlist";
+
     const success = await joinGame(
       game.id,
       null,
-      "guests",
+      slot,
       guestName.trim(),
       user.id,
     );
