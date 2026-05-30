@@ -267,8 +267,13 @@ function JoinList({ game, onUpdate }) {
       return;
     }
 
+    const day = new Date().getDay();
+    const isGuestWindowClosed = day === 6 || day === 0;
+
     const slot = isSundayGame
-      ? "guests"
+      ? isGuestWindowClosed
+        ? "waitlist"
+        : "guests"
       : mainListCount < MAX_MAIN_LIST
         ? "main"
         : "waitlist";

@@ -156,11 +156,7 @@ function LoggedIn({ user, onLogout, onUpdateUser }) {
         <Button variant="danger" size="sm" onClick={onLogout}>
           Sair
         </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={handleStartEditing}
-        >
+        <Button variant="secondary" size="sm" onClick={handleStartEditing}>
           Editar perfil
         </Button>
       </div>
