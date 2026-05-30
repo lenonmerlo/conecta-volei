@@ -1,42 +1,46 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { VitePWA } from 'vite-plugin-pwa'
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'icons/*.png'],
+      registerType: "autoUpdate",
+      includeAssets: ["favicon.svg", "icons/*.png"],
       manifest: {
-        name: 'Conecta Vôlei',
-        short_name: 'Conecta',
-        description: 'Gerenciamento do grupo de vôlei de quadra Conecta Vôlei',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
-        display: 'standalone',
-        orientation: 'portrait',
-        scope: '/',
-        start_url: '/',
+        name: "Conecta Vôlei",
+        short_name: "Conecta",
+        description: "Gerenciamento do grupo de vôlei de quadra Conecta Vôlei",
+        theme_color: "#0f172a",
+        background_color: "#0f172a",
+        display: "standalone",
+        orientation: "portrait",
+        scope: "/",
+        start_url: "/",
         icons: [
           {
-            src: 'icons/icon-192.png',
-            sizes: '192x192',
-            type: 'image/png',
+            src: "icons/icon-192.png",
+            sizes: "192x192",
+            type: "image/png",
           },
           {
-            src: 'icons/icon-512.png',
-            sizes: '512x512',
-            type: 'image/png',
+            src: "icons/icon-512.png",
+            sizes: "512x512",
+            type: "image/png",
           },
           {
-            src: 'icons/icon-512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable',
+            src: "icons/icon-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any maskable",
           },
         ],
       },
     }),
   ],
-})
+  test: {
+    environment: "node",
+    globals: true,
+  },
+});
