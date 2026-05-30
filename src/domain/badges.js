@@ -156,6 +156,107 @@ function iconForBadge(id, size) {
       }),
       svgElement("circle", { cx: 32, cy: 32, r: 4, fill: "#DDF4FF" }),
     ]),
+    monster_block: iconFrame(size, [
+      svgElement("defs", {}, [
+        svgElement(
+          "linearGradient",
+          {
+            id: "monster-block-bg",
+            x1: "8",
+            y1: "8",
+            x2: "56",
+            y2: "56",
+            gradientUnits: "userSpaceOnUse",
+          },
+          [
+            svgElement("stop", { offset: "0", stopColor: "#2A5BFF" }),
+            svgElement("stop", { offset: "1", stopColor: "#6E39B7" }),
+          ],
+        ),
+      ]),
+      svgElement("path", {
+        d: "M32 9l17 7v13c0 12-7 20-17 25-10-5-17-13-17-25V16l17-7z",
+        fill: "url(#monster-block-bg)",
+        stroke: "#BFD5FF",
+        strokeWidth: 2,
+      }),
+      svgElement("path", {
+        d: "M24 34v-7c0-2 1-4 4-4 2 0 3 1 4 2l1-1c1-1 3-1 4 0 1 1 1 2 1 3l1-1c1-1 3-1 4 0 1 1 1 3 0 4l-5 6c-1 1-2 2-4 2h-7c-2 0-3-2-3-4z",
+        fill: "#E7F0FF",
+      }),
+      svgElement("path", {
+        d: "M23 44h18",
+        stroke: "#C8DCFF",
+        strokeWidth: 3,
+        strokeLinecap: "round",
+      }),
+    ]),
+    super_spike: iconFrame(size, [
+      svgElement("defs", {}, [
+        svgElement(
+          "linearGradient",
+          {
+            id: "super-spike-bg",
+            x1: "10",
+            y1: "10",
+            x2: "54",
+            y2: "54",
+            gradientUnits: "userSpaceOnUse",
+          },
+          [
+            svgElement("stop", { offset: "0", stopColor: "#FF5A36" }),
+            svgElement("stop", { offset: "1", stopColor: "#FFB248" }),
+          ],
+        ),
+      ]),
+      svgElement("circle", {
+        cx: 32,
+        cy: 32,
+        r: 28,
+        fill: "#31120B",
+        stroke: "#FF9A6C",
+        strokeWidth: 2,
+      }),
+      svgElement("path", {
+        d: "M33 14l-8 14h7l-3 10 12-16h-8l4-8z",
+        fill: "url(#super-spike-bg)",
+      }),
+      svgElement("circle", { cx: 44, cy: 20, r: 7, fill: "#FFE4C6" }),
+      svgElement("path", {
+        d: "M38 20h12M44 14v12",
+        stroke: "#FF8E43",
+        strokeWidth: 2,
+      }),
+    ]),
+    guardian: iconFrame(size, [
+      svgElement("defs", {}, [
+        svgElement(
+          "linearGradient",
+          {
+            id: "guardian-shield",
+            x1: "12",
+            y1: "12",
+            x2: "52",
+            y2: "52",
+            gradientUnits: "userSpaceOnUse",
+          },
+          [
+            svgElement("stop", { offset: "0", stopColor: "#2EA36D" }),
+            svgElement("stop", { offset: "1", stopColor: "#B9983D" }),
+          ],
+        ),
+      ]),
+      svgElement("path", {
+        d: "M32 10l16 6v12c0 13-7 21-16 26-9-5-16-13-16-26V16l16-6z",
+        fill: "url(#guardian-shield)",
+        stroke: "#F4E5A7",
+        strokeWidth: 2,
+      }),
+      svgElement("path", {
+        d: "M32 20l2.8 5.8 6.4.9-4.6 4.5 1.1 6.3-5.7-3-5.7 3 1.1-6.3-4.6-4.5 6.4-.9L32 20z",
+        fill: "#FFF5CD",
+      }),
+    ]),
   };
 
   return definitions[id] || iconFrame(size, [commonBg]);
@@ -237,6 +338,27 @@ export const BADGES = [
     label: "Levantador",
     description: "Levantador do time",
     condition: (stats) => stats.isSetter,
+  },
+  {
+    id: "monster_block",
+    icon: null,
+    label: "Monster Block",
+    description: "Bloqueador excepcional do grupo",
+    condition: (stats) => stats.badgeMonsterBlock,
+  },
+  {
+    id: "super_spike",
+    icon: null,
+    label: "Super Spike",
+    description: "Atacante excepcional do grupo",
+    condition: (stats) => stats.badgeSuperSpike,
+  },
+  {
+    id: "guardian",
+    icon: null,
+    label: "Guardian",
+    description: "Defensor excepcional do grupo",
+    condition: (stats) => stats.badgeGuardian,
   },
 ];
 
