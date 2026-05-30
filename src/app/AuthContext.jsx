@@ -55,6 +55,13 @@ export function AuthProvider({ children }) {
       };
     }
 
+    if (member.status === "pending") {
+      return {
+        success: false,
+        error: "Seu cadastro está aguardando aprovação de um administrador.",
+      };
+    }
+
     const acceptedRules =
       typeof member.accepted_rules === "boolean"
         ? member.accepted_rules

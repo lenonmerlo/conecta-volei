@@ -211,7 +211,7 @@ describe("supabaseService", () => {
           whatsapp: "27998887777",
           gender: "M",
           type: "member",
-          status: "active",
+          status: "pending",
           accepted_rules: true,
         },
       });
