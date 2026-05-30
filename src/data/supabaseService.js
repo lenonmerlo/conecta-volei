@@ -6,6 +6,11 @@ import { supabase } from "../lib/supabase";
 // ── Players ──────────────────────────────────────────
 
 export async function registerPlayer(player) {
+  const existingPlayer = await getPlayerByWhatsapp(player.whatsapp);
+  if (existingPlayer) {
+    return { success: false, error: "Este WhatsApp já está cadastrado." };
+  }
+
   const { data, error } = await supabase
     .from("players")
     .insert({
