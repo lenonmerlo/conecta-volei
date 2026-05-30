@@ -80,10 +80,10 @@ function normalizeGame(game) {
 function buildListsFromRegistrations(registrations, isSundayGame) {
   const list = { main: [], waitlist: [], guests: [] };
 
-  registrations.forEach((registration) => {
-    const slot = registration.slot || "main";
-    const player = registration.player;
-    const inviterName = registration.inviter?.name || null;
+  registrations.forEach((r) => {
+    const slot = r.slot || "main";
+    const player = r.player;
+    const inviterName = r.inviter?.name || null;
 
     if (player) {
       const normalizedPlayer = {
@@ -94,8 +94,8 @@ function buildListsFromRegistrations(registrations, isSundayGame) {
         type: player.type,
         gender: player.gender,
         status: player.status,
-        is_captain: Boolean(player.is_captain),
-        is_setter: Boolean(player.is_setter),
+        is_captain: Boolean(r.player?.is_captain ?? r.player?.isCaptain),
+        is_setter: Boolean(r.player?.is_setter ?? r.player?.isSetter),
         position: player.position || "all-around",
       };
 
@@ -112,10 +112,10 @@ function buildListsFromRegistrations(registrations, isSundayGame) {
       return;
     }
 
-    if (registration.guest_name) {
+    if (r.guest_name) {
       const normalizedGuest = {
-        id: registration.id,
-        name: registration.guest_name,
+        id: r.id,
+        name: r.guest_name,
         nickname: null,
         type: PLAYER_TYPE.GUEST,
         gender: null,
@@ -252,26 +252,26 @@ function GameDetail() {
           </p>
         )}
         <ul className="game-detail__list">
-          {mainListDisplay.map((p, i) => (
-            <li key={p.id} className="game-detail__item">
+          {mainListDisplay.map((player, i) => (
+            <li key={player.id} className="game-detail__item">
               <span className="game-detail__position">{i + 1}</span>
-              <span className="game-detail__name">{formatName(p)}</span>
-              {p.is_captain && (
+              <span className="game-detail__name">{formatName(player)}</span>
+              {player.is_captain && (
                 <span className="game-detail__badge game-detail__badge--captain">
                   C
                 </span>
               )}
-              {p.is_setter && (
+              {player.is_setter && (
                 <span className="game-detail__badge game-detail__badge--setter">
                   L
                 </span>
               )}
-              {p.status === PLAYER_STATUS.PENALIZED && (
+              {player.status === PLAYER_STATUS.PENALIZED && (
                 <span className="game-detail__badge game-detail__badge--penalized">
                   Penalizado
                 </span>
               )}
-              {p.type === PLAYER_TYPE.GUEST && !isSundayGame && (
+              {player.type === PLAYER_TYPE.GUEST && !isSundayGame && (
                 <span className="game-detail__badge game-detail__badge--guest">
                   Convidado
                 </span>
@@ -295,6 +295,16 @@ function GameDetail() {
             <li key={p.id} className="game-detail__item">
               <span className="game-detail__position">{i + 1}</span>
               <span className="game-detail__name">{formatName(p)}</span>
+              {p.type === PLAYER_TYPE.MEMBER && p.is_captain && (
+                <span className="game-detail__badge game-detail__badge--captain">
+                  C
+                </span>
+              )}
+              {p.type === PLAYER_TYPE.MEMBER && p.is_setter && (
+                <span className="game-detail__badge game-detail__badge--setter">
+                  L
+                </span>
+              )}
               {p.type === PLAYER_TYPE.GUEST && (
                 <span className="game-detail__badge game-detail__badge--guest">
                   Convidado
