@@ -459,7 +459,10 @@ export async function promoteFromWaitlist(gameId) {
 export async function migrateGuestsToWaitlist(gameId) {
   const { error } = await supabase
     .from("game_registrations")
-    .update({ slot: "waitlist" })
+    .update({
+      slot: "waitlist",
+      registered_at: new Date().toISOString(),
+    })
     .eq("game_id", gameId)
     .eq("slot", "guests");
 
