@@ -5,6 +5,7 @@ import { useAuth } from "../../app/AuthContext";
 import {
   getAllPlayers,
   getGameRegistrations,
+  getGuestsByInviter,
   isPlayerRegistered,
   joinGame,
   leaveGame,
@@ -46,6 +47,7 @@ function JoinList({ game, onUpdate }) {
   const [error, setError] = useState("");
   const [players, setPlayers] = useState([]);
   const [registrations, setRegistrations] = useState([]);
+  const [myGuests, setMyGuests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showLateLeaveModal, setShowLateLeaveModal] = useState(false);
@@ -55,15 +57,17 @@ function JoinList({ game, onUpdate }) {
 
     async function loadData() {
       setLoading(true);
-      const [allPlayers, allRegistrations] = await Promise.all([
+      const [allPlayers, allRegistrations, inviterGuests] = await Promise.all([
         getAllPlayers(),
         getGameRegistrations(game.id),
+        user?.id ? getGuestsByInviter(game.id, user.id) : Promise.resolve([]),
       ]);
 
       if (!active) return;
 
       setPlayers(allPlayers || []);
       setRegistrations(allRegistrations || []);
+      setMyGuests(inviterGuests || []);
       setLoading(false);
     }
 
@@ -72,11 +76,16 @@ function JoinList({ game, onUpdate }) {
     return () => {
       active = false;
     };
-  }, [game.id]);
+  }, [game.id, user?.id]);
 
   async function refreshData() {
-    const updatedRegistrations = await getGameRegistrations(game.id);
+    const [updatedRegistrations, inviterGuests] = await Promise.all([
+      getGameRegistrations(game.id),
+      user?.id ? getGuestsByInviter(game.id, user.id) : Promise.resolve([]),
+    ]);
+
     setRegistrations(updatedRegistrations || []);
+    setMyGuests(inviterGuests || []);
   }
 
   const registeredPlayerIds = useMemo(
@@ -99,17 +108,6 @@ function JoinList({ game, onUpdate }) {
 
   const alreadyIn = Boolean(user?.id && registeredPlayerIds.has(user.id));
   const userId = user?.id;
-
-  const myGuests = useMemo(
-    () =>
-      registrations.filter(
-        (registration) =>
-          registration.invited_by === userId &&
-          !registration.player_id &&
-          registration.guest_name,
-      ),
-    [registrations, userId],
-  );
 
   const myAddedMembersOnMainCount = useMemo(
     () =>
@@ -139,6 +137,21 @@ function JoinList({ game, onUpdate }) {
           m.whatsapp.includes(searchTerm),
       )
     : [];
+
+  async function handleRemoveGuest(guestId) {
+    setActionLoading(true);
+    const success = await removeGuest(guestId);
+    setActionLoading(false);
+
+    if (!success) {
+      setError("Nao foi possivel remover o convidado.");
+      return;
+    }
+
+    setError("");
+    await refreshData();
+    onUpdate();
+  }
 
   async function handleJoinSelf() {
     if (alreadyIn) {
@@ -306,20 +319,7 @@ function JoinList({ game, onUpdate }) {
                   <span>{guest.guest_name}</span>
                   <button
                     className="join-list__remove-guest"
-                    onClick={async () => {
-                      setActionLoading(true);
-                      const success = await removeGuest(guest.id);
-                      setActionLoading(false);
-
-                      if (!success) {
-                        setError("Nao foi possivel remover o convidado.");
-                        return;
-                      }
-
-                      setError("");
-                      await refreshData();
-                      onUpdate();
-                    }}
+                    onClick={() => handleRemoveGuest(guest.id)}
                   >
                     Remover
                   </button>
@@ -383,8 +383,44 @@ function JoinList({ game, onUpdate }) {
   if (!alreadyIn && step === "idle") {
     return (
       <div className="join-list">
+        {myGuests.length > 0 && (
+          <div className="join-list__my-guests">
+            <p className="join-list__info">Seus convidados:</p>
+            <ul className="join-list__results">
+              {myGuests.map((guest) => (
+                <li
+                  key={guest.id}
+                  className="join-list__result join-list__result--guest"
+                >
+                  <span>{guest.guest_name}</span>
+                  <button
+                    className="join-list__remove-guest"
+                    onClick={() => handleRemoveGuest(guest.id)}
+                  >
+                    Remover
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {error && <p className="join-list__error">{error}</p>}
-        <Button onClick={handleJoinSelf}>Entrar na lista</Button>
+        <div className="join-list__actions">
+          <Button onClick={handleJoinSelf} disabled={actionLoading}>
+            Entrar na lista
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setStep("adding");
+              setError("");
+            }}
+            disabled={actionLoading}
+          >
+            Adicionar pessoa
+          </Button>
+        </div>
       </div>
     );
   }

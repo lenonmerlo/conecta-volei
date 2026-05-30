@@ -283,7 +283,9 @@ describe("supabaseService", () => {
       const success = await leaveGame("g1", "p1");
 
       expect(success).toBe(true);
-      expect(hoisted.callLog.delete[0]).toEqual({ table: "game_registrations" });
+      expect(hoisted.callLog.delete[0]).toEqual({
+        table: "game_registrations",
+      });
     });
   });
 
