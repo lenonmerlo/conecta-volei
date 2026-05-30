@@ -86,6 +86,24 @@ export async function updatePlayerPosition(
   return !error;
 }
 
+export async function updatePlayerProfile(playerId, { nickname, whatsapp }) {
+  const normalizedWhatsapp = (whatsapp || "").trim();
+  const normalizedNickname = (nickname || "").trim() || null;
+
+  const { data, error } = await supabase
+    .from("players")
+    .update({
+      nickname: normalizedNickname,
+      whatsapp: normalizedWhatsapp,
+    })
+    .eq("id", playerId)
+    .select("*")
+    .maybeSingle();
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, player: data };
+}
+
 export async function getPlayerStats(playerId) {
   const [
     { data: presences, error: presencesError },
