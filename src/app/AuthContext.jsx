@@ -101,6 +101,26 @@ export function AuthProvider({ children }) {
     };
 
     const result = await registerPlayer(player);
+    if (!result.success) {
+      const errorText = (result.error || "").toLowerCase();
+      const isDuplicateWhatsapp =
+        errorText.includes("whatsapp") &&
+        (errorText.includes("ja esta cadastrado") ||
+          errorText.includes("already") ||
+          errorText.includes("duplicate") ||
+          errorText.includes("unique"));
+
+      if (isDuplicateWhatsapp) {
+        return {
+          success: false,
+          error:
+            "Este WhatsApp já está cadastrado. Faça login com esse número ou use outro WhatsApp para cadastro.",
+        };
+      }
+
+      return result;
+    }
+
     if (result.success) {
       setPendingRegister(null);
     }
