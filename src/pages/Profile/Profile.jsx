@@ -4,13 +4,22 @@ import { useRef, useState } from "react";
 import { useAuth } from "../../app/AuthContext";
 import Button from "../../components/Button/Button";
 import PlayerStats from "../../components/PlayerStats/PlayerStats";
-import { updatePlayerAvatar, uploadAvatar } from "../../data/supabaseService";
+import {
+  updatePlayerAvatar,
+  updatePlayerProfile,
+  uploadAvatar,
+} from "../../data/supabaseService";
 import { isAdmin, isSuperAdmin } from "../../domain/admins";
 import "./Profile.css";
 
 function LoggedIn({ user, onLogout, onUpdateUser }) {
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [nickname, setNickname] = useState(user.nickname || "");
+  const [whatsapp, setWhatsapp] = useState(user.whatsapp || "");
+  const [successMessage, setSuccessMessage] = useState("");
   const [error, setError] = useState("");
 
   const role = isSuperAdmin(user)
@@ -47,6 +56,55 @@ function LoggedIn({ user, onLogout, onUpdateUser }) {
 
     onUpdateUser({ ...user, avatar_url: uploadResult.url });
     setUploading(false);
+  }
+
+  function handleStartEditing() {
+    setNickname(user.nickname || "");
+    setWhatsapp(user.whatsapp || "");
+    setError("");
+    setSuccessMessage("");
+    setEditing(true);
+  }
+
+  function handleCancelEditing() {
+    setEditing(false);
+    setNickname(user.nickname || "");
+    setWhatsapp(user.whatsapp || "");
+    setError("");
+  }
+
+  async function handleSaveProfile() {
+    const cleanedWhatsapp = whatsapp.trim();
+    const cleanedNickname = nickname.trim();
+
+    if (!cleanedWhatsapp) {
+      setError("Informe um WhatsApp valido.");
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+
+    const result = await updatePlayerProfile(user.id, {
+      nickname: cleanedNickname,
+      whatsapp: cleanedWhatsapp,
+    });
+
+    setSaving(false);
+
+    if (!result.success) {
+      setError(result.error || "Nao foi possivel atualizar o perfil.");
+      return;
+    }
+
+    onUpdateUser({
+      ...user,
+      nickname: cleanedNickname || null,
+      whatsapp: cleanedWhatsapp,
+    });
+
+    setSuccessMessage("Perfil atualizado com sucesso.");
+    setEditing(false);
   }
 
   return (
@@ -94,13 +152,70 @@ function LoggedIn({ user, onLogout, onUpdateUser }) {
       )}
       <p className="profile__logged-info">{user.whatsapp}</p>
       <span className={`profile__logged-type ${roleClass}`}>{role}</span>
-      <Button variant="secondary" onClick={onLogout}>
-        Sair
-      </Button>
+      <div className="profile__logged-actions">
+        <Button variant="danger" size="sm" onClick={onLogout}>
+          Sair
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={handleStartEditing}
+        >
+          Editar perfil
+        </Button>
+      </div>
+
+      {editing && (
+        <div className="profile__edit-form">
+          <div className="profile__field">
+            <label htmlFor="profile-nickname">Apelido</label>
+            <input
+              id="profile-nickname"
+              type="text"
+              placeholder="Opcional"
+              value={nickname}
+              onChange={(event) => setNickname(event.target.value)}
+            />
+          </div>
+
+          <div className="profile__field">
+            <label htmlFor="profile-whatsapp">WhatsApp</label>
+            <input
+              id="profile-whatsapp"
+              type="text"
+              value={whatsapp}
+              onChange={(event) => setWhatsapp(event.target.value)}
+            />
+            <p className="profile__warning">
+              Atencao: ao alterar o WhatsApp, voce precisara usar o novo numero
+              para fazer login.
+            </p>
+          </div>
+
+          <div className="profile__actions">
+            <Button size="sm" onClick={handleSaveProfile} disabled={saving}>
+              Salvar
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleCancelEditing}
+              disabled={saving}
+            >
+              Cancelar
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div className="profile__stats">
         <PlayerStats playerId={user.id} />
       </div>
+
+      {successMessage && (
+        <p className="profile__success-text">{successMessage}</p>
+      )}
+      {error && <p className="profile__error">{error}</p>}
     </div>
   );
 }
