@@ -30,6 +30,7 @@ export const MAX_LATENESS_MINUTES = 30;
 
 export const PLAYER_STATUS = {
   ACTIVE: "active",
+  pending: "pending",
   INACTIVE: "inactive",
   PENALIZED: "penalized",
   BLOCKED: "blocked",

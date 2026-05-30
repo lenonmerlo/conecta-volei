@@ -78,6 +78,24 @@
   border: 1px solid rgba(130, 94, 255, 0.42);
 }
 
+.admin-tab__status--pending {
+  background-color: rgba(255, 179, 71, 0.22);
+  color: #ffe6bf;
+  border: 1px solid rgba(255, 179, 71, 0.48);
+}
+
+.admin-tab__info--pending {
+  align-items: flex-start;
+}
+
+.admin-tab__pending-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  color: var(--cv-muted);
+}
+
 .admin-tab__actions {
   display: flex;
   gap: 0.5rem;

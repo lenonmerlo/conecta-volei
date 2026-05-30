@@ -19,7 +19,7 @@ export async function registerPlayer(player) {
       whatsapp: player.whatsapp,
       gender: player.gender,
       type: "member",
-      status: "active",
+      status: "pending",
       accepted_rules: true,
     })
     .select()
@@ -59,6 +59,27 @@ export async function getAllPlayers() {
 
   if (error) return [];
   return data;
+}
+
+export async function getPendingPlayers() {
+  const { data, error } = await supabase
+    .from("players")
+    .select("*")
+    .eq("status", "pending")
+    .order("created_at", { ascending: true });
+
+  if (error) return [];
+  return data || [];
+}
+
+export async function deletePlayer(playerId) {
+  const { data, error } = await supabase
+    .from("players")
+    .delete()
+    .eq("id", playerId)
+    .select("id");
+
+  return !error && (data?.length || 0) > 0;
 }
 
 export async function updatePlayerStatus(playerId, status) {

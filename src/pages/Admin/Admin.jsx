@@ -1,20 +1,39 @@
 // Página do painel administrativo
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../app/AuthContext";
+import { getPendingPlayers } from "../../data/supabaseService";
 import { isSuperAdmin } from "../../domain/admins";
 import "./Admin.css";
 import AdminDraw from "./tabs/AdminDraw";
 import AdminGames from "./tabs/AdminGames";
 import AdminLevels from "./tabs/AdminLevels";
+import AdminPending from "./tabs/AdminPending";
 import AdminPlayers from "./tabs/AdminPlayers";
 import AdminPresence from "./tabs/AdminPresence";
 
 function Admin() {
   const { user } = useAuth();
   const userIsSuperAdmin = isSuperAdmin(user);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  const refreshPendingCount = useCallback(async () => {
+    const pendingPlayers = await getPendingPlayers();
+    setPendingCount(pendingPlayers.length);
+  }, []);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      refreshPendingCount();
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [refreshPendingCount]);
 
   const TABS = [
+    { key: "pending", label: `Pendentes (${pendingCount})` },
     { key: "players", label: "Jogadores" },
     { key: "games", label: "Jogos" },
     { key: "presence", label: "Presenças" },
@@ -22,7 +41,7 @@ function Admin() {
     { key: "draw", label: "Sorteio" },
   ];
 
-  const [activeTab, setActiveTab] = useState("players");
+  const [activeTab, setActiveTab] = useState("pending");
 
   return (
     <div className="admin">
@@ -43,6 +62,9 @@ function Admin() {
       </div>
 
       <div className="admin__content">
+        {activeTab === "pending" && (
+          <AdminPending onUpdatePendingCount={refreshPendingCount} />
+        )}
         {activeTab === "players" && <AdminPlayers />}
         {activeTab === "games" && <AdminGames />}
         {activeTab === "presence" && <AdminPresence />}
