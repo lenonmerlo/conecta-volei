@@ -143,6 +143,30 @@
   margin-bottom: 0.75rem;
 }
 
+.admin-tab__search-wrap {
+  margin-bottom: 0.7rem;
+}
+
+.admin-tab__search-input {
+  width: 100%;
+  background-color: rgba(16, 54, 86, 0.62);
+  border: 1px solid rgba(143, 215, 255, 0.28);
+  border-radius: 10px;
+  padding: 0.56rem 0.78rem;
+  color: var(--cv-text);
+  font-size: 0.88rem;
+  outline: none;
+}
+
+.admin-tab__search-input::placeholder {
+  color: rgba(179, 215, 238, 0.65);
+}
+
+.admin-tab__search-input:focus {
+  border-color: rgba(110, 205, 253, 0.62);
+  box-shadow: 0 0 0 2px rgba(62, 165, 232, 0.16);
+}
+
 .admin-tab__select {
   background-color: rgba(16, 54, 86, 0.58);
   border: 1px solid rgba(143, 215, 255, 0.25);
@@ -162,7 +186,7 @@
 }
 
 .admin-tab__item--level {
-  gap: 0;
+  gap: 0.7rem;
 }
 
 .admin-tab__info--level {
@@ -202,6 +226,79 @@
 
 .admin-tab__select--position {
   min-width: 130px;
+}
+
+.admin-tab__level-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+}
+
+.admin-tab__level-section {
+  border: 1px solid rgba(143, 215, 255, 0.14);
+  background: rgba(10, 35, 58, 0.42);
+  border-radius: 10px;
+  padding: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-tab__level-section--special {
+  border-color: rgba(255, 198, 102, 0.32);
+  background: linear-gradient(
+    140deg,
+    rgba(39, 30, 17, 0.58),
+    rgba(16, 39, 54, 0.52)
+  );
+}
+
+.admin-tab__section-label {
+  font-size: 0.67rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(191, 229, 255, 0.78);
+  font-weight: 700;
+}
+
+.admin-tab__check-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem 0.8rem;
+}
+
+.admin-tab__check-grid--special {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-tab__check-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  color: #d7e9f8;
+  line-height: 1;
+  min-height: 32px;
+  padding: 0.32rem 0.5rem;
+  border: 1px solid rgba(143, 215, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(8, 31, 52, 0.52);
+  transition: border-color 160ms ease, background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.admin-tab__check-label--active {
+  border-color: rgba(110, 205, 253, 0.6);
+  background: linear-gradient(
+    120deg,
+    rgba(24, 71, 107, 0.7),
+    rgba(14, 56, 88, 0.62)
+  );
+}
+
+.admin-tab__check-label input {
+  accent-color: #6ecdfd;
+  transform: scale(1.03);
 }
 
 .admin-games {
@@ -325,6 +422,15 @@
     margin-left: 0.5rem;
     padding-left: 0.5rem;
     padding-right: 0.5rem;
+  }
+
+  .admin-tab__check-grid,
+  .admin-tab__check-grid--special {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-tab__level-section {
+    padding: 0.5rem 0.55rem;
   }
 
   .admin-games__form-grid {

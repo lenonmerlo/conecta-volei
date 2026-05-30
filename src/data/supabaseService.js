@@ -54,7 +54,7 @@ export async function getPlayerById(playerId) {
 export async function getAllPlayers() {
   const { data, error } = await supabase
     .from("players")
-    .select("*")
+    .select("*, badge_monster_block, badge_super_spike, badge_guardian")
     .order("name");
 
   if (error) return [];
@@ -112,6 +112,22 @@ export async function updatePlayerPosition(
   return !error;
 }
 
+export async function updatePlayerSpecialBadges(
+  playerId,
+  { badgeMonsterBlock, badgeSuperSpike, badgeGuardian },
+) {
+  const { error } = await supabase
+    .from("players")
+    .update({
+      badge_monster_block: Boolean(badgeMonsterBlock),
+      badge_super_spike: Boolean(badgeSuperSpike),
+      badge_guardian: Boolean(badgeGuardian),
+    })
+    .eq("id", playerId);
+
+  return !error;
+}
+
 export async function updatePlayerProfile(playerId, { nickname, whatsapp }) {
   const normalizedWhatsapp = (whatsapp || "").trim();
   const normalizedNickname = (nickname || "").trim() || null;
@@ -148,7 +164,9 @@ export async function getPlayerStats(playerId) {
       .is("player_id", null),
     supabase
       .from("players")
-      .select("is_captain, is_setter")
+      .select(
+        "is_captain, is_setter, badge_monster_block, badge_super_spike, badge_guardian",
+      )
       .eq("id", playerId)
       .maybeSingle(),
     supabase
@@ -206,6 +224,9 @@ export async function getPlayerStats(playerId) {
     currentStreak,
     isCaptain: Boolean(player?.is_captain),
     isSetter: Boolean(player?.is_setter),
+    badgeMonsterBlock: player?.badge_monster_block ?? false,
+    badgeSuperSpike: player?.badge_super_spike ?? false,
+    badgeGuardian: player?.badge_guardian ?? false,
   };
 }
 
