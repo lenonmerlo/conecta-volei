@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../app/AuthContext";
-import { getPendingPlayers } from "../../data/supabaseService";
+import Button from "../../components/Button/Button";
+import { getAllPlayers } from "../../data/supabaseService";
 import { isSuperAdmin } from "../../domain/admins";
 import "./Admin.css";
 import AdminDraw from "./tabs/AdminDraw";
@@ -15,22 +16,29 @@ import AdminPresence from "./tabs/AdminPresence";
 function Admin() {
   const { user } = useAuth();
   const userIsSuperAdmin = isSuperAdmin(user);
-  const [pendingCount, setPendingCount] = useState(0);
+  const [players, setPlayers] = useState([]);
+  const [loadingPlayers, setLoadingPlayers] = useState(true);
 
-  const refreshPendingCount = useCallback(async () => {
-    const pendingPlayers = await getPendingPlayers();
-    setPendingCount(pendingPlayers.length);
+  const refreshPlayers = useCallback(async () => {
+    setLoadingPlayers(true);
+    const allPlayers = await getAllPlayers();
+    setPlayers(allPlayers || []);
+    setLoadingPlayers(false);
   }, []);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      refreshPendingCount();
+      refreshPlayers();
     }, 0);
 
     return () => {
       clearTimeout(timeoutId);
     };
-  }, [refreshPendingCount]);
+  }, [refreshPlayers]);
+
+  const pendingCount = players.filter(
+    (player) => player.status === "pending",
+  ).length;
 
   const TABS = [
     { key: "pending", label: `Pendentes (${pendingCount})` },
@@ -47,6 +55,15 @@ function Admin() {
     <div className="admin">
       <div className="admin__header">
         <h2 className="admin__title">Painel Admin</h2>
+        <Button
+          size="sm"
+          variant="secondary"
+          className="admin__refresh"
+          onClick={refreshPlayers}
+          disabled={loadingPlayers}
+        >
+          {loadingPlayers ? "Atualizando..." : "Atualizar"}
+        </Button>
       </div>
 
       <div className="admin__tabs">
@@ -63,12 +80,28 @@ function Admin() {
 
       <div className="admin__content">
         {activeTab === "pending" && (
-          <AdminPending onUpdatePendingCount={refreshPendingCount} />
+          <AdminPending
+            players={players}
+            loadingPlayers={loadingPlayers}
+            onRefreshPlayers={refreshPlayers}
+          />
         )}
-        {activeTab === "players" && <AdminPlayers />}
+        {activeTab === "players" && (
+          <AdminPlayers
+            players={players}
+            loadingPlayers={loadingPlayers}
+            onRefreshPlayers={refreshPlayers}
+          />
+        )}
         {activeTab === "games" && <AdminGames />}
         {activeTab === "presence" && <AdminPresence />}
-        {activeTab === "levels" && userIsSuperAdmin && <AdminLevels />}
+        {activeTab === "levels" && userIsSuperAdmin && (
+          <AdminLevels
+            players={players}
+            loadingPlayers={loadingPlayers}
+            onRefreshPlayers={refreshPlayers}
+          />
+        )}
         {activeTab === "draw" && <AdminDraw />}
       </div>
     </div>

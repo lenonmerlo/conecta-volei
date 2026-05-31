@@ -61,6 +61,18 @@ export async function getAllPlayers() {
   return data;
 }
 
+export async function getPublicPlayers() {
+  const { data, error } = await supabase
+    .from("players")
+    .select(
+      "id, name, nickname, gender, status, avatar_url, is_captain, is_setter, badge_monster_block, badge_super_spike, badge_guardian",
+    )
+    .order("name");
+
+  if (error) return [];
+  return data || [];
+}
+
 export async function getPendingPlayers() {
   const { data, error } = await supabase
     .from("players")
@@ -418,6 +430,23 @@ export async function getGameRegistrations(gameId) {
     return [];
   }
   return data;
+}
+
+export async function getRegistrationCountsByGame() {
+  const { data, error } = await supabase
+    .from("game_registrations")
+    .select("game_id, slot")
+    .eq("slot", "main");
+
+  if (error) return {};
+
+  return (data || []).reduce((acc, row) => {
+    const gameId = row.game_id;
+    if (!gameId) return acc;
+
+    acc[gameId] = (acc[gameId] || 0) + 1;
+    return acc;
+  }, {});
 }
 
 export async function joinGame(

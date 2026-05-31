@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import GameCard from "../../components/GameCard/GameCard";
 import {
-  getGameRegistrations,
   getGames,
+  getRegistrationCountsByGame,
   updateGameDates,
 } from "../../data/supabaseService";
 import { supabase } from "../../lib/supabase";
@@ -104,21 +104,18 @@ function Home() {
   const fetchGames = useCallback(async () => {
     setLoading(true);
     await updateGameDates();
-    const data = await getGames();
+    const [data, registrationCounts] = await Promise.all([
+      getGames(),
+      getRegistrationCountsByGame(),
+    ]);
 
     const normalizedGames = (data || [])
       .map(normalizeGame)
       .filter(isGameVisible);
-    const gamesWithCounts = await Promise.all(
-      normalizedGames.map(async (game) => {
-        const registrations = await getGameRegistrations(game.id);
-        const registeredCount = (registrations || []).filter(
-          (registration) => (registration.slot || "main") === "main",
-        ).length;
-
-        return { ...game, registeredCount };
-      }),
-    );
+    const gamesWithCounts = normalizedGames.map((game) => ({
+      ...game,
+      registeredCount: registrationCounts?.[game.id] || 0,
+    }));
 
     setGames(gamesWithCounts);
     setLoading(false);

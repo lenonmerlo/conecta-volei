@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import Button from "../../../components/Button/Button";
 import {
   deletePlayer,
-  getAllPlayers,
   updatePlayerStatus,
 } from "../../../data/supabaseService";
 import "./AdminTabs.css";
@@ -22,47 +21,13 @@ function formatDate(value) {
   });
 }
 
-function AdminPending({ onUpdatePendingCount }) {
-  const [players, setPlayers] = useState([]);
-  const [loading, setLoading] = useState(true);
+function AdminPending({ players, loadingPlayers, onRefreshPlayers }) {
   const [error, setError] = useState("");
 
-  async function fetchPending() {
-    setLoading(true);
-    setError("");
-
-    const allPlayers = await getAllPlayers();
-    const data = (allPlayers || []).filter(
-      (player) => player.status === "pending",
-    );
-
-    setPlayers(data || []);
-    setLoading(false);
-  }
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadPendingPlayers() {
-      setLoading(true);
-      setError("");
-
-      const allPlayers = await getAllPlayers();
-      const data = (allPlayers || []).filter(
-        (player) => player.status === "pending",
-      );
-      if (!active) return;
-
-      setPlayers(data || []);
-      setLoading(false);
-    }
-
-    loadPendingPlayers();
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  const pendingPlayers = useMemo(
+    () => (players || []).filter((player) => player.status === "pending"),
+    [players],
+  );
 
   async function approvePlayer(playerId) {
     const success = await updatePlayerStatus(playerId, "active");
@@ -72,14 +37,11 @@ function AdminPending({ onUpdatePendingCount }) {
     }
 
     setError("");
-    setPlayers((prev) => prev.filter((player) => player.id !== playerId));
-    onUpdatePendingCount();
+    await onRefreshPlayers();
   }
 
   async function rejectPlayer(playerId) {
-    console.log("[AdminPending] rejectPlayer chamado", { playerId });
     const success = await deletePlayer(playerId);
-    console.log("[AdminPending] deletePlayer resultado", { playerId, success });
 
     if (!success) {
       setError("Nao foi possivel recusar o cadastro.");
@@ -87,11 +49,10 @@ function AdminPending({ onUpdatePendingCount }) {
     }
 
     setError("");
-    await fetchPending();
-    onUpdatePendingCount();
+    await onRefreshPlayers();
   }
 
-  if (loading) {
+  if (loadingPlayers) {
     return (
       <div className="admin-tab">
         <p className="admin-tab__restricted">Carregando pendentes...</p>
@@ -103,12 +64,12 @@ function AdminPending({ onUpdatePendingCount }) {
     <div className="admin-tab">
       {error && <p className="admin-tab__restricted">{error}</p>}
 
-      {players.length === 0 && (
+      {pendingPlayers.length === 0 && (
         <p className="admin-tab__restricted">Nenhum cadastro pendente.</p>
       )}
 
       <ul className="admin-tab__list">
-        {players.map((player) => (
+        {pendingPlayers.map((player) => (
           <li key={player.id} className="admin-tab__item">
             <div className="admin-tab__info admin-tab__info--pending">
               <span className="admin-tab__name">

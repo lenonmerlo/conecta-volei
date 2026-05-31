@@ -1,11 +1,8 @@
 // Aba de jogadores do painel admin
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Button from "../../../components/Button/Button";
-import {
-  getAllPlayers,
-  updatePlayerStatus,
-} from "../../../data/supabaseService";
+import { updatePlayerStatus } from "../../../data/supabaseService";
 import { PLAYER_STATUS, PLAYER_TYPE } from "../../../domain/constants";
 import "./AdminTabs.css";
 
@@ -19,31 +16,8 @@ function statusLabel(status) {
   return map[status] || status;
 }
 
-function AdminPlayers() {
-  const [players, setPlayers] = useState([]);
-  const [loading, setLoading] = useState(true);
+function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadPlayers() {
-      setLoading(true);
-      setError("");
-
-      const data = await getAllPlayers();
-      if (!active) return;
-
-      setPlayers(data || []);
-      setLoading(false);
-    }
-
-    loadPlayers();
-
-    return () => {
-      active = false;
-    };
-  }, []);
 
   async function togglePenalized(id) {
     const current = players.find((player) => player.id === id);
@@ -61,11 +35,7 @@ function AdminPlayers() {
     }
 
     setError("");
-    setPlayers((prev) =>
-      prev.map((player) =>
-        player.id === id ? { ...player, status: nextStatus } : player,
-      ),
-    );
+    await onRefreshPlayers();
   }
 
   async function toggleBlocked(id) {
@@ -84,14 +54,10 @@ function AdminPlayers() {
     }
 
     setError("");
-    setPlayers((prev) =>
-      prev.map((player) =>
-        player.id === id ? { ...player, status: nextStatus } : player,
-      ),
-    );
+    await onRefreshPlayers();
   }
 
-  if (loading) {
+  if (loadingPlayers) {
     return (
       <div className="admin-tab">
         <p className="admin-tab__restricted">Carregando jogadores...</p>
