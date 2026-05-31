@@ -241,7 +241,9 @@ function AdminLevels() {
               </div>
 
               <div className="admin-tab__level-section admin-tab__level-section--special">
-                <span className="admin-tab__section-label">Badges Especiais</span>
+                <span className="admin-tab__section-label">
+                  Badges Especiais
+                </span>
                 <div className="admin-tab__check-grid admin-tab__check-grid--special">
                   <label
                     className={`admin-tab__check-label${
@@ -266,7 +268,9 @@ function AdminLevels() {
 
                   <label
                     className={`admin-tab__check-label${
-                      p.badge_super_spike ? " admin-tab__check-label--active" : ""
+                      p.badge_super_spike
+                        ? " admin-tab__check-label--active"
+                        : ""
                     }`}
                   >
                     <input

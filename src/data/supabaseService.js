@@ -439,19 +439,12 @@ export async function joinGame(
 }
 
 export async function leaveGame(gameId, playerId) {
-  const { data: removedPlayerRows, error: playerError } = await supabase
+  const { error: playerError } = await supabase
     .from("game_registrations")
     .delete()
     .eq("game_id", gameId)
     .eq("player_id", playerId)
     .select("id, slot");
-
-  console.log("[leaveGame] delete results", {
-    gameId,
-    playerId,
-    removedPlayerRows: removedPlayerRows || [],
-    playerError,
-  });
 
   if (playerError) {
     console.error("[leaveGame] delete failed, skipping promotion", {
@@ -461,16 +454,6 @@ export async function leaveGame(gameId, playerId) {
     });
     return false;
   }
-
-  const removedMainCount = (removedPlayerRows || []).filter(
-    (row) => (row.slot || "main") === "main",
-  ).length;
-
-  console.log("[leaveGame] removed main slots", {
-    gameId,
-    playerId,
-    removedMainCount,
-  });
 
   // Verifica quantos estao na lista principal agora
   const { count } = await supabase
@@ -499,24 +482,12 @@ export async function promoteFromWaitlist(gameId) {
     .limit(1)
     .maybeSingle();
 
-  console.log("[promoteFromWaitlist] waitlist lookup", {
-    gameId,
-    firstWaitlist,
-    selectError,
-  });
-
   if (selectError || !firstWaitlist?.id) return false;
 
   const { error: updateError } = await supabase
     .from("game_registrations")
     .update({ slot: "main" })
     .eq("id", firstWaitlist.id);
-
-  console.log("[promoteFromWaitlist] update to main", {
-    gameId,
-    promotedRegistrationId: firstWaitlist.id,
-    updateError,
-  });
 
   return !updateError;
 }

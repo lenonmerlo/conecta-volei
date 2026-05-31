@@ -97,6 +97,7 @@ function Athletes() {
                   src={p.avatar_url}
                   alt={p.name}
                   className="athletes__avatar-img"
+                  loading="lazy"
                 />
               ) : (
                 <span>{p.name.charAt(0).toUpperCase()}</span>

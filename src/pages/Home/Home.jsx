@@ -1,6 +1,6 @@
 // Página inicial — exibe os jogos da semana
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import GameCard from "../../components/GameCard/GameCard";
 import {
   getGameRegistrations,
@@ -99,6 +99,7 @@ function isGameVisible(game) {
 function Home() {
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
+  const realtimeDebounceRef = useRef(null);
 
   const fetchGames = useCallback(async () => {
     setLoading(true);
@@ -134,6 +135,16 @@ function Home() {
   }, [fetchGames]);
 
   useEffect(() => {
+    function scheduleRealtimeRefresh() {
+      if (realtimeDebounceRef.current) {
+        clearTimeout(realtimeDebounceRef.current);
+      }
+
+      realtimeDebounceRef.current = setTimeout(() => {
+        fetchGames();
+      }, 300);
+    }
+
     const channel = supabase
       .channel("home-game-registrations")
       .on(
@@ -143,7 +154,7 @@ function Home() {
           schema: "public",
           table: "game_registrations",
         },
-        () => fetchGames(),
+        scheduleRealtimeRefresh,
       )
       .on(
         "postgres_changes",
@@ -152,11 +163,14 @@ function Home() {
           schema: "public",
           table: "game_registrations",
         },
-        () => fetchGames(),
+        scheduleRealtimeRefresh,
       )
       .subscribe();
 
     return () => {
+      if (realtimeDebounceRef.current) {
+        clearTimeout(realtimeDebounceRef.current);
+      }
       supabase.removeChannel(channel);
     };
   }, [fetchGames]);

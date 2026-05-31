@@ -47,7 +47,7 @@ function PlayerMiniCard({ player, onClick, clickable = false }) {
       <div className="scrapbook__player scrapbook__player--static">
         <span className="scrapbook__avatar" aria-hidden="true">
           {player?.avatar_url ? (
-            <img src={player.avatar_url} alt={label} />
+            <img src={player.avatar_url} alt={label} loading="lazy" />
           ) : (
             <span>{(player?.name || "?").charAt(0).toUpperCase()}</span>
           )}
@@ -65,7 +65,7 @@ function PlayerMiniCard({ player, onClick, clickable = false }) {
     >
       <span className="scrapbook__avatar" aria-hidden="true">
         {player?.avatar_url ? (
-          <img src={player.avatar_url} alt={label} />
+          <img src={player.avatar_url} alt={label} loading="lazy" />
         ) : (
           <span>{(player?.name || "?").charAt(0).toUpperCase()}</span>
         )}
