@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAllPlayers } from "../../data/supabaseService";
+import { getPublicPlayers } from "../../data/supabaseService";
 import { PLAYER_STATUS } from "../../domain/constants";
 import "./Athletes.css";
 
@@ -43,7 +43,7 @@ function Athletes() {
 
   useEffect(() => {
     async function fetchPlayers() {
-      const data = await getAllPlayers();
+      const data = await getPublicPlayers();
       setPlayers(data || []);
       setLoading(false);
     }

@@ -1,8 +1,7 @@
 // Aba de níveis técnicos — exclusivo para super admin
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
-  getAllPlayers,
   updatePlayerLevel,
   updatePlayerPosition,
   updatePlayerSpecialBadges,
@@ -12,9 +11,7 @@ import "./AdminTabs.css";
 
 const POSITION_OPTIONS = ["all-around", "attacker", "setter", "libero"];
 
-function AdminLevels() {
-  const [players, setPlayers] = useState([]);
-  const [loading, setLoading] = useState(true);
+function AdminLevels({ players, loadingPlayers, onRefreshPlayers }) {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
 
@@ -26,25 +23,6 @@ function AdminLevels() {
       .trim();
   }
 
-  useEffect(() => {
-    let active = true;
-
-    async function loadPlayers() {
-      setLoading(true);
-      setError("");
-      const data = await getAllPlayers();
-      if (!active) return;
-      setPlayers(data || []);
-      setLoading(false);
-    }
-
-    loadPlayers();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
   async function updateLevel(id, level) {
     const parsedLevel = parseFloat(level);
     const success = await updatePlayerLevel(id, parsedLevel);
@@ -55,9 +33,7 @@ function AdminLevels() {
     }
 
     setError("");
-    setPlayers((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, skill_level: parsedLevel } : p)),
-    );
+    await onRefreshPlayers();
   }
 
   async function updatePosition(id, nextValues) {
@@ -69,9 +45,7 @@ function AdminLevels() {
     }
 
     setError("");
-    setPlayers((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...nextValues } : p)),
-    );
+    await onRefreshPlayers();
   }
 
   function handleCaptainChange(player, checked) {
@@ -107,18 +81,7 @@ function AdminLevels() {
     }
 
     setError("");
-    setPlayers((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? {
-              ...p,
-              badge_monster_block: Boolean(nextValues.badgeMonsterBlock),
-              badge_super_spike: Boolean(nextValues.badgeSuperSpike),
-              badge_guardian: Boolean(nextValues.badgeGuardian),
-            }
-          : p,
-      ),
-    );
+    await onRefreshPlayers();
   }
 
   function handleSpecialBadgeChange(player, field, checked) {
@@ -136,7 +99,7 @@ function AdminLevels() {
     });
   }
 
-  if (loading) {
+  if (loadingPlayers) {
     return (
       <div className="admin-tab">
         <p className="admin-tab__restricted">Carregando niveis...</p>
