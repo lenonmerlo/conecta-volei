@@ -271,6 +271,11 @@ function GameDetail() {
                   Penalizado
                 </span>
               )}
+              {player.type === PLAYER_TYPE.GUEST && player.invitedBy && (
+                <span className="game-detail__invited-by">
+                  por {player.invitedBy}
+                </span>
+              )}
               {player.type === PLAYER_TYPE.GUEST && !isSundayGame && (
                 <span className="game-detail__badge game-detail__badge--guest">
                   Convidado
@@ -303,6 +308,11 @@ function GameDetail() {
               {p.type === PLAYER_TYPE.MEMBER && p.is_setter && (
                 <span className="game-detail__badge game-detail__badge--setter">
                   L
+                </span>
+              )}
+              {p.type === PLAYER_TYPE.GUEST && p.invitedBy && (
+                <span className="game-detail__invited-by">
+                  por {p.invitedBy}
                 </span>
               )}
               {p.type === PLAYER_TYPE.GUEST && (
