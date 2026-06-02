@@ -158,6 +158,38 @@ export async function updatePlayerProfile(playerId, { nickname, whatsapp }) {
   return { success: true, player: data };
 }
 
+export async function registerGuest(name, gender, invitedById) {
+  const guestName = (name || "").trim();
+  if (!guestName) {
+    return { success: false, error: "Nome do convidado é obrigatório." };
+  }
+
+  const { data, error } = await supabase
+    .from("guests")
+    .insert({
+      name: guestName,
+      gender,
+      skill_level: 3,
+      invited_by: invitedById,
+    })
+    .select("*")
+    .single();
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, guest: data };
+}
+
+export async function updateGuestLevel(guestId, level) {
+  const skillLevel = Number(level);
+
+  const { error } = await supabase
+    .from("guests")
+    .update({ skill_level: skillLevel })
+    .eq("id", guestId);
+
+  return !error;
+}
+
 export async function getPlayerStats(playerId) {
   const [
     { data: presences, error: presencesError },
@@ -420,7 +452,7 @@ export async function getGameRegistrations(gameId) {
   const { data, error } = await supabase
     .from("game_registrations")
     .select(
-      "*, player:players!game_registrations_player_id_fkey(*), inviter:players!game_registrations_invited_by_fkey(id, name, nickname)",
+      "*, player:players!game_registrations_player_id_fkey(*), inviter:players!game_registrations_invited_by_fkey(id, name, nickname), guest:guests!game_registrations_guest_id_fkey(id, name, gender, skill_level, invited_by)",
     )
     .eq("game_id", gameId)
     .order("registered_at");
@@ -455,11 +487,13 @@ export async function joinGame(
   slot,
   guestName = null,
   invitedBy = null,
+  guestId = null,
 ) {
   const { error } = await supabase.from("game_registrations").insert({
     game_id: gameId,
     player_id: playerId || null,
-    guest_name: guestName || null,
+    guest_name: guestId ? null : guestName || null,
+    guest_id: guestId || null,
     invited_by: invitedBy || null,
     slot,
   });
@@ -552,6 +586,21 @@ export async function getGuestsByInviter(gameId, inviterId) {
     .eq("game_id", gameId)
     .eq("invited_by", inviterId)
     .is("player_id", null)
+    .order("registered_at");
+
+  if (error) return [];
+  return data || [];
+}
+
+export async function getGuestsByInviterFromTable(gameId, invitedById) {
+  const { data, error } = await supabase
+    .from("game_registrations")
+    .select(
+      "id, guest_id, guest:guests!game_registrations_guest_id_fkey(id, name, gender, skill_level, invited_by)",
+    )
+    .eq("game_id", gameId)
+    .not("guest_id", "is", null)
+    .eq("guest.invited_by", invitedById)
     .order("registered_at");
 
   if (error) return [];

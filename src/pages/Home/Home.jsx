@@ -5,7 +5,6 @@ import GameCard from "../../components/GameCard/GameCard";
 import {
   getGames,
   getRegistrationCountsByGame,
-  updateGameDates,
 } from "../../data/supabaseService";
 import { supabase } from "../../lib/supabase";
 import "./Home.css";
@@ -103,7 +102,6 @@ function Home() {
 
   const fetchGames = useCallback(async () => {
     setLoading(true);
-    await updateGameDates();
     const [data, registrationCounts] = await Promise.all([
       getGames(),
       getRegistrationCountsByGame(),

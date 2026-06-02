@@ -41,6 +41,21 @@ function normalizePlayer(player) {
   };
 }
 
+function normalizeGuest(guest) {
+  return {
+    id: `guest-${guest.id}`,
+    name: guest.name,
+    nickname: null,
+    gender: guest.gender || null,
+    skillLevel: Number(guest.skill_level ?? 3),
+    is_captain: false,
+    is_setter: false,
+    position: "all-around",
+    status: "active",
+    type: "guest",
+  };
+}
+
 function normalizeGame(game) {
   return {
     id: game.id,
@@ -145,9 +160,14 @@ function AdminDraw() {
 
       const mainPlayers = (registrations || [])
         .filter((registration) => registration.slot === "main")
-        .map((registration) => registration.player)
-        .filter(Boolean)
-        .map(normalizePlayer);
+        .map((registration) => {
+          if (registration.player) return normalizePlayer(registration.player);
+          if (registration.guest_id && registration.guest) {
+            return normalizeGuest(registration.guest);
+          }
+          return null;
+        })
+        .filter(Boolean);
 
       setPlayers(mainPlayers);
       setTeams(null);

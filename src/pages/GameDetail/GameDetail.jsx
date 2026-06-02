@@ -112,14 +112,37 @@ function buildListsFromRegistrations(registrations, isSundayGame) {
       return;
     }
 
+    if (r.guest_id && r.guest) {
+      const normalizedGuest = {
+        id: `guest-${r.guest.id}`,
+        name: r.guest.name,
+        nickname: null,
+        type: PLAYER_TYPE.GUEST,
+        gender: r.guest.gender || null,
+        status: PLAYER_STATUS.ACTIVE,
+        skill_level: Number(r.guest.skill_level ?? 3),
+        invitedBy: inviterName,
+      };
+
+      if (isSundayGame && slot === "guests") {
+        list.guests.push(normalizedGuest);
+      } else if (slot === "waitlist") {
+        list.waitlist.push(normalizedGuest);
+      } else {
+        list.main.push(normalizedGuest);
+      }
+      return;
+    }
+
     if (r.guest_name) {
       const normalizedGuest = {
-        id: r.id,
+        id: `guest-legacy-${r.id}`,
         name: r.guest_name,
         nickname: null,
         type: PLAYER_TYPE.GUEST,
         gender: null,
         status: PLAYER_STATUS.ACTIVE,
+        skill_level: 3,
         invitedBy: inviterName,
       };
 

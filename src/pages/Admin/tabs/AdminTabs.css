@@ -303,6 +303,18 @@
   transform: scale(1.03);
 }
 
+.admin-tab__guest-levels {
+  margin-top: 0.8rem;
+  border-top: 1px solid rgba(143, 215, 255, 0.2);
+  padding-top: 0.75rem;
+}
+
+.admin-tab__guest-levels-title {
+  font-size: 0.95rem;
+  margin-bottom: 0.55rem;
+  color: #e4f1fb;
+}
+
 .admin-games {
   gap: 0.9rem;
 }
