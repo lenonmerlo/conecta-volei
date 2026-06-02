@@ -42,7 +42,8 @@
 }
 
 .join-list__search input,
-.join-list__guest input {
+.join-list__guest input,
+.join-list__guest select {
   min-height: 44px;
   background-color: color-mix(in srgb, var(--cv-surface) 72%, black);
   border: 1px solid color-mix(in srgb, var(--cv-border) 72%, white);
@@ -57,7 +58,8 @@
 }
 
 .join-list__search input:focus,
-.join-list__guest input:focus {
+.join-list__guest input:focus,
+.join-list__guest select:focus {
   border-color: var(--cv-primary);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--cv-primary) 18%, transparent);
 }

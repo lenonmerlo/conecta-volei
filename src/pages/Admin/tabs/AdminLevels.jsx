@@ -1,7 +1,10 @@
 // Aba de níveis técnicos — exclusivo para super admin
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  getGameRegistrations,
+  getGames,
+  updateGuestLevel,
   updatePlayerLevel,
   updatePlayerPosition,
   updatePlayerSpecialBadges,
@@ -14,6 +17,10 @@ const POSITION_OPTIONS = ["all-around", "attacker", "setter", "libero"];
 function AdminLevels({ players, loadingPlayers, onRefreshPlayers }) {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  const [games, setGames] = useState([]);
+  const [selectedGameId, setSelectedGameId] = useState("");
+  const [gameGuests, setGameGuests] = useState([]);
+  const [loadingGuests, setLoadingGuests] = useState(true);
 
   function normalizeSearch(value) {
     return (value || "")
@@ -22,6 +29,68 @@ function AdminLevels({ players, loadingPlayers, onRefreshPlayers }) {
       .replace(/[\u0300-\u036f]/g, "")
       .trim();
   }
+
+  useEffect(() => {
+    let active = true;
+
+    const timeoutId = setTimeout(async () => {
+      const data = await getGames();
+      if (!active) return;
+
+      const normalizedGames = (data || []).map((game) => ({
+        id: game.id,
+        date: game.date,
+        time: game.time,
+      }));
+
+      setGames(normalizedGames);
+      setSelectedGameId((prev) => prev || normalizedGames[0]?.id || "");
+    }, 0);
+
+    return () => {
+      active = false;
+      clearTimeout(timeoutId);
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const timeoutId = setTimeout(async () => {
+      if (!selectedGameId) {
+        if (!active) return;
+        setGameGuests([]);
+        setLoadingGuests(false);
+        return;
+      }
+
+      setLoadingGuests(true);
+      const registrations = await getGameRegistrations(selectedGameId);
+      if (!active) return;
+
+      const guests = (registrations || [])
+        .filter((registration) => registration.guest_id && registration.guest)
+        .map((registration) => ({
+          registrationId: registration.id,
+          guestId: registration.guest.id,
+          name: registration.guest.name,
+          gender: registration.guest.gender,
+          slot: registration.slot || "main",
+          skillLevel: Number(registration.guest.skill_level ?? 3),
+        }))
+        .filter(
+          (guest, index, list) =>
+            list.findIndex((item) => item.guestId === guest.guestId) === index,
+        );
+
+      setGameGuests(guests);
+      setLoadingGuests(false);
+    }, 0);
+
+    return () => {
+      active = false;
+      clearTimeout(timeoutId);
+    };
+  }, [selectedGameId]);
 
   async function updateLevel(id, level) {
     const parsedLevel = parseFloat(level);
@@ -97,6 +166,25 @@ function AdminLevels({ players, loadingPlayers, onRefreshPlayers }) {
       badgeGuardian:
         field === "badgeGuardian" ? checked : Boolean(player.badge_guardian),
     });
+  }
+
+  async function handleGuestLevelChange(guestId, level) {
+    const parsedLevel = parseFloat(level);
+    const success = await updateGuestLevel(guestId, parsedLevel);
+
+    if (!success) {
+      setError("Nao foi possivel atualizar o nivel do convidado.");
+      return;
+    }
+
+    setError("");
+    setGameGuests((prev) =>
+      prev.map((guest) =>
+        guest.guestId === guestId
+          ? { ...guest, skillLevel: parsedLevel }
+          : guest,
+      ),
+    );
   }
 
   if (loadingPlayers) {
@@ -274,6 +362,60 @@ function AdminLevels({ players, loadingPlayers, onRefreshPlayers }) {
           </li>
         ))}
       </ul>
+
+      <div className="admin-tab__guest-levels">
+        <h3 className="admin-tab__guest-levels-title">Convidados por jogo</h3>
+
+        <div className="admin-tab__select-wrap">
+          <select
+            className="admin-tab__select"
+            value={selectedGameId}
+            onChange={(e) => setSelectedGameId(e.target.value)}
+          >
+            {games.map((game) => (
+              <option key={game.id} value={game.id}>
+                {game.date} - {game.time}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {loadingGuests && (
+          <p className="admin-tab__restricted">Carregando convidados...</p>
+        )}
+
+        {!loadingGuests && gameGuests.length === 0 && (
+          <p className="admin-tab__restricted">Nenhum convidado inscrito.</p>
+        )}
+
+        {!loadingGuests && gameGuests.length > 0 && (
+          <ul className="admin-tab__list">
+            {gameGuests.map((guest) => (
+              <li key={guest.guestId} className="admin-tab__item">
+                <div className="admin-tab__info admin-tab__info--level">
+                  <span className="admin-tab__name">
+                    {guest.name} ({guest.gender || "N/A"})
+                  </span>
+                  <span className="admin-tab__type">Slot: {guest.slot}</span>
+                  <select
+                    className="admin-tab__select admin-tab__select--level"
+                    value={guest.skillLevel}
+                    onChange={(e) =>
+                      handleGuestLevelChange(guest.guestId, e.target.value)
+                    }
+                  >
+                    {SKILL_LEVELS.map((level) => (
+                      <option key={level} value={level}>
+                        {level}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

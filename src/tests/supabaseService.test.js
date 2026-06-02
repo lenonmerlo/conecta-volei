@@ -252,6 +252,7 @@ describe("supabaseService", () => {
           game_id: "g1",
           player_id: "p1",
           guest_name: null,
+          guest_id: null,
           invited_by: null,
           slot: "main",
         },

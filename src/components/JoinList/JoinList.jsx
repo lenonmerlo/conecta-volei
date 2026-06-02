@@ -5,10 +5,11 @@ import { useAuth } from "../../app/AuthContext";
 import {
   getAllPlayers,
   getGameRegistrations,
-  getGuestsByInviter,
+  getGuestsByInviterFromTable,
   isPlayerRegistered,
   joinGame,
   leaveGame,
+  registerGuest,
   removeGuest,
 } from "../../data/supabaseService";
 import { PLAYER_TYPE } from "../../domain/constants";
@@ -19,7 +20,7 @@ const MAX_MAIN_LIST = 21;
 
 function getRegistrationSlot(registration) {
   if (registration.slot) return registration.slot;
-  if (registration.guest_name) return "guests";
+  if (registration.guest_name || registration.guest_id) return "guests";
   return "main";
 }
 
@@ -44,6 +45,7 @@ function JoinList({ game, onUpdate }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMember, setSelectedMember] = useState(null);
   const [guestName, setGuestName] = useState("");
+  const [guestGender, setGuestGender] = useState("M");
   const [error, setError] = useState("");
   const [players, setPlayers] = useState([]);
   const [registrations, setRegistrations] = useState([]);
@@ -60,7 +62,9 @@ function JoinList({ game, onUpdate }) {
       const [allPlayers, allRegistrations, inviterGuests] = await Promise.all([
         getAllPlayers(),
         getGameRegistrations(game.id),
-        user?.id ? getGuestsByInviter(game.id, user.id) : Promise.resolve([]),
+        user?.id
+          ? getGuestsByInviterFromTable(game.id, user.id)
+          : Promise.resolve([]),
       ]);
 
       if (!active) return;
@@ -81,7 +85,9 @@ function JoinList({ game, onUpdate }) {
   async function refreshData() {
     const [updatedRegistrations, inviterGuests] = await Promise.all([
       getGameRegistrations(game.id),
-      user?.id ? getGuestsByInviter(game.id, user.id) : Promise.resolve([]),
+      user?.id
+        ? getGuestsByInviterFromTable(game.id, user.id)
+        : Promise.resolve([]),
     ]);
 
     setRegistrations(updatedRegistrations || []);
@@ -197,6 +203,7 @@ function JoinList({ game, onUpdate }) {
     setAddMode(null);
     setSelectedMember(null);
     setGuestName("");
+    setGuestGender("M");
     setError("");
     await refreshData();
     onUpdate();
@@ -258,8 +265,9 @@ function JoinList({ game, onUpdate }) {
 
     const guestAlreadyIn = registrations.some(
       (registration) =>
-        (registration.guest_name || "").trim().toLowerCase() ===
-        guestName.trim().toLowerCase(),
+        (registration.guest?.name || registration.guest_name || "")
+          .trim()
+          .toLowerCase() === guestName.trim().toLowerCase(),
     );
 
     if (guestAlreadyIn) {
@@ -278,12 +286,23 @@ function JoinList({ game, onUpdate }) {
         ? "main"
         : "waitlist";
 
+    const guestResult = await registerGuest(
+      guestName.trim(),
+      guestGender,
+      user.id,
+    );
+    if (!guestResult.success || !guestResult.guest?.id) {
+      setError(guestResult.error || "Nao foi possivel cadastrar o convidado.");
+      return;
+    }
+
     const success = await joinGame(
       game.id,
       null,
       slot,
-      guestName.trim(),
+      null,
       user.id,
+      guestResult.guest.id,
     );
 
     if (!success) {
@@ -294,6 +313,7 @@ function JoinList({ game, onUpdate }) {
     setStep("idle");
     setAddMode(null);
     setGuestName("");
+    setGuestGender("M");
     setError("");
     await refreshData();
     onUpdate();
@@ -321,7 +341,7 @@ function JoinList({ game, onUpdate }) {
                   key={guest.id}
                   className="join-list__result join-list__result--guest"
                 >
-                  <span>{guest.guest_name}</span>
+                  <span>{guest.guest?.name || guest.guest_name}</span>
                   <button
                     className="join-list__remove-guest"
                     onClick={() => handleRemoveGuest(guest.id)}
@@ -397,7 +417,7 @@ function JoinList({ game, onUpdate }) {
                   key={guest.id}
                   className="join-list__result join-list__result--guest"
                 >
-                  <span>{guest.guest_name}</span>
+                  <span>{guest.guest?.name || guest.guest_name}</span>
                   <button
                     className="join-list__remove-guest"
                     onClick={() => handleRemoveGuest(guest.id)}
@@ -502,6 +522,13 @@ function JoinList({ game, onUpdate }) {
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
             />
+            <select
+              value={guestGender}
+              onChange={(e) => setGuestGender(e.target.value)}
+            >
+              <option value="M">Masculino</option>
+              <option value="F">Feminino</option>
+            </select>
             <div className="join-list__actions">
               <Button onClick={handleAddGuest}>Confirmar</Button>
               <Button
@@ -509,6 +536,7 @@ function JoinList({ game, onUpdate }) {
                 onClick={() => {
                   setAddMode(null);
                   setGuestName("");
+                  setGuestGender("M");
                 }}
               >
                 Voltar
