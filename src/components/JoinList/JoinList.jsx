@@ -37,6 +37,20 @@ function isAfterSaturday19ForSundayGame(game) {
   return Date.now() >= cutoff.getTime();
 }
 
+function getGuestDisplayName(guestRegistration) {
+  return (
+    guestRegistration?.guest?.name ||
+    guestRegistration?.guest_name ||
+    ""
+  ).trim();
+}
+
+function sanitizeMyGuests(guests) {
+  return (guests || []).filter(
+    (guestRegistration) => getGuestDisplayName(guestRegistration).length > 0,
+  );
+}
+
 function JoinList({ game, onUpdate }) {
   const { user } = useAuth();
   const isSundayGame = game?.day === "sunday";
@@ -71,7 +85,7 @@ function JoinList({ game, onUpdate }) {
 
       setPlayers(allPlayers || []);
       setRegistrations(allRegistrations || []);
-      setMyGuests(inviterGuests || []);
+      setMyGuests(sanitizeMyGuests(inviterGuests));
       setLoading(false);
     }
 
@@ -91,7 +105,7 @@ function JoinList({ game, onUpdate }) {
     ]);
 
     setRegistrations(updatedRegistrations || []);
-    setMyGuests(inviterGuests || []);
+    setMyGuests(sanitizeMyGuests(inviterGuests));
   }
 
   const registeredPlayerIds = useMemo(
@@ -114,6 +128,7 @@ function JoinList({ game, onUpdate }) {
 
   const alreadyIn = Boolean(user?.id && registeredPlayerIds.has(user.id));
   const userId = user?.id;
+  const hasMyGuests = myGuests.length > 0;
 
   const myAddedMembersOnMainCount = useMemo(
     () =>
@@ -332,7 +347,7 @@ function JoinList({ game, onUpdate }) {
       <div className="join-list">
         <p className="join-list__info">Voce esta inscrito neste jogo.</p>
 
-        {myGuests.length > 0 && (
+        {hasMyGuests && (
           <div className="join-list__my-guests">
             <p className="join-list__info">Seus convidados:</p>
             <ul className="join-list__results">
@@ -341,7 +356,7 @@ function JoinList({ game, onUpdate }) {
                   key={guest.id}
                   className="join-list__result join-list__result--guest"
                 >
-                  <span>{guest.guest?.name || guest.guest_name}</span>
+                  <span>{getGuestDisplayName(guest)}</span>
                   <button
                     className="join-list__remove-guest"
                     onClick={() => handleRemoveGuest(guest.id)}
@@ -408,7 +423,7 @@ function JoinList({ game, onUpdate }) {
   if (!alreadyIn && step === "idle") {
     return (
       <div className="join-list">
-        {myGuests.length > 0 && (
+        {hasMyGuests && (
           <div className="join-list__my-guests">
             <p className="join-list__info">Seus convidados:</p>
             <ul className="join-list__results">
@@ -417,7 +432,7 @@ function JoinList({ game, onUpdate }) {
                   key={guest.id}
                   className="join-list__result join-list__result--guest"
                 >
-                  <span>{guest.guest?.name || guest.guest_name}</span>
+                  <span>{getGuestDisplayName(guest)}</span>
                   <button
                     className="join-list__remove-guest"
                     onClick={() => handleRemoveGuest(guest.id)}
