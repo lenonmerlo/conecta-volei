@@ -328,7 +328,17 @@ export async function getGames() {
     .order("date");
 
   if (error) return [];
-  return data;
+
+  return (data || []).map((game) => {
+    if (game.day === "wednesday" || game.day === "sunday") {
+      return {
+        ...game,
+        date: getNextGameDate(game.day),
+      };
+    }
+
+    return game;
+  });
 }
 
 export async function createGame(game) {
@@ -443,12 +453,54 @@ export async function getGameById(gameId) {
     .single();
 
   if (error) return null;
+  if (!data) return null;
+
+  if (data.day === "wednesday" || data.day === "sunday") {
+    return {
+      ...data,
+      date: getNextGameDate(data.day),
+    };
+  }
+
   return data;
+}
+
+function getCycleOpenAt(game) {
+  if (!game?.date || !game?.day) return null;
+  if (game.day !== "wednesday" && game.day !== "sunday") return null;
+
+  const effectiveDate = getNextGameDate(game.day);
+
+  const [year, month, day] = String(effectiveDate)
+    .split("T")[0]
+    .split("-")
+    .map((value) => Number.parseInt(value, 10));
+
+  if (!year || !month || !day) return null;
+
+  const gameDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+  const offsetDays = game.day === "wednesday" ? 2 : 3;
+  gameDate.setDate(gameDate.getDate() - offsetDays);
+  gameDate.setHours(19, 0, 0, 0);
+
+  return gameDate;
+}
+
+function isRegistrationInCurrentCycle(registration, game) {
+  const openAt = getCycleOpenAt(game);
+  if (!openAt) return true;
+
+  const registeredAt = new Date(registration?.registered_at);
+  if (Number.isNaN(registeredAt.getTime())) return false;
+
+  return registeredAt.getTime() >= openAt.getTime();
 }
 
 // ── Registrations ──────────────────────────────────
 
 export async function getGameRegistrations(gameId) {
+  const game = await getGameById(gameId);
+
   const { data, error } = await supabase
     .from("game_registrations")
     .select(
@@ -461,13 +513,21 @@ export async function getGameRegistrations(gameId) {
     console.error("[Supabase] Falha ao carregar inscricoes do jogo:", error);
     return [];
   }
-  return data;
+
+  return (data || []).filter((registration) =>
+    isRegistrationInCurrentCycle(registration, game),
+  );
 }
 
 export async function getRegistrationCountsByGame() {
+  const games = await getGames();
+  const gamesById = new Map(
+    (games || []).map((game) => [String(game.id), game]),
+  );
+
   const { data, error } = await supabase
     .from("game_registrations")
-    .select("game_id, slot")
+    .select("game_id, slot, registered_at")
     .eq("slot", "main");
 
   if (error) return {};
@@ -475,6 +535,10 @@ export async function getRegistrationCountsByGame() {
   return (data || []).reduce((acc, row) => {
     const gameId = row.game_id;
     if (!gameId) return acc;
+
+    const game = gamesById.get(String(gameId));
+    if (!game) return acc;
+    if (!isRegistrationInCurrentCycle(row, game)) return acc;
 
     acc[gameId] = (acc[gameId] || 0) + 1;
     return acc;
@@ -571,12 +635,17 @@ export async function migrateGuestsToWaitlist(gameId) {
 export async function isPlayerRegistered(gameId, playerId) {
   const { data } = await supabase
     .from("game_registrations")
-    .select("id")
+    .select("id, registered_at")
     .eq("game_id", gameId)
     .eq("player_id", playerId)
     .maybeSingle();
 
-  return !!data;
+  if (!data) return false;
+
+  const game = await getGameById(gameId);
+  if (!game) return true;
+
+  return isRegistrationInCurrentCycle(data, game);
 }
 
 export async function getGuestsByInviter(gameId, inviterId) {
@@ -593,10 +662,12 @@ export async function getGuestsByInviter(gameId, inviterId) {
 }
 
 export async function getGuestsByInviterFromTable(gameId, invitedById) {
+  const game = await getGameById(gameId);
+
   const { data, error } = await supabase
     .from("game_registrations")
     .select(
-      "id, guest_id, guest:guests!game_registrations_guest_id_fkey(id, name, gender, skill_level, invited_by)",
+      "id, guest_id, registered_at, guest:guests!game_registrations_guest_id_fkey(id, name, gender, skill_level, invited_by)",
     )
     .eq("game_id", gameId)
     .not("guest_id", "is", null)
@@ -604,7 +675,9 @@ export async function getGuestsByInviterFromTable(gameId, invitedById) {
     .order("registered_at");
 
   if (error) return [];
-  return data || [];
+  return (data || []).filter((registration) =>
+    isRegistrationInCurrentCycle(registration, game),
+  );
 }
 
 export async function removeGuest(registrationId) {
