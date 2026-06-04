@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { GAME_DAYS } from "../domain/constants";
 import {
+  getNextGameDate,
   isGuestAllowedInMainList,
   isListOpen,
   isMemberPriorityWindow,
@@ -88,4 +89,25 @@ describe("gameRules", () => {
     });
   });
 
+  describe("getNextGameDate", () => {
+    it("mantem a quarta atual quando hoje e quarta", () => {
+      const wednesday = new Date(2026, 5, 3, 10, 0, 0);
+      expect(getNextGameDate("wednesday", wednesday)).toBe("2026-06-03");
+    });
+
+    it("avanca para a proxima quarta apos virar para quinta", () => {
+      const thursday = new Date(2026, 5, 4, 0, 0, 1);
+      expect(getNextGameDate("wednesday", thursday)).toBe("2026-06-10");
+    });
+
+    it("mantem o domingo atual quando hoje e domingo", () => {
+      const sunday = new Date(2026, 5, 7, 10, 0, 0);
+      expect(getNextGameDate("sunday", sunday)).toBe("2026-06-07");
+    });
+
+    it("avanca para o proximo domingo apos virar para segunda", () => {
+      const monday = new Date(2026, 5, 8, 0, 0, 1);
+      expect(getNextGameDate("sunday", monday)).toBe("2026-06-14");
+    });
+  });
 });
