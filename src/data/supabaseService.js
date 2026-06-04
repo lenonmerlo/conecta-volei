@@ -193,6 +193,7 @@ export async function updateGuestLevel(guestId, level) {
 export async function getPlayerStats(playerId) {
   const [
     { data: presences, error: presencesError },
+    { data: mainRegistrations, error: mainRegistrationsError },
     { data: guestRows, error: guestsError },
     { data: player, error: playerError },
     { data: sundayGames, error: sundayGamesError },
@@ -201,6 +202,13 @@ export async function getPlayerStats(playerId) {
       .from("game_presences")
       .select("game_id, present")
       .eq("player_id", playerId),
+    supabase
+      .from("game_registrations")
+      .select(
+        "game_id, registered_at, game:games!game_registrations_game_id_fkey(id, day, date)",
+      )
+      .eq("player_id", playerId)
+      .eq("slot", "main"),
     supabase
       .from("game_registrations")
       .select("id")
@@ -221,9 +229,16 @@ export async function getPlayerStats(playerId) {
       .order("time", { ascending: false }),
   ]);
 
-  if (presencesError || guestsError || playerError || sundayGamesError) {
+  if (
+    presencesError ||
+    mainRegistrationsError ||
+    guestsError ||
+    playerError ||
+    sundayGamesError
+  ) {
     console.error("[getPlayerStats] erro ao buscar estatisticas", {
       presencesError,
+      mainRegistrationsError,
       guestsError,
       playerError,
       sundayGamesError,
@@ -231,33 +246,49 @@ export async function getPlayerStats(playerId) {
   }
 
   const safePresences = presences || [];
-  const totalGames = safePresences.filter((row) => row.present === true).length;
+  const safeMainRegistrations = mainRegistrations || [];
+  const todayString = new Date().toISOString().slice(0, 10);
+  const cutoffDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+  const totalGames = safeMainRegistrations.filter((row) => {
+    const registeredAt = new Date(row.registered_at);
+    if (Number.isNaN(registeredAt.getTime())) return false;
+    return registeredAt.getTime() < cutoffDate.getTime();
+  }).length;
+
   const totalAbsences = safePresences.filter(
     (row) => row.present === false,
   ).length;
   const totalGuests = (guestRows || []).length;
 
-  const presenceMap = new Map(
-    safePresences.map((row) => [String(row.game_id), row.present === true]),
+  const absentGameIds = new Set(
+    safePresences
+      .filter((row) => row.present === false)
+      .map((row) => String(row.game_id)),
   );
 
-  const now = Date.now();
+  const sundayRegisteredMainGameIds = new Set(
+    safeMainRegistrations
+      .filter((row) => row.game?.day === "sunday")
+      .map((row) => String(row.game_id)),
+  );
+
   const playedSundays = (sundayGames || []).filter((game) => {
-    const dateTime = new Date(
-      `${game.date}T${(game.time || "00:00").slice(0, 5)}:00Z`,
-    );
-    return !Number.isNaN(dateTime.getTime()) && dateTime.getTime() <= now;
+    return typeof game.date === "string" && game.date < todayString;
   });
 
   let currentStreak = 0;
   for (const game of playedSundays) {
-    const present = presenceMap.get(String(game.id)) === true;
-    if (!present) break;
+    const gameId = String(game.id);
+    if (!sundayRegisteredMainGameIds.has(gameId)) break;
+    if (absentGameIds.has(gameId)) break;
     currentStreak += 1;
   }
 
   const sundayAbsences = playedSundays.filter(
-    (game) => presenceMap.get(String(game.id)) === false,
+    (game) =>
+      sundayRegisteredMainGameIds.has(String(game.id)) &&
+      absentGameIds.has(String(game.id)),
   ).length;
 
   return {
