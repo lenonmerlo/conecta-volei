@@ -753,6 +753,9 @@ export async function saveGameTeams(gameId, teams) {
 }
 
 export async function getGameTeams(gameId) {
+  const game = await getGameById(gameId);
+  const cycleOpenAt = getCycleOpenAt(game);
+
   const { data, error } = await supabase
     .from("game_teams")
     .select("*")
@@ -760,7 +763,13 @@ export async function getGameTeams(gameId) {
     .order("team_name");
 
   if (error) return [];
-  return data;
+  if (!cycleOpenAt) return data || [];
+
+  return (data || []).filter((team) => {
+    const createdAt = new Date(team.created_at);
+    if (Number.isNaN(createdAt.getTime())) return false;
+    return createdAt.getTime() >= cycleOpenAt.getTime();
+  });
 }
 
 // ── Presences ───────────────────────────────────────
