@@ -76,3 +76,23 @@ export function canJoinWednesdayList(player) {
   if (player.status === PLAYER_STATUS.BLOCKED) return false;
   return true;
 }
+
+export function getNextGameDate(gameDay, now = new Date()) {
+  const today = new Date(now);
+  const dayOfWeek = today.getDay(); // 0=dom, 1=seg... 6=sab
+
+  const targetDay = gameDay === "wednesday" ? 3 : 0; // 3=quarta, 0=domingo
+
+  let daysUntilTarget = targetDay - dayOfWeek;
+  // No proprio dia do jogo, mantem a data atual.
+  // So avanca para a semana seguinte apos virar para o dia seguinte.
+  if (daysUntilTarget < 0) daysUntilTarget += 7;
+
+  const nextDate = new Date(today);
+  nextDate.setDate(today.getDate() + daysUntilTarget);
+
+  const year = nextDate.getFullYear();
+  const month = String(nextDate.getMonth() + 1).padStart(2, "0");
+  const day = String(nextDate.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
