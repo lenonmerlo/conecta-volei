@@ -6,6 +6,7 @@ import Button from "../../components/Button/Button";
 import { getAllPlayers } from "../../data/supabaseService";
 import { isSuperAdmin } from "../../domain/admins";
 import "./Admin.css";
+import AdminAnnouncements from "./tabs/AdminAnnouncements";
 import AdminDraw from "./tabs/AdminDraw";
 import AdminGames from "./tabs/AdminGames";
 import AdminLevels from "./tabs/AdminLevels";
@@ -44,6 +45,7 @@ function Admin() {
     { key: "pending", label: `Pendentes (${pendingCount})` },
     { key: "players", label: "Jogadores" },
     { key: "games", label: "Jogos" },
+    { key: "announcements", label: "Avisos" },
     { key: "presence", label: "Presenças" },
     ...(userIsSuperAdmin ? [{ key: "levels", label: "Níveis" }] : []),
     { key: "draw", label: "Sorteio" },
@@ -94,6 +96,7 @@ function Admin() {
           />
         )}
         {activeTab === "games" && <AdminGames />}
+        {activeTab === "announcements" && <AdminAnnouncements />}
         {activeTab === "presence" && <AdminPresence />}
         {activeTab === "levels" && userIsSuperAdmin && (
           <AdminLevels
