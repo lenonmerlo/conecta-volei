@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import GameCard from "../../components/GameCard/GameCard";
 import {
+  getActiveAnnouncements,
   getGames,
   getRegistrationCountsByGame,
   updateGameDates,
@@ -98,15 +99,17 @@ function isGameVisible(game) {
 
 function Home() {
   const [games, setGames] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const realtimeDebounceRef = useRef(null);
 
   const fetchGames = useCallback(async () => {
     setLoading(true);
     await updateGameDates();
-    const [data, registrationCounts] = await Promise.all([
+    const [data, registrationCounts, activeAnnouncements] = await Promise.all([
       getGames(),
       getRegistrationCountsByGame(),
+      getActiveAnnouncements(),
     ]);
 
     const normalizedGames = (data || [])
@@ -118,6 +121,7 @@ function Home() {
     }));
 
     setGames(gamesWithCounts);
+    setAnnouncements(activeAnnouncements || []);
     setLoading(false);
   }, []);
 
@@ -194,6 +198,28 @@ function Home() {
             />
           ))}
       </div>
+
+      {!loading && announcements.length > 0 && (
+        <div className="home__announcements">
+          <h3 className="home__announcements-title">Avisos</h3>
+          <ul className="home__announcements-list">
+            {announcements.map((announcement) => (
+              <li
+                key={announcement.id}
+                className={`home__announcements-item ${announcement.urgent ? "home__announcements-item--urgent" : ""}`}
+              >
+                <strong className="home__announcements-item-title">
+                  {announcement.urgent ? "URGENTE - " : ""}
+                  {announcement.title}
+                </strong>
+                <p className="home__announcements-item-body">
+                  {announcement.body}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
