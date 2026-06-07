@@ -48,6 +48,10 @@ class QueryBuilder {
     return this;
   }
 
+  is() {
+    return this;
+  }
+
   order() {
     this.hasOrder = true;
     return this;
@@ -144,6 +148,7 @@ import {
   leaveGame,
   promoteFromWaitlist,
   registerPlayer,
+  removeGuest,
   updatePlayerStatus,
 } from "../data/supabaseService";
 
@@ -276,8 +281,16 @@ describe("supabaseService", () => {
         data: [{ id: "r1", slot: "main" }],
         error: null,
       });
-      enqueueResponse("game_registrations.count.await", {
-        count: 21,
+      enqueueResponse("games.select.single", {
+        data: { id: "g1", day: "friendly", date: "2026-06-10" },
+        error: null,
+      });
+      enqueueResponse("game_registrations.select.await", {
+        data: new Array(21).fill(null).map((_, index) => ({
+          id: `m${index + 1}`,
+          slot: "main",
+          registered_at: "2026-06-01T20:00:00.000Z",
+        })),
         error: null,
       });
 
@@ -316,8 +329,18 @@ describe("supabaseService", () => {
 
   describe("promoteFromWaitlist", () => {
     it("retorna true quando promove alguem", async () => {
-      enqueueResponse("game_registrations.waitlist.maybeSingle", {
-        data: { id: "w1" },
+      enqueueResponse("games.select.single", {
+        data: { id: "g1", day: "friendly", date: "2026-06-10" },
+        error: null,
+      });
+      enqueueResponse("game_registrations.select.await", {
+        data: [
+          {
+            id: "w1",
+            slot: "waitlist",
+            registered_at: "2026-06-01T20:00:00.000Z",
+          },
+        ],
         error: null,
       });
       enqueueResponse("game_registrations.update.eq", {
@@ -334,14 +357,71 @@ describe("supabaseService", () => {
     });
 
     it("retorna false quando waitlist esta vazia", async () => {
-      enqueueResponse("game_registrations.waitlist.maybeSingle", {
-        data: null,
+      enqueueResponse("games.select.single", {
+        data: { id: "g1", day: "friendly", date: "2026-06-10" },
+        error: null,
+      });
+      enqueueResponse("game_registrations.select.await", {
+        data: [],
         error: null,
       });
 
       const promoted = await promoteFromWaitlist("g1");
 
       expect(promoted).toBe(false);
+    });
+  });
+
+  describe("removeGuest", () => {
+    it("promove da waitlist quando remove convidado da lista principal", async () => {
+      enqueueResponse("game_registrations.delete.select.await", {
+        data: [{ id: "r1", game_id: "g1", slot: "main" }],
+        error: null,
+      });
+      enqueueResponse("games.select.single", {
+        data: { id: "g1", day: "friendly", date: "2026-06-10" },
+        error: null,
+      });
+      enqueueResponse("game_registrations.select.await", {
+        data: [
+          ...new Array(20).fill(null).map((_, index) => ({
+            id: `m${index + 1}`,
+            slot: "main",
+            registered_at: "2026-06-01T20:00:00.000Z",
+          })),
+          {
+            id: "w1",
+            slot: "waitlist",
+            registered_at: "2026-06-01T20:10:00.000Z",
+          },
+        ],
+        error: null,
+      });
+      enqueueResponse("games.select.single", {
+        data: { id: "g1", day: "friendly", date: "2026-06-10" },
+        error: null,
+      });
+      enqueueResponse("game_registrations.select.await", {
+        data: [
+          {
+            id: "w1",
+            slot: "waitlist",
+            registered_at: "2026-06-01T20:10:00.000Z",
+          },
+        ],
+        error: null,
+      });
+      enqueueResponse("game_registrations.update.eq", {
+        error: null,
+      });
+
+      const success = await removeGuest("r1");
+
+      expect(success).toBe(true);
+      expect(hoisted.callLog.update[0]).toEqual({
+        table: "game_registrations",
+        payload: { slot: "main" },
+      });
     });
   });
 

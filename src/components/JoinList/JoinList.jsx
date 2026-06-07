@@ -126,6 +126,16 @@ function JoinList({ game, onUpdate }) {
     [registrations],
   );
 
+  const currentUserRegistrationSlot = useMemo(() => {
+    if (!user?.id) return null;
+
+    const registration = registrations.find(
+      (item) => item.player_id === user.id,
+    );
+
+    return registration ? getRegistrationSlot(registration) : null;
+  }, [registrations, user?.id]);
+
   const alreadyIn = Boolean(user?.id && registeredPlayerIds.has(user.id));
   const userId = user?.id;
   const hasMyGuests = myGuests.length > 0;
@@ -225,7 +235,11 @@ function JoinList({ game, onUpdate }) {
   }
 
   async function handleLeave() {
-    if (isAfterSaturday19ForSundayGame(game)) {
+    const shouldConfirmPenalty =
+      currentUserRegistrationSlot === "main" &&
+      isAfterSaturday19ForSundayGame(game);
+
+    if (shouldConfirmPenalty) {
       setShowLateLeaveModal(true);
       return;
     }

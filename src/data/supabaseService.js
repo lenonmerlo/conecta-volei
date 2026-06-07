@@ -3,6 +3,8 @@
 import { getNextGameDate } from "../domain/gameRules";
 import { supabase } from "../lib/supabase";
 
+const MAX_MAIN_LIST = 21;
+
 // ── Players ──────────────────────────────────────────
 
 export async function registerPlayer(player) {
@@ -601,34 +603,32 @@ export async function leaveGame(gameId, playerId) {
     return false;
   }
 
-  // Verifica quantos estao na lista principal agora
-  const { count } = await supabase
-    .from("game_registrations")
-    .select("*", { count: "exact", head: true })
-    .eq("game_id", gameId)
-    .eq("slot", "main");
+  await fillMainListFromWaitlist(gameId);
 
-  let spotsAvailable = 21 - (count || 0);
+  return true;
+}
+
+async function fillMainListFromWaitlist(gameId) {
+  const registrations = await getGameRegistrations(gameId);
+  const mainListCount = (registrations || []).filter(
+    (registration) => registration.slot === "main",
+  ).length;
+
+  let spotsAvailable = MAX_MAIN_LIST - mainListCount;
   while (spotsAvailable > 0) {
     const promoted = await promoteFromWaitlist(gameId);
     if (!promoted) break;
     spotsAvailable -= 1;
   }
-
-  return true;
 }
 
 export async function promoteFromWaitlist(gameId) {
-  const { data: firstWaitlist, error: selectError } = await supabase
-    .from("game_registrations")
-    .select("id")
-    .eq("game_id", gameId)
-    .eq("slot", "waitlist")
-    .order("registered_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  const registrations = await getGameRegistrations(gameId);
+  const firstWaitlist = (registrations || []).find(
+    (registration) => registration.slot === "waitlist",
+  );
 
-  if (selectError || !firstWaitlist?.id) return false;
+  if (!firstWaitlist?.id) return false;
 
   const { error: updateError } = await supabase
     .from("game_registrations")
@@ -700,13 +700,21 @@ export async function getGuestsByInviterFromTable(gameId, invitedById) {
 }
 
 export async function removeGuest(registrationId) {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("game_registrations")
     .delete()
     .eq("id", registrationId)
-    .is("player_id", null);
+    .is("player_id", null)
+    .select("id, game_id, slot");
 
-  return !error;
+  if (error || !data?.length) return false;
+
+  const removedRegistration = data[0];
+  if (removedRegistration.slot === "main" && removedRegistration.game_id) {
+    await fillMainListFromWaitlist(removedRegistration.game_id);
+  }
+
+  return true;
 }
 
 // ── Avatar ──────────────────────────────────────────
