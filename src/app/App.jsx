@@ -1,20 +1,27 @@
 import { RefreshCw } from "lucide-react";
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import escudoConecta from "../assets/escudo-conecta-prata.png";
 import BottomNav from "../components/BottomNav/BottomNav";
 import { isAdmin } from "../domain/admins";
-import Admin from "../pages/Admin/Admin";
-import AthleteProfile from "../pages/AthleteProfile/AthleteProfile";
-import Athletes from "../pages/Athletes/Athletes";
-import GameDetail from "../pages/GameDetail/GameDetail";
-import Home from "../pages/Home/Home";
-import Login from "../pages/Login/Login";
-import Profile from "../pages/Profile/Profile";
-import Rules from "../pages/Rules/Rules";
-import Scrapbook from "../pages/Scrapbook/Scrapbook";
-import Teams from "../pages/Teams/Teams";
 import "./App.css";
 import { AuthProvider, useAuth } from "./AuthContext";
+const Admin = lazy(() => import("../pages/Admin/Admin"));
+const AthleteProfile = lazy(
+  () => import("../pages/AthleteProfile/AthleteProfile"),
+);
+const Athletes = lazy(() => import("../pages/Athletes/Athletes"));
+const GameDetail = lazy(() => import("../pages/GameDetail/GameDetail"));
+const Home = lazy(() => import("../pages/Home/Home"));
+const Login = lazy(() => import("../pages/Login/Login"));
+const Profile = lazy(() => import("../pages/Profile/Profile"));
+const Rules = lazy(() => import("../pages/Rules/Rules"));
+const Scrapbook = lazy(() => import("../pages/Scrapbook/Scrapbook"));
+const Teams = lazy(() => import("../pages/Teams/Teams"));
+
+function RoutesFallback() {
+  return <div className="app__loading">Carregando pagina...</div>;
+}
 
 function AppShell() {
   const { user } = useAuth();
@@ -22,14 +29,16 @@ function AppShell() {
   if (!user) {
     return (
       <div className="app-public">
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/athletes" element={<Athletes />} />
-          <Route path="/athlete/:id" element={<AthleteProfile />} />
-          <Route path="/scrapbook" element={<Scrapbook />} />
-          <Route path="/rules" element={<Rules />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <Suspense fallback={<RoutesFallback />}>
+          <Routes>
+            <Route path="/" element={<Login />} />
+            <Route path="/athletes" element={<Athletes />} />
+            <Route path="/athlete/:id" element={<AthleteProfile />} />
+            <Route path="/scrapbook" element={<Scrapbook />} />
+            <Route path="/rules" element={<Rules />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </div>
     );
   }
@@ -61,20 +70,22 @@ function AppShell() {
         </div>
       </header>
       <main className="app__main">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/athletes" element={<Athletes />} />
-          <Route path="/athlete/:id" element={<AthleteProfile />} />
-          <Route path="/scrapbook" element={<Scrapbook />} />
-          <Route path="/rules" element={<Rules />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/game/:id" element={<GameDetail />} />
-          <Route path="/teams" element={<Teams />} />
-          <Route
-            path="/admin"
-            element={isAdmin(user) ? <Admin /> : <Navigate to="/" replace />}
-          />
-        </Routes>
+        <Suspense fallback={<RoutesFallback />}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/athletes" element={<Athletes />} />
+            <Route path="/athlete/:id" element={<AthleteProfile />} />
+            <Route path="/scrapbook" element={<Scrapbook />} />
+            <Route path="/rules" element={<Rules />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/game/:id" element={<GameDetail />} />
+            <Route path="/teams" element={<Teams />} />
+            <Route
+              path="/admin"
+              element={isAdmin(user) ? <Admin /> : <Navigate to="/" replace />}
+            />
+          </Routes>
+        </Suspense>
       </main>
       <BottomNav />
     </div>

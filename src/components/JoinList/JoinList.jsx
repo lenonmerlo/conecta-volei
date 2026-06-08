@@ -126,18 +126,19 @@ function JoinList({ game, onUpdate }) {
     [registrations],
   );
 
+  const userId = user?.id;
+
   const currentUserRegistrationSlot = useMemo(() => {
-    if (!user?.id) return null;
+    if (!userId) return null;
 
     const registration = registrations.find(
-      (item) => item.player_id === user.id,
+      (item) => item.player_id === userId,
     );
 
     return registration ? getRegistrationSlot(registration) : null;
-  }, [registrations, user?.id]);
+  }, [registrations, userId]);
 
-  const alreadyIn = Boolean(user?.id && registeredPlayerIds.has(user.id));
-  const userId = user?.id;
+  const alreadyIn = Boolean(userId && registeredPlayerIds.has(userId));
   const hasMyGuests = myGuests.length > 0;
 
   const myAddedMembersOnMainCount = useMemo(
