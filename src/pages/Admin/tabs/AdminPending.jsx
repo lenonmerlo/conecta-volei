@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import Button from "../../../components/Button/Button";
 import {
   deletePlayer,
+  logAction,
   updatePlayerStatus,
 } from "../../../data/supabaseService";
 import "./AdminTabs.css";
@@ -36,17 +37,27 @@ function AdminPending({ players, loadingPlayers, onRefreshPlayers }) {
       return;
     }
 
+    await logAction(null, playerId, "approved", "Cadastro aprovado no Admin");
+
     setError("");
     await onRefreshPlayers();
   }
 
   async function rejectPlayer(playerId) {
+    const player = (players || []).find((item) => item.id === playerId);
     const success = await deletePlayer(playerId);
 
     if (!success) {
       setError("Nao foi possivel recusar o cadastro.");
       return;
     }
+
+    await logAction(
+      null,
+      playerId,
+      "rejected",
+      player?.name ? `Cadastro recusado: ${player.name}` : "Cadastro recusado no Admin",
+    );
 
     setError("");
     await onRefreshPlayers();

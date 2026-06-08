@@ -5,6 +5,28 @@ import { supabase } from "../lib/supabase";
 
 const MAX_MAIN_LIST = 21;
 
+export async function logAction(gameId, playerId, action, details = null) {
+  const { error } = await supabase.from("audit_log").insert({
+    game_id: gameId || null,
+    player_id: playerId || null,
+    action,
+    details: details || null,
+  });
+
+  if (error) {
+    console.error("[audit_log] falha ao salvar evento", {
+      gameId,
+      playerId,
+      action,
+      details,
+      error,
+    });
+    return false;
+  }
+
+  return true;
+}
+
 // ── Players ──────────────────────────────────────────
 
 export async function registerPlayer(player) {
@@ -101,6 +123,10 @@ export async function updatePlayerStatus(playerId, status) {
     .from("players")
     .update({ status })
     .eq("id", playerId);
+
+  if (!error && status === "penalized") {
+    await logAction(null, playerId, "penalized", "Penalizado via Admin");
+  }
 
   return !error;
 }
@@ -583,11 +609,23 @@ export async function joinGame(
     slot,
   });
 
+  if (!error) {
+    const actionBySlot = {
+      main: "joined_main",
+      waitlist: "joined_waitlist",
+      guests: "joined_guests",
+    };
+    const action = actionBySlot[slot];
+    if (action) {
+      await logAction(gameId, playerId, action, guestId ? "Convidado" : null);
+    }
+  }
+
   return !error;
 }
 
 export async function leaveGame(gameId, playerId) {
-  const { error: playerError } = await supabase
+  const { data: removedRegistrations, error: playerError } = await supabase
     .from("game_registrations")
     .delete()
     .eq("game_id", gameId)
@@ -601,6 +639,10 @@ export async function leaveGame(gameId, playerId) {
       playerError,
     });
     return false;
+  }
+
+  if ((removedRegistrations || []).length > 0) {
+    await logAction(gameId, playerId, "left_list", null);
   }
 
   await fillMainListFromWaitlist(gameId);
@@ -634,6 +676,15 @@ export async function promoteFromWaitlist(gameId) {
     .from("game_registrations")
     .update({ slot: "main" })
     .eq("id", firstWaitlist.id);
+
+  if (!updateError) {
+    await logAction(
+      gameId,
+      firstWaitlist.player_id || null,
+      "promoted_to_main",
+      firstWaitlist.guest_id ? "Convidado promovido" : null,
+    );
+  }
 
   return !updateError;
 }
@@ -831,6 +882,18 @@ export async function getAllAnnouncements() {
   const { data, error } = await supabase
     .from("announcements")
     .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) return [];
+  return data || [];
+}
+
+export async function getAuditLogs() {
+  const { data, error } = await supabase
+    .from("audit_log")
+    .select(
+      "id, game_id, player_id, action, details, created_at, player:players(id, name, nickname)",
+    )
     .order("created_at", { ascending: false });
 
   if (error) return [];

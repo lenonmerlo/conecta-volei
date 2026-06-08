@@ -178,6 +178,25 @@
   cursor: pointer;
 }
 
+.admin-tab__filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.7rem;
+  margin-bottom: 0.8rem;
+}
+
+.admin-tab__filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: var(--cv-muted);
+  font-size: 0.8rem;
+}
+
+.admin-tab__info--audit {
+  justify-content: space-between;
+}
+
 .admin-tab__restricted {
   color: var(--cv-muted);
   font-size: 0.9rem;
