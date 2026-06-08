@@ -7,6 +7,7 @@ import { getAllPlayers } from "../../data/supabaseService";
 import { isSuperAdmin } from "../../domain/admins";
 import "./Admin.css";
 import AdminAnnouncements from "./tabs/AdminAnnouncements";
+import AdminAudit from "./tabs/AdminAudit";
 import AdminDraw from "./tabs/AdminDraw";
 import AdminGames from "./tabs/AdminGames";
 import AdminLevels from "./tabs/AdminLevels";
@@ -47,6 +48,7 @@ function Admin() {
     { key: "games", label: "Jogos" },
     { key: "announcements", label: "Avisos" },
     { key: "presence", label: "Presenças" },
+    { key: "audit", label: "Auditoria" },
     ...(userIsSuperAdmin ? [{ key: "levels", label: "Níveis" }] : []),
     { key: "draw", label: "Sorteio" },
   ];
@@ -98,6 +100,7 @@ function Admin() {
         {activeTab === "games" && <AdminGames />}
         {activeTab === "announcements" && <AdminAnnouncements />}
         {activeTab === "presence" && <AdminPresence />}
+        {activeTab === "audit" && <AdminAudit />}
         {activeTab === "levels" && userIsSuperAdmin && (
           <AdminLevels
             players={players}
