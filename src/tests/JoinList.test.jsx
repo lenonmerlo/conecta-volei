@@ -99,4 +99,40 @@ describe("JoinList", () => {
     ).toBeInTheDocument();
     expect(mockLeaveGame).not.toHaveBeenCalled();
   });
+
+  it("mostra aviso para penalizado e segue para join", async () => {
+    mockUseAuth.mockReturnValue({ user: { id: "p1", status: "penalized" } });
+    mockGetGameRegistrations.mockResolvedValue([]);
+    mockIsPlayerRegistered.mockResolvedValue(false);
+    mockJoinGame.mockResolvedValue(true);
+
+    render(<JoinList game={makeGame()} onUpdate={vi.fn()} />);
+
+    await screen.findByRole("button", { name: "Entrar na lista" });
+    fireEvent.click(screen.getByRole("button", { name: "Entrar na lista" }));
+
+    expect(
+      await screen.findByText(
+        "Você está penalizado e entrará na lista de espera",
+      ),
+    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(mockJoinGame).toHaveBeenCalledWith("sun-2026-06-01", "p1", "main");
+    });
+  });
+
+  it("bloqueia entrada de usuario blocked antes de chamar joinGame", async () => {
+    mockUseAuth.mockReturnValue({ user: { id: "p1", status: "blocked" } });
+    mockGetGameRegistrations.mockResolvedValue([]);
+
+    render(<JoinList game={makeGame()} onUpdate={vi.fn()} />);
+
+    await screen.findByRole("button", { name: "Entrar na lista" });
+    fireEvent.click(screen.getByRole("button", { name: "Entrar na lista" }));
+
+    expect(
+      await screen.findByText("Você está bloqueado e não pode entrar na lista"),
+    ).toBeInTheDocument();
+    expect(mockJoinGame).not.toHaveBeenCalled();
+  });
 });

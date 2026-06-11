@@ -61,6 +61,7 @@ function JoinList({ game, onUpdate }) {
   const [guestName, setGuestName] = useState("");
   const [guestGender, setGuestGender] = useState("M");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [players, setPlayers] = useState([]);
   const [registrations, setRegistrations] = useState([]);
   const [myGuests, setMyGuests] = useState([]);
@@ -187,8 +188,24 @@ function JoinList({ game, onUpdate }) {
 
   async function handleJoinSelf() {
     if (alreadyIn) {
+      setNotice("");
       setError("Jogador ja esta na lista.");
       return;
+    }
+
+    const loggedUser = players.find((player) => player.id === user.id);
+    const userStatus = loggedUser?.status || user?.status;
+
+    if (userStatus === "blocked") {
+      setNotice("");
+      setError("Você está bloqueado e não pode entrar na lista");
+      return;
+    }
+
+    if (userStatus === "penalized") {
+      setNotice("Você está penalizado e entrará na lista de espera");
+    } else {
+      setNotice("");
     }
 
     setActionLoading(true);
@@ -385,6 +402,7 @@ function JoinList({ game, onUpdate }) {
         )}
 
         {error && <p className="join-list__error">{error}</p>}
+        {notice && <p className="join-list__info">{notice}</p>}
         <div className="join-list__actions">
           <Button
             variant="secondary"
@@ -461,6 +479,7 @@ function JoinList({ game, onUpdate }) {
         )}
 
         {error && <p className="join-list__error">{error}</p>}
+        {notice && <p className="join-list__info">{notice}</p>}
         <div className="join-list__actions">
           <Button onClick={handleJoinSelf} disabled={actionLoading}>
             Entrar na lista
@@ -485,6 +504,7 @@ function JoinList({ game, onUpdate }) {
       <div className="join-list">
         <p className="join-list__info">Deseja adicionar mais alguem?</p>
         {error && <p className="join-list__error">{error}</p>}
+        {notice && <p className="join-list__info">{notice}</p>}
 
         {!addMode && (
           <div className="join-list__actions">

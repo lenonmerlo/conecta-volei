@@ -98,6 +98,9 @@ class QueryBuilder {
       if (this.mode === "select" && terminal === "single") {
         return "players.select.single";
       }
+      if (this.mode === "select" && terminal === "maybeSingle") {
+        return "players.select.maybeSingle";
+      }
       if (this.mode === "insert" && terminal === "single") {
         return "players.insert.single";
       }
@@ -244,6 +247,10 @@ describe("supabaseService", () => {
 
   describe("joinGame", () => {
     it("insere registro com slot correto e retorna true em sucesso", async () => {
+      enqueueResponse("players.select.maybeSingle", {
+        data: { id: "p1", status: "active" },
+        error: null,
+      });
       enqueueResponse("game_registrations.insert.await", {
         error: null,
       });
@@ -272,6 +279,43 @@ describe("supabaseService", () => {
       const success = await joinGame("g1", null, "guests", "Convidado", "p1");
 
       expect(success).toBe(false);
+    });
+
+    it("forca waitlist quando jogador esta penalizado", async () => {
+      enqueueResponse("players.select.maybeSingle", {
+        data: { id: "p1", status: "penalized" },
+        error: null,
+      });
+      enqueueResponse("game_registrations.insert.await", {
+        error: null,
+      });
+
+      const success = await joinGame("g1", "p1", "main", null, null);
+
+      expect(success).toBe(true);
+      expect(hoisted.callLog.insert[0]).toEqual({
+        table: "game_registrations",
+        payload: {
+          game_id: "g1",
+          player_id: "p1",
+          guest_name: null,
+          guest_id: null,
+          invited_by: null,
+          slot: "waitlist",
+        },
+      });
+    });
+
+    it("nao insere quando jogador esta bloqueado", async () => {
+      enqueueResponse("players.select.maybeSingle", {
+        data: { id: "p1", status: "blocked" },
+        error: null,
+      });
+
+      const success = await joinGame("g1", "p1", "main", null, null);
+
+      expect(success).toBe(false);
+      expect(hoisted.callLog.insert).toHaveLength(0);
     });
   });
 
