@@ -600,13 +600,28 @@ export async function joinGame(
   invitedBy = null,
   guestId = null,
 ) {
+  let effectiveSlot = slot;
+
+  if (playerId) {
+    const player = await getPlayerById(playerId);
+    const playerStatus = player?.status;
+
+    if (playerStatus === "blocked") {
+      return false;
+    }
+
+    if (playerStatus === "penalized") {
+      effectiveSlot = "waitlist";
+    }
+  }
+
   const { error } = await supabase.from("game_registrations").insert({
     game_id: gameId,
     player_id: playerId || null,
     guest_name: guestId ? null : guestName || null,
     guest_id: guestId || null,
     invited_by: invitedBy || null,
-    slot,
+    slot: effectiveSlot,
   });
 
   if (!error) {
@@ -615,7 +630,7 @@ export async function joinGame(
       waitlist: "joined_waitlist",
       guests: "joined_guests",
     };
-    const action = actionBySlot[slot];
+    const action = actionBySlot[effectiveSlot];
     if (action) {
       await logAction(gameId, playerId, action, guestId ? "Convidado" : null);
     }
