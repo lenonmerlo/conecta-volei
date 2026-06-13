@@ -551,7 +551,7 @@ export async function getGameRegistrations(gameId) {
   const { data, error } = await supabase
     .from("game_registrations")
     .select(
-      "*, player:players!game_registrations_player_id_fkey(*), inviter:players!game_registrations_invited_by_fkey(id, name, nickname), guest:guests!game_registrations_guest_id_fkey(id, name, gender, skill_level, invited_by)",
+      "*, player:players!game_registrations_player_id_fkey(*), inviter:players!game_registrations_invited_by_fkey(id, name, nickname, gender, status, type, is_captain, is_setter, position), guest:guests!game_registrations_guest_id_fkey(id, name, gender, skill_level, invited_by)",
     )
     .eq("game_id", gameId)
     .order("registered_at");
@@ -714,7 +714,11 @@ export async function migrateGuestsToWaitlist(gameId) {
     .eq("game_id", gameId)
     .eq("slot", "guests");
 
-  return !error;
+  if (error) return false;
+
+  await fillMainListFromWaitlist(gameId);
+
+  return true;
 }
 
 export async function isPlayerRegistered(gameId, playerId) {

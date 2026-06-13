@@ -36,6 +36,14 @@ function normalizeLocation(value) {
     .trim();
 }
 
+function normalizeComparableName(value) {
+  return (value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
 function getFixedMapUrlByLocation(location) {
   const normalized = normalizeLocation(location);
 
@@ -83,6 +91,7 @@ function buildListsFromRegistrations(registrations, isSundayGame) {
   registrations.forEach((r) => {
     const slot = r.slot || "main";
     const player = r.player;
+    const inviter = r.inviter || null;
     const inviterName = r.inviter?.name || null;
 
     if (player) {
@@ -112,16 +121,37 @@ function buildListsFromRegistrations(registrations, isSundayGame) {
       return;
     }
 
-    if (r.guest_id && r.guest) {
+    if (r.guest_id && !player) {
+      const guestName = r.guest?.name || r.guest_name || "Convidado";
+      const isPenalizedMemberProxy =
+        Boolean(inviterName) &&
+        normalizeComparableName(guestName) ===
+          normalizeComparableName(inviterName);
+
       const normalizedGuest = {
-        id: `guest-${r.guest.id}`,
-        name: r.guest.name,
-        nickname: null,
-        type: PLAYER_TYPE.GUEST,
-        gender: r.guest.gender || null,
-        status: PLAYER_STATUS.ACTIVE,
-        skill_level: Number(r.guest.skill_level ?? 3),
-        invitedBy: inviterName,
+        id: isPenalizedMemberProxy
+          ? inviter?.id || `guest-${r.guest?.id || r.guest_id}`
+          : `guest-${r.guest?.id || r.guest_id}`,
+        name: isPenalizedMemberProxy ? inviter?.name || guestName : guestName,
+        nickname: isPenalizedMemberProxy ? inviter?.nickname || null : null,
+        type: isPenalizedMemberProxy ? PLAYER_TYPE.MEMBER : PLAYER_TYPE.GUEST,
+        gender: isPenalizedMemberProxy
+          ? inviter?.gender || r.guest?.gender || null
+          : r.guest?.gender || null,
+        status: isPenalizedMemberProxy
+          ? inviter?.status || PLAYER_STATUS.ACTIVE
+          : PLAYER_STATUS.ACTIVE,
+        is_captain: isPenalizedMemberProxy
+          ? Boolean(inviter?.is_captain ?? inviter?.isCaptain)
+          : false,
+        is_setter: isPenalizedMemberProxy
+          ? Boolean(inviter?.is_setter ?? inviter?.isSetter)
+          : false,
+        position: isPenalizedMemberProxy
+          ? inviter?.position || "all-around"
+          : "all-around",
+        skill_level: Number(r.guest?.skill_level ?? 3),
+        invitedBy: isPenalizedMemberProxy ? null : inviterName,
       };
 
       if (isSundayGame && slot === "guests") {
@@ -135,15 +165,35 @@ function buildListsFromRegistrations(registrations, isSundayGame) {
     }
 
     if (r.guest_name) {
+      const isPenalizedMemberProxy =
+        Boolean(inviterName) &&
+        normalizeComparableName(r.guest_name) ===
+          normalizeComparableName(inviterName);
+
       const normalizedGuest = {
-        id: `guest-legacy-${r.id}`,
-        name: r.guest_name,
-        nickname: null,
-        type: PLAYER_TYPE.GUEST,
-        gender: null,
-        status: PLAYER_STATUS.ACTIVE,
+        id: isPenalizedMemberProxy
+          ? inviter?.id || `guest-legacy-${r.id}`
+          : `guest-legacy-${r.id}`,
+        name: isPenalizedMemberProxy
+          ? inviter?.name || r.guest_name
+          : r.guest_name,
+        nickname: isPenalizedMemberProxy ? inviter?.nickname || null : null,
+        type: isPenalizedMemberProxy ? PLAYER_TYPE.MEMBER : PLAYER_TYPE.GUEST,
+        gender: isPenalizedMemberProxy ? inviter?.gender || null : null,
+        status: isPenalizedMemberProxy
+          ? inviter?.status || PLAYER_STATUS.ACTIVE
+          : PLAYER_STATUS.ACTIVE,
+        is_captain: isPenalizedMemberProxy
+          ? Boolean(inviter?.is_captain ?? inviter?.isCaptain)
+          : false,
+        is_setter: isPenalizedMemberProxy
+          ? Boolean(inviter?.is_setter ?? inviter?.isSetter)
+          : false,
+        position: isPenalizedMemberProxy
+          ? inviter?.position || "all-around"
+          : "all-around",
         skill_level: 3,
-        invitedBy: inviterName,
+        invitedBy: isPenalizedMemberProxy ? null : inviterName,
       };
 
       if (isSundayGame && slot === "guests") {
@@ -234,8 +284,7 @@ function GameDetail() {
   const mainPlayers = supabaseList.main;
   const waitlist = supabaseList.waitlist;
   const guests = supabaseList.guests;
-  const members = mainPlayers.filter((p) => p.type === PLAYER_TYPE.MEMBER);
-  const mainListDisplay = isSundayGame ? members : mainPlayers;
+  const mainListDisplay = mainPlayers;
   const dayLabel = getDayLabel(game.date);
 
   return (
@@ -263,15 +312,11 @@ function GameDetail() {
 
       <div className="game-detail__section">
         <h3 className="game-detail__section-title">
-          {isSundayGame
-            ? `Membros (${members.length})`
-            : `Lista Principal (${mainListDisplay.length})`}
+          {`Lista Principal (${mainListDisplay.length})`}
         </h3>
         {mainListDisplay.length === 0 && (
           <p className="game-detail__empty">
-            {isSundayGame
-              ? "Nenhum membro inscrito."
-              : "Nenhum jogador na lista principal."}
+            Nenhum jogador na lista principal.
           </p>
         )}
         <ul className="game-detail__list">
@@ -299,7 +344,7 @@ function GameDetail() {
                   por {player.invitedBy}
                 </span>
               )}
-              {player.type === PLAYER_TYPE.GUEST && !isSundayGame && (
+              {player.type === PLAYER_TYPE.GUEST && (
                 <span className="game-detail__badge game-detail__badge--guest">
                   Convidado
                 </span>
