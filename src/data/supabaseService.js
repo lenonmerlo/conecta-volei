@@ -681,9 +681,14 @@ async function fillMainListFromWaitlist(gameId) {
 
 export async function promoteFromWaitlist(gameId) {
   const registrations = await getGameRegistrations(gameId);
-  const firstWaitlist = (registrations || []).find(
-    (registration) => registration.slot === "waitlist",
-  );
+  const firstWaitlist = (registrations || []).find((registration) => {
+    if (registration.slot !== "waitlist") return false;
+
+    // Guests do not have penalization status and remain eligible for promotion.
+    if (!registration.player_id) return true;
+
+    return registration.player?.status !== "penalized";
+  });
 
   if (!firstWaitlist?.id) return false;
 
