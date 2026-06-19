@@ -400,6 +400,43 @@ describe("supabaseService", () => {
       });
     });
 
+    it("promove o primeiro nao penalizado da waitlist, pulando penalizados na frente", async () => {
+      enqueueResponse("games.select.single", {
+        data: { id: "g1", day: "friendly", date: "2026-06-10" },
+        error: null,
+      });
+      enqueueResponse("game_registrations.select.await", {
+        data: [
+          {
+            id: "w1",
+            slot: "waitlist",
+            player_id: "p-pen",
+            player: { id: "p-pen", status: "penalized" },
+            registered_at: "2026-06-01T20:00:00.000Z",
+          },
+          {
+            id: "w2",
+            slot: "waitlist",
+            player_id: "p-ok",
+            player: { id: "p-ok", status: "active" },
+            registered_at: "2026-06-01T20:01:00.000Z",
+          },
+        ],
+        error: null,
+      });
+      enqueueResponse("game_registrations.update.eq", {
+        error: null,
+      });
+
+      const promoted = await promoteFromWaitlist("g1");
+
+      expect(promoted).toBe(true);
+      expect(hoisted.callLog.update[0]).toEqual({
+        table: "game_registrations",
+        payload: { slot: "main" },
+      });
+    });
+
     it("retorna false quando waitlist esta vazia", async () => {
       enqueueResponse("games.select.single", {
         data: { id: "g1", day: "friendly", date: "2026-06-10" },
