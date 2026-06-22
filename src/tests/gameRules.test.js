@@ -39,7 +39,7 @@ describe("gameRules", () => {
     it("retorna true dentro da janela (quinta 19h)", () => {
       const thursday19h = {
         getDay: () => 4,
-        getHour: () => 19,
+        getHours: () => 19,
         getMinutes: () => 0,
       };
 
@@ -49,7 +49,7 @@ describe("gameRules", () => {
     it("retorna false fora da janela (quinta 18h)", () => {
       const thursday18h = {
         getDay: () => 4,
-        getHour: () => 18,
+        getHours: () => 18,
         getMinutes: () => 0,
       };
 
@@ -59,7 +59,7 @@ describe("gameRules", () => {
     it("retorna true na sexta durante a janela", () => {
       const friday22h = {
         getDay: () => 5,
-        getHour: () => 22,
+        getHours: () => 22,
         getMinutes: () => 10,
       };
 
@@ -69,7 +69,7 @@ describe("gameRules", () => {
     it("retorna false fora da janela (sabado)", () => {
       const saturday = {
         getDay: () => 6,
-        getHour: () => 0,
+        getHours: () => 0,
         getMinutes: () => 0,
       };
 
