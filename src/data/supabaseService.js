@@ -568,6 +568,112 @@ export async function getGameById(gameId) {
   return data;
 }
 
+function normalizeGameDate(value) {
+  if (!value) return null;
+  return String(value).split("T")[0] || null;
+}
+
+function isFixedDay(day) {
+  return day === "wednesday" || day === "sunday";
+}
+
+function dedupeById(rows) {
+  const seen = new Set();
+  return (rows || []).filter((row) => {
+    if (!row?.id) return false;
+    if (seen.has(row.id)) return false;
+    seen.add(row.id);
+    return true;
+  });
+}
+
+export async function resolveGameId(gameId) {
+  if (!gameId) return gameId;
+
+  const requestedId = String(gameId);
+  const { data: requestedGame } = await supabase
+    .from("games")
+    .select("id, day, date")
+    .eq("id", requestedId)
+    .maybeSingle();
+
+  if (!requestedGame || !isFixedDay(requestedGame.day)) {
+    return requestedId;
+  }
+
+  const normalizedDate = normalizeGameDate(requestedGame.date);
+  if (!normalizedDate) return requestedId;
+
+  const newFormatId = `${requestedGame.day}-${normalizedDate}`;
+  const { data: newFormatGame } = await supabase
+    .from("games")
+    .select("id")
+    .eq("id", newFormatId)
+    .maybeSingle();
+
+  if (newFormatGame?.id) return newFormatGame.id;
+  return requestedId;
+}
+
+async function resolveEquivalentGameIds(gameId) {
+  const requestedId = String(gameId || "");
+  if (!requestedId) return [];
+
+  const resolvedId = await resolveGameId(requestedId);
+  const ids = new Set([requestedId, resolvedId].filter(Boolean));
+
+  const { data: resolvedGame } = await supabase
+    .from("games")
+    .select("day, date")
+    .eq("id", resolvedId)
+    .maybeSingle();
+
+  if (!resolvedGame || !isFixedDay(resolvedGame.day)) {
+    return Array.from(ids);
+  }
+
+  const normalizedDate = normalizeGameDate(resolvedGame.date);
+  if (!normalizedDate) return Array.from(ids);
+
+  const fallbackNewFormatId = `${resolvedGame.day}-${normalizedDate}`;
+  ids.add(fallbackNewFormatId);
+
+  const { data: sameDateGames } = await supabase
+    .from("games")
+    .select("id")
+    .eq("day", resolvedGame.day)
+    .eq("date", normalizedDate);
+
+  (sameDateGames || []).forEach((game) => {
+    if (game?.id) ids.add(game.id);
+  });
+
+  return Array.from(ids);
+}
+
+async function getRegistrationRowsByGameIds(gameIds, columns) {
+  const uniqueGameIds = Array.from(new Set((gameIds || []).filter(Boolean)));
+  if (!uniqueGameIds.length) return { data: [], error: null };
+
+  const results = await Promise.all(
+    uniqueGameIds.map((id) =>
+      supabase.from("game_registrations").select(columns).eq("game_id", id),
+    ),
+  );
+
+  const firstErrorResult = results.find((result) => result.error);
+  if (firstErrorResult?.error) {
+    return { data: [], error: firstErrorResult.error };
+  }
+
+  const rows = results.flatMap((result) => result.data || []);
+  const dedupedRows = dedupeById(rows).sort((a, b) =>
+    String(a?.registered_at || "").localeCompare(String(b?.registered_at || "")),
+  );
+
+  return { data: dedupedRows, error: null };
+}
+
 function getCycleOpenAt(game) {
   if (!game?.date || !game?.day) return null;
   if (game.day !== "wednesday" && game.day !== "sunday") return null;
@@ -600,15 +706,22 @@ function isRegistrationInCurrentCycle(registration, game) {
 // ── Registrations ──────────────────────────────────
 
 export async function getGameRegistrations(gameId) {
-  const game = await getGameById(gameId);
+  const equivalentGameIds = await resolveEquivalentGameIds(gameId);
+  const [requestedGame, gamesByIdList] = await Promise.all([
+    getGameById(gameId),
+    Promise.all(equivalentGameIds.map((id) => getGameById(id))),
+  ]);
 
-  const { data, error } = await supabase
-    .from("game_registrations")
-    .select(
-      "*, player:players!game_registrations_player_id_fkey(*), inviter:players!game_registrations_invited_by_fkey(id, name, nickname, gender, status, type, is_captain, is_setter, position), guest:guests!game_registrations_guest_id_fkey(id, name, gender, skill_level, invited_by)",
-    )
-    .eq("game_id", gameId)
-    .order("registered_at");
+  const gamesById = new Map();
+  equivalentGameIds.forEach((id, index) => {
+    const game = gamesByIdList[index];
+    if (game) gamesById.set(String(id), game);
+  });
+
+  const { data, error } = await getRegistrationRowsByGameIds(
+    equivalentGameIds,
+    "*, player:players!game_registrations_player_id_fkey(*), inviter:players!game_registrations_invited_by_fkey(id, name, nickname, gender, status, type, is_captain, is_setter, position), guest:guests!game_registrations_guest_id_fkey(id, name, gender, skill_level, invited_by)",
+  );
 
   if (error) {
     console.error("[Supabase] Falha ao carregar inscricoes do jogo:", error);
@@ -616,12 +729,57 @@ export async function getGameRegistrations(gameId) {
   }
 
   return (data || []).filter((registration) =>
-    isRegistrationInCurrentCycle(registration, game),
+    isRegistrationInCurrentCycle(
+      registration,
+      gamesById.get(String(registration.game_id)) || requestedGame,
+    ),
   );
 }
 
 export async function getRegistrationCountsByGame() {
   const games = await getGames();
+
+  const { data: allGames } = await supabase.from("games").select("id, day, date");
+  const canonicalByDayDate = new Map();
+  const gameIdToCanonical = new Map();
+
+  (allGames || []).forEach((game) => {
+    const normalizedDate = normalizeGameDate(game.date);
+    if (!normalizedDate || !isFixedDay(game.day)) {
+      gameIdToCanonical.set(String(game.id), String(game.id));
+      return;
+    }
+
+    const key = `${game.day}-${normalizedDate}`;
+    const currentCanonical = canonicalByDayDate.get(key);
+    const isNewFormatId = String(game.id).startsWith(`${game.day}-`);
+
+    if (!currentCanonical) {
+      canonicalByDayDate.set(key, String(game.id));
+      return;
+    }
+
+    const canonicalIsNewFormat = String(currentCanonical).startsWith(
+      `${game.day}-`,
+    );
+
+    if (isNewFormatId && !canonicalIsNewFormat) {
+      canonicalByDayDate.set(key, String(game.id));
+    }
+  });
+
+  (allGames || []).forEach((game) => {
+    const normalizedDate = normalizeGameDate(game.date);
+    if (!normalizedDate || !isFixedDay(game.day)) {
+      gameIdToCanonical.set(String(game.id), String(game.id));
+      return;
+    }
+
+    const key = `${game.day}-${normalizedDate}`;
+    const canonicalId = canonicalByDayDate.get(key) || String(game.id);
+    gameIdToCanonical.set(String(game.id), String(canonicalId));
+  });
+
   const gamesById = new Map(
     (games || []).map((game) => [String(game.id), game]),
   );
@@ -634,7 +792,8 @@ export async function getRegistrationCountsByGame() {
   if (error) return {};
 
   return (data || []).reduce((acc, row) => {
-    const gameId = row.game_id;
+    const rawGameId = row.game_id;
+    const gameId = gameIdToCanonical.get(String(rawGameId)) || rawGameId;
     if (!gameId) return acc;
 
     const game = gamesById.get(String(gameId));
@@ -654,6 +813,7 @@ export async function joinGame(
   invitedBy = null,
   guestId = null,
 ) {
+  const targetGameId = await resolveGameId(gameId);
   let effectiveSlot = slot;
 
   if (playerId) {
@@ -667,10 +827,13 @@ export async function joinGame(
     if (playerStatus === "penalized") {
       effectiveSlot = "waitlist";
     }
+
+    const alreadyRegistered = await isPlayerRegistered(targetGameId, playerId);
+    if (alreadyRegistered) return false;
   }
 
   const { error } = await supabase.from("game_registrations").insert({
-    game_id: gameId,
+    game_id: targetGameId,
     player_id: playerId || null,
     guest_name: guestId ? null : guestName || null,
     guest_id: guestId || null,
@@ -686,7 +849,12 @@ export async function joinGame(
     };
     const action = actionBySlot[effectiveSlot];
     if (action) {
-      await logAction(gameId, playerId, action, guestId ? "Convidado" : null);
+      await logAction(
+        targetGameId,
+        playerId,
+        action,
+        guestId ? "Convidado" : null,
+      );
     }
   }
 
@@ -694,12 +862,20 @@ export async function joinGame(
 }
 
 export async function leaveGame(gameId, playerId) {
-  const { data: removedRegistrations, error: playerError } = await supabase
-    .from("game_registrations")
-    .delete()
-    .eq("game_id", gameId)
-    .eq("player_id", playerId)
-    .select("id, slot");
+  const equivalentGameIds = await resolveEquivalentGameIds(gameId);
+  const results = await Promise.all(
+    equivalentGameIds.map((id) =>
+      supabase
+        .from("game_registrations")
+        .delete()
+        .eq("game_id", id)
+        .eq("player_id", playerId)
+        .select("id, slot"),
+    ),
+  );
+
+  const playerError = results.find((result) => result.error)?.error || null;
+  const removedRegistrations = results.flatMap((result) => result.data || []);
 
   if (playerError) {
     console.error("[leaveGame] delete failed, skipping promotion", {
@@ -753,7 +929,7 @@ export async function promoteFromWaitlist(gameId) {
 
   if (!updateError) {
     await logAction(
-      gameId,
+      firstWaitlist.game_id || gameId,
       firstWaitlist.player_id || null,
       "promoted_to_main",
       firstWaitlist.guest_id ? "Convidado promovido" : null,
@@ -764,67 +940,124 @@ export async function promoteFromWaitlist(gameId) {
 }
 
 export async function migrateGuestsToWaitlist(gameId) {
-  const { error } = await supabase
-    .from("game_registrations")
-    .update({
-      slot: "waitlist",
-      registered_at: new Date().toISOString(),
-    })
-    .eq("game_id", gameId)
-    .eq("slot", "guests");
+  const equivalentGameIds = await resolveEquivalentGameIds(gameId);
+  const results = await Promise.all(
+    equivalentGameIds.map((id) =>
+      supabase
+        .from("game_registrations")
+        .update({
+          slot: "waitlist",
+          registered_at: new Date().toISOString(),
+        })
+        .eq("game_id", id)
+        .eq("slot", "guests"),
+    ),
+  );
 
+  const error = results.find((result) => result.error)?.error || null;
   if (error) return false;
 
-  await fillMainListFromWaitlist(gameId);
+  const canonicalGameId = await resolveGameId(gameId);
+  await fillMainListFromWaitlist(canonicalGameId);
 
   return true;
 }
 
 export async function isPlayerRegistered(gameId, playerId) {
-  const { data } = await supabase
-    .from("game_registrations")
-    .select("id, registered_at")
-    .eq("game_id", gameId)
-    .eq("player_id", playerId)
-    .maybeSingle();
+  const equivalentGameIds = await resolveEquivalentGameIds(gameId);
 
-  if (!data) return false;
+  const [queryResults, gamesByIdList] = await Promise.all([
+    Promise.all(
+      equivalentGameIds.map((id) =>
+        supabase
+          .from("game_registrations")
+          .select("id, game_id, registered_at")
+          .eq("game_id", id)
+          .eq("player_id", playerId)
+          .maybeSingle(),
+      ),
+    ),
+    Promise.all(equivalentGameIds.map((id) => getGameById(id))),
+  ]);
 
-  const game = await getGameById(gameId);
-  if (!game) return true;
+  const gamesById = new Map();
+  equivalentGameIds.forEach((id, index) => {
+    const game = gamesByIdList[index];
+    if (game) gamesById.set(String(id), game);
+  });
 
-  return isRegistrationInCurrentCycle(data, game);
+  return queryResults.some((result) => {
+    if (!result?.data) return false;
+
+    const registration = result.data;
+    const registrationGame = gamesById.get(String(registration.game_id));
+    if (!registrationGame) return true;
+
+    return isRegistrationInCurrentCycle(registration, registrationGame);
+  });
 }
 
 export async function getGuestsByInviter(gameId, inviterId) {
-  const { data, error } = await supabase
-    .from("game_registrations")
-    .select("id, guest_name")
-    .eq("game_id", gameId)
-    .eq("invited_by", inviterId)
-    .is("player_id", null)
-    .order("registered_at");
+  const equivalentGameIds = await resolveEquivalentGameIds(gameId);
+  const results = await Promise.all(
+    equivalentGameIds.map((id) =>
+      supabase
+        .from("game_registrations")
+        .select("id, game_id, guest_name, registered_at")
+        .eq("game_id", id)
+        .eq("invited_by", inviterId)
+        .is("player_id", null)
+        .order("registered_at"),
+    ),
+  );
+
+  const error = results.find((result) => result.error)?.error || null;
+  const data = dedupeById(results.flatMap((result) => result.data || [])).sort(
+    (a, b) =>
+      String(a?.registered_at || "").localeCompare(String(b?.registered_at || "")),
+  );
 
   if (error) return [];
   return data || [];
 }
 
 export async function getGuestsByInviterFromTable(gameId, invitedById) {
-  const game = await getGameById(gameId);
+  const equivalentGameIds = await resolveEquivalentGameIds(gameId);
+  const gamesByIdList = await Promise.all(
+    equivalentGameIds.map((id) => getGameById(id)),
+  );
+  const gamesById = new Map();
+  equivalentGameIds.forEach((id, index) => {
+    const game = gamesByIdList[index];
+    if (game) gamesById.set(String(id), game);
+  });
 
-  const { data, error } = await supabase
-    .from("game_registrations")
-    .select(
-      "id, guest_id, registered_at, guest:guests!game_registrations_guest_id_fkey(id, name, gender, skill_level, invited_by)",
-    )
-    .eq("game_id", gameId)
-    .not("guest_id", "is", null)
-    .eq("guest.invited_by", invitedById)
-    .order("registered_at");
+  const results = await Promise.all(
+    equivalentGameIds.map((id) =>
+      supabase
+        .from("game_registrations")
+        .select(
+          "id, game_id, guest_id, registered_at, guest:guests!game_registrations_guest_id_fkey(id, name, gender, skill_level, invited_by)",
+        )
+        .eq("game_id", id)
+        .not("guest_id", "is", null)
+        .eq("guest.invited_by", invitedById)
+        .order("registered_at"),
+    ),
+  );
+
+  const error = results.find((result) => result.error)?.error || null;
+  const data = dedupeById(results.flatMap((result) => result.data || [])).sort(
+    (a, b) =>
+      String(a?.registered_at || "").localeCompare(String(b?.registered_at || "")),
+  );
 
   if (error) return [];
   return (data || []).filter((registration) =>
-    isRegistrationInCurrentCycle(registration, game),
+    isRegistrationInCurrentCycle(
+      registration,
+      gamesById.get(String(registration.game_id)),
+    ),
   );
 }
 
@@ -875,10 +1108,17 @@ export async function updatePlayerAvatar(playerId, avatarUrl) {
 // ── Teams ──────────────────────────────────────────
 
 export async function saveGameTeams(gameId, teams) {
-  await supabase.from("game_teams").delete().eq("game_id", gameId);
+  const canonicalGameId = await resolveGameId(gameId);
+  const equivalentGameIds = await resolveEquivalentGameIds(gameId);
+
+  await Promise.all(
+    equivalentGameIds.map((id) =>
+      supabase.from("game_teams").delete().eq("game_id", id),
+    ),
+  );
 
   const rows = teams.map((team) => ({
-    game_id: gameId,
+    game_id: canonicalGameId,
     team_name: team.name,
     players: team.players,
     total_level: team.totalLevel,
@@ -890,41 +1130,86 @@ export async function saveGameTeams(gameId, teams) {
 }
 
 export async function getGameTeams(gameId) {
-  const game = await getGameById(gameId);
+  const equivalentGameIds = await resolveEquivalentGameIds(gameId);
+  const [game, gamesByIdList] = await Promise.all([
+    getGameById(gameId),
+    Promise.all(equivalentGameIds.map((id) => getGameById(id))),
+  ]);
+
+  const gamesById = new Map();
+  equivalentGameIds.forEach((id, index) => {
+    const item = gamesByIdList[index];
+    if (item) gamesById.set(String(id), item);
+  });
+
   const cycleOpenAt = getCycleOpenAt(game);
 
-  const { data, error } = await supabase
-    .from("game_teams")
-    .select("*")
-    .eq("game_id", gameId)
-    .order("team_name");
+  const results = await Promise.all(
+    equivalentGameIds.map((id) =>
+      supabase.from("game_teams").select("*").eq("game_id", id).order("team_name"),
+    ),
+  );
+
+  const error = results.find((result) => result.error)?.error || null;
+  const data = dedupeById(results.flatMap((result) => result.data || [])).sort(
+    (a, b) => String(a?.team_name || "").localeCompare(String(b?.team_name || "")),
+  );
 
   if (error) return [];
   if (!cycleOpenAt) return data || [];
 
   return (data || []).filter((team) => {
+    const teamGame = gamesById.get(String(team.game_id)) || game;
+    const openAt = getCycleOpenAt(teamGame);
+    if (!openAt) return true;
+
     const createdAt = new Date(team.created_at);
     if (Number.isNaN(createdAt.getTime())) return false;
-    return createdAt.getTime() >= cycleOpenAt.getTime();
+    return createdAt.getTime() >= openAt.getTime();
   });
 }
 
 // ── Presences ───────────────────────────────────────
 
 export async function getGamePresences(gameId) {
-  const { data, error } = await supabase
-    .from("game_presences")
-    .select("*")
-    .eq("game_id", gameId);
+  const equivalentGameIds = await resolveEquivalentGameIds(gameId);
+  const results = await Promise.all(
+    equivalentGameIds.map((id) =>
+      supabase.from("game_presences").select("*").eq("game_id", id),
+    ),
+  );
+
+  const error = results.find((result) => result.error)?.error || null;
+  const merged = results.flatMap((result) => result.data || []);
+  const byPlayerId = new Map();
+  merged.forEach((row) => {
+    const key = String(row?.player_id || "");
+    if (!key) return;
+
+    const current = byPlayerId.get(key);
+    if (!current) {
+      byPlayerId.set(key, row);
+      return;
+    }
+
+    const currentUpdatedAt = String(current?.updated_at || current?.created_at || "");
+    const rowUpdatedAt = String(row?.updated_at || row?.created_at || "");
+    if (rowUpdatedAt > currentUpdatedAt) {
+      byPlayerId.set(key, row);
+    }
+  });
+
+  const data = Array.from(byPlayerId.values());
 
   if (error) return [];
   return data || [];
 }
 
 export async function upsertPresence(gameId, playerId, present) {
+  const canonicalGameId = await resolveGameId(gameId);
   const { error } = await supabase.from("game_presences").upsert(
     {
-      game_id: gameId,
+      game_id: canonicalGameId,
       player_id: playerId,
       present,
     },

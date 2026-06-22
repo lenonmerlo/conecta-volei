@@ -36,7 +36,7 @@ export function isListOpen(gameDay, now = new Date()) {
 
 export function isMemberPriorityWindow(date) {
   const day = date.getDay();
-  const hour = date.getHour();
+  const hour = date.getHours();
   const minute = date.getMinutes();
 
   if (day === 4 && hour >= 19) return true;
@@ -56,7 +56,7 @@ export function isGuestAllowedInMainList(date) {
 export function getSundayPriority(player, date) {
   if (player.status === PLAYER_STATUS.PENALIZED) return 4;
 
-  if (player.getDay === PLAYER_TYPE.MEMBER) {
+  if (player.type === PLAYER_TYPE.MEMBER) {
     return isMemberPriorityWindow(date) ? 1 : 2;
   }
 
