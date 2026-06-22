@@ -387,7 +387,61 @@ export async function getGames() {
     .order("date");
 
   if (error) return [];
-  return data || [];
+
+  const games = data || [];
+  const prioritizedDays = ["wednesday", "sunday"];
+
+  const pickMostRecent = (items) => {
+    if (!items.length) return null;
+
+    return items.reduce((latest, current) => {
+      const latestDate = String(latest?.date || "");
+      const currentDate = String(current?.date || "");
+
+      if (currentDate > latestDate) return current;
+      if (currentDate < latestDate) return latest;
+
+      const latestTime = String(latest?.time || "");
+      const currentTime = String(current?.time || "");
+      if (currentTime > latestTime) return current;
+      if (currentTime < latestTime) return latest;
+
+      return String(current?.id || "") > String(latest?.id || "")
+        ? current
+        : latest;
+    });
+  };
+
+  const selectedByDay = prioritizedDays
+    .map((day) => {
+      const dayGames = games.filter((game) => game?.day === day);
+      if (!dayGames.length) return null;
+
+      const preferredNewIdGames = dayGames.filter(
+        (game) => typeof game?.id === "string" && game.id.startsWith(`${day}-`),
+      );
+
+      const source = preferredNewIdGames.length
+        ? preferredNewIdGames
+        : dayGames;
+      return pickMostRecent(source);
+    })
+    .filter(Boolean);
+
+  const selectedIds = new Set(selectedByDay.map((game) => game.id));
+
+  return games
+    .filter(
+      (game) =>
+        !prioritizedDays.includes(game?.day) || selectedIds.has(game?.id),
+    )
+    .sort((a, b) => {
+      const dateCompare = String(a?.date || "").localeCompare(
+        String(b?.date || ""),
+      );
+      if (dateCompare !== 0) return dateCompare;
+      return String(a?.time || "").localeCompare(String(b?.time || ""));
+    });
 }
 
 export async function createGame(game) {
