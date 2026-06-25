@@ -3,6 +3,9 @@
   margin: 0 auto;
   padding: 0.75rem 0.75rem 6.5rem;
   color: var(--cv-text);
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 .app__header {
@@ -86,6 +89,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
+  min-width: 0;
 }
 
 .app__logo {
@@ -98,12 +102,14 @@
   font-size: 0.82rem;
   line-height: 1.35;
   color: var(--cv-primary-soft);
+  overflow-wrap: anywhere;
 }
 
 .app__main {
   margin-top: 0.85rem;
   border: 1px solid rgba(143, 215, 255, 0.22);
   border-radius: 16px;
+  max-width: 100%;
   background: linear-gradient(
     180deg,
     rgba(9, 28, 46, 0.88) 0%,

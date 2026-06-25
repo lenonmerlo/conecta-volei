@@ -82,6 +82,8 @@
 .home__announcements-item-title {
   font-size: 0.95rem;
   color: #eff8ff;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .home__announcements-item-body {
@@ -89,6 +91,8 @@
   font-size: 0.88rem;
   color: var(--cv-muted);
   line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 @media (min-width: 860px) {
