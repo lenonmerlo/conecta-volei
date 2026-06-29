@@ -2,8 +2,12 @@
 
 import { useState } from "react";
 import Button from "../../../components/Button/Button";
-import { updatePlayerStatus } from "../../../data/supabaseService";
-import { PLAYER_STATUS, PLAYER_TYPE } from "../../../domain/constants";
+import {
+  addWarning,
+  removeWarning,
+  resetWarnings,
+} from "../../../data/supabaseService";
+import { PLAYER_TYPE } from "../../../domain/constants";
 import "./AdminTabs.css";
 
 function statusLabel(status) {
@@ -19,37 +23,23 @@ function statusLabel(status) {
 function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
   const [error, setError] = useState("");
 
-  async function togglePenalized(id) {
-    const current = players.find((player) => player.id === id);
-    if (!current) return;
+  async function applyWarningAction(playerId, action) {
+    let updatedPlayer = null;
 
-    const nextStatus =
-      current.status === PLAYER_STATUS.PENALIZED
-        ? PLAYER_STATUS.ACTIVE
-        : PLAYER_STATUS.PENALIZED;
-
-    const success = await updatePlayerStatus(id, nextStatus);
-    if (!success) {
-      setError("Nao foi possivel atualizar o status do jogador.");
-      return;
+    if (action === "add") {
+      updatedPlayer = await addWarning(playerId);
     }
 
-    setError("");
-    await onRefreshPlayers();
-  }
+    if (action === "remove") {
+      updatedPlayer = await removeWarning(playerId);
+    }
 
-  async function toggleBlocked(id) {
-    const current = players.find((player) => player.id === id);
-    if (!current) return;
+    if (action === "reset") {
+      updatedPlayer = await resetWarnings(playerId);
+    }
 
-    const nextStatus =
-      current.status === PLAYER_STATUS.BLOCKED
-        ? PLAYER_STATUS.ACTIVE
-        : PLAYER_STATUS.BLOCKED;
-
-    const success = await updatePlayerStatus(id, nextStatus);
-    if (!success) {
-      setError("Nao foi possivel atualizar o status do jogador.");
+    if (!updatedPlayer) {
+      setError("Nao foi possivel atualizar as advertencias do jogador.");
       return;
     }
 
@@ -84,27 +74,34 @@ function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
               <span className="admin-tab__type">
                 {p.type === PLAYER_TYPE.MEMBER ? "Membro" : "Convidado"}
               </span>
+              <span className="admin-tab__warning-count">
+                Advertencias: {Math.max(0, Number(p.warnings) || 0)}
+              </span>
             </div>
             <div className="admin-tab__actions">
               <Button
                 size="sm"
                 variant="warning"
                 className="admin-tab__btn"
-                onClick={() => togglePenalized(p.id)}
+                onClick={() => applyWarningAction(p.id, "add")}
               >
-                {p.status === PLAYER_STATUS.PENALIZED
-                  ? "Remover penalidade"
-                  : "Penalizar"}
+                +Advertencia
+              </Button>
+              <Button
+                size="sm"
+                variant="success"
+                className="admin-tab__btn"
+                onClick={() => applyWarningAction(p.id, "remove")}
+              >
+                -Advertencia
               </Button>
               <Button
                 size="sm"
                 variant="danger"
                 className="admin-tab__btn"
-                onClick={() => toggleBlocked(p.id)}
+                onClick={() => applyWarningAction(p.id, "reset")}
               >
-                {p.status === PLAYER_STATUS.BLOCKED
-                  ? "Desbloquear"
-                  : "Bloquear"}
+                Zerar
               </Button>
             </div>
           </li>

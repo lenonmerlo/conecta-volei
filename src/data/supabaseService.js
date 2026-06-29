@@ -131,6 +131,75 @@ export async function updatePlayerStatus(playerId, status) {
   return !error;
 }
 
+function statusFromWarnings(warnings) {
+  if (warnings >= 3) return "blocked";
+  if (warnings === 2) return "penalized";
+  return "active";
+}
+
+export function isSaturdayAfter21h(game) {
+  if (game?.day !== "sunday" || !game?.date) return false;
+
+  const sundayDate = new Date(`${game.date}T00:00:00`);
+  if (Number.isNaN(sundayDate.getTime())) return false;
+
+  const cutoff = new Date(sundayDate);
+  cutoff.setDate(cutoff.getDate() - 1);
+  cutoff.setHours(21, 0, 0, 0);
+
+  return Date.now() >= cutoff.getTime();
+}
+
+export async function addWarning(playerId) {
+  const player = await getPlayerById(playerId);
+  if (!player) return null;
+
+  const currentWarnings = Math.max(0, Number(player.warnings) || 0);
+  const nextWarnings = currentWarnings + 1;
+  const nextStatus = statusFromWarnings(nextWarnings);
+
+  const { data, error } = await supabase
+    .from("players")
+    .update({ warnings: nextWarnings, status: nextStatus })
+    .eq("id", playerId)
+    .select("*")
+    .maybeSingle();
+
+  if (error) return null;
+  return data;
+}
+
+export async function removeWarning(playerId) {
+  const player = await getPlayerById(playerId);
+  if (!player) return null;
+
+  const currentWarnings = Math.max(0, Number(player.warnings) || 0);
+  const nextWarnings = Math.max(0, currentWarnings - 1);
+  const nextStatus = statusFromWarnings(nextWarnings);
+
+  const { data, error } = await supabase
+    .from("players")
+    .update({ warnings: nextWarnings, status: nextStatus })
+    .eq("id", playerId)
+    .select("*")
+    .maybeSingle();
+
+  if (error) return null;
+  return data;
+}
+
+export async function resetWarnings(playerId) {
+  const { data, error } = await supabase
+    .from("players")
+    .update({ warnings: 0, status: "active" })
+    .eq("id", playerId)
+    .select("*")
+    .maybeSingle();
+
+  if (error) return null;
+  return data;
+}
+
 export async function updatePlayerLevel(playerId, skillLevel) {
   const { error } = await supabase
     .from("players")
@@ -668,7 +737,9 @@ async function getRegistrationRowsByGameIds(gameIds, columns) {
 
   const rows = results.flatMap((result) => result.data || []);
   const dedupedRows = dedupeById(rows).sort((a, b) =>
-    String(a?.registered_at || "").localeCompare(String(b?.registered_at || "")),
+    String(a?.registered_at || "").localeCompare(
+      String(b?.registered_at || ""),
+    ),
   );
 
   return { data: dedupedRows, error: null };
@@ -739,7 +810,9 @@ export async function getGameRegistrations(gameId) {
 export async function getRegistrationCountsByGame() {
   const games = await getGames();
 
-  const { data: allGames } = await supabase.from("games").select("id, day, date");
+  const { data: allGames } = await supabase
+    .from("games")
+    .select("id, day, date");
   const canonicalByDayDate = new Map();
   const gameIdToCanonical = new Map();
 
@@ -862,6 +935,13 @@ export async function joinGame(
 }
 
 export async function leaveGame(gameId, playerId) {
+  const resolvedGameId = await resolveGameId(gameId);
+  const { data: gameData } = await supabase
+    .from("games")
+    .select("id, day, date")
+    .eq("id", resolvedGameId)
+    .maybeSingle();
+
   const equivalentGameIds = await resolveEquivalentGameIds(gameId);
   const results = await Promise.all(
     equivalentGameIds.map((id) =>
@@ -888,6 +968,18 @@ export async function leaveGame(gameId, playerId) {
 
   if ((removedRegistrations || []).length > 0) {
     await logAction(gameId, playerId, "left_list", null);
+
+    if (isSaturdayAfter21h(gameData)) {
+      const warnedPlayer = await addWarning(playerId);
+      if (warnedPlayer) {
+        await logAction(
+          gameId,
+          playerId,
+          "warning_added",
+          "Saiu da lista após 21h de sábado",
+        );
+      }
+    }
   }
 
   await fillMainListFromWaitlist(gameId);
@@ -1014,7 +1106,9 @@ export async function getGuestsByInviter(gameId, inviterId) {
   const error = results.find((result) => result.error)?.error || null;
   const data = dedupeById(results.flatMap((result) => result.data || [])).sort(
     (a, b) =>
-      String(a?.registered_at || "").localeCompare(String(b?.registered_at || "")),
+      String(a?.registered_at || "").localeCompare(
+        String(b?.registered_at || ""),
+      ),
   );
 
   if (error) return [];
@@ -1049,7 +1143,9 @@ export async function getGuestsByInviterFromTable(gameId, invitedById) {
   const error = results.find((result) => result.error)?.error || null;
   const data = dedupeById(results.flatMap((result) => result.data || [])).sort(
     (a, b) =>
-      String(a?.registered_at || "").localeCompare(String(b?.registered_at || "")),
+      String(a?.registered_at || "").localeCompare(
+        String(b?.registered_at || ""),
+      ),
   );
 
   if (error) return [];
@@ -1146,13 +1242,18 @@ export async function getGameTeams(gameId) {
 
   const results = await Promise.all(
     equivalentGameIds.map((id) =>
-      supabase.from("game_teams").select("*").eq("game_id", id).order("team_name"),
+      supabase
+        .from("game_teams")
+        .select("*")
+        .eq("game_id", id)
+        .order("team_name"),
     ),
   );
 
   const error = results.find((result) => result.error)?.error || null;
   const data = dedupeById(results.flatMap((result) => result.data || [])).sort(
-    (a, b) => String(a?.team_name || "").localeCompare(String(b?.team_name || "")),
+    (a, b) =>
+      String(a?.team_name || "").localeCompare(String(b?.team_name || "")),
   );
 
   if (error) return [];
@@ -1192,7 +1293,9 @@ export async function getGamePresences(gameId) {
       return;
     }
 
-    const currentUpdatedAt = String(current?.updated_at || current?.created_at || "");
+    const currentUpdatedAt = String(
+      current?.updated_at || current?.created_at || "",
+    );
     const rowUpdatedAt = String(row?.updated_at || row?.created_at || "");
     if (rowUpdatedAt > currentUpdatedAt) {
       byPlayerId.set(key, row);
