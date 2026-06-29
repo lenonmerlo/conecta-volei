@@ -47,6 +47,16 @@
   color: var(--cv-muted);
 }
 
+.admin-tab__warning-count {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #fff1bf;
+  background: rgba(204, 145, 58, 0.24);
+  border: 1px solid rgba(204, 145, 58, 0.45);
+  border-radius: 999px;
+  padding: 0.2rem 0.52rem;
+}
+
 .admin-tab__status {
   font-size: 0.7rem;
   font-weight: 600;
@@ -105,7 +115,7 @@
 }
 
 .admin-tab__actions .admin-tab__btn {
-  flex: 1 1 calc(50% - 0.25rem);
+  flex: 1 1 calc(33.33% - 0.35rem);
   min-width: 0;
 }
 
