@@ -62,8 +62,46 @@ function getFixedMapUrlByLocation(location) {
 }
 
 function formatName(player) {
-  if (player.nickname) return `${player.name} (${player.nickname})`;
-  return player.name;
+  const cleanName = sanitizeInlineText(player.name);
+  const cleanNickname = sanitizeInlineText(player.nickname);
+
+  if (cleanNickname) return `${cleanName} (${cleanNickname})`;
+  return cleanName;
+}
+
+function sanitizeInlineText(value) {
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getBadgesText(player) {
+  let suffix = "";
+  if (player.is_captain) suffix += " (C)";
+  if (player.is_setter) suffix += " (L)";
+  return suffix;
+}
+
+function buildMainListText(game, dayLabel, players) {
+  const cleanLocation = sanitizeInlineText(game.location);
+  const cleanTime = sanitizeInlineText(game.time);
+
+  const lines = [
+    "🏐 *Lista Principal*",
+    "",
+    `*${dayLabel}*`,
+    `${game.date} às ${cleanTime}`,
+    cleanLocation,
+    "",
+    `Inscritos: ${players.length}/21`,
+    "",
+  ];
+
+  players.forEach((player, index) => {
+    lines.push(`${index + 1}. ${formatName(player)}${getBadgesText(player)}`);
+  });
+
+  return lines.join("\n").trim();
 }
 
 function hasCaptainBadge(player) {
@@ -216,6 +254,7 @@ function GameDetail() {
   const [registrations, setRegistrations] = useState([]);
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [copyNotice, setCopyNotice] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -263,6 +302,18 @@ function GameDetail() {
     };
   }, [id, fetchData]);
 
+  useEffect(() => {
+    if (!copyNotice) return undefined;
+
+    const timeoutId = setTimeout(() => {
+      setCopyNotice(null);
+    }, 2600);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [copyNotice]);
+
   if (loading) {
     return (
       <div className="game-detail">
@@ -287,8 +338,37 @@ function GameDetail() {
   const mainListDisplay = mainPlayers;
   const dayLabel = getDayLabel(game.date);
 
+  async function handleCopyMainList() {
+    if (mainListDisplay.length === 0) return;
+
+    const text = buildMainListText(game, dayLabel, mainListDisplay);
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopyNotice({
+        type: "success",
+        message: "Lista copiada. Agora é só colar no WhatsApp.",
+      });
+    } catch {
+      setCopyNotice({
+        type: "error",
+        message: "Não foi possível copiar a lista. Tente novamente.",
+      });
+    }
+  }
+
   return (
     <div className="game-detail">
+      {copyNotice && (
+        <div
+          className={`game-detail__notice game-detail__notice--${copyNotice.type}`}
+          role="status"
+          aria-live="polite"
+        >
+          {copyNotice.message}
+        </div>
+      )}
+
       <div className="game-detail__header">
         <h2 className="game-detail__day">{dayLabel}</h2>
         <p className="game-detail__info">
@@ -311,9 +391,18 @@ function GameDetail() {
       </div>
 
       <div className="game-detail__section">
-        <h3 className="game-detail__section-title">
-          {`Lista Principal (${mainListDisplay.length})`}
-        </h3>
+        <div className="game-detail__section-head">
+          <h3 className="game-detail__section-title">
+            {`Lista Principal (${mainListDisplay.length})`}
+          </h3>
+          <button
+            className="game-detail__share-button"
+            onClick={handleCopyMainList}
+            disabled={mainListDisplay.length === 0}
+          >
+            Copiar para WhatsApp
+          </button>
+        </div>
         {mainListDisplay.length === 0 && (
           <p className="game-detail__empty">
             Nenhum jogador na lista principal.
