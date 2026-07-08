@@ -1,5 +1,6 @@
 // Serviço de integração com o Supabase
 
+import { isSuperAdmin } from "../domain/admins";
 import { getNextGameDate } from "../domain/gameRules";
 import { supabase } from "../lib/supabase";
 
@@ -78,11 +79,16 @@ export async function getPlayerById(playerId) {
 export async function getAllPlayers() {
   const { data, error } = await supabase
     .from("players")
-    .select("*, badge_monster_block, badge_super_spike, badge_guardian")
+    .select(
+      "*, on_injury_leave, badge_monster_block, badge_super_spike, badge_guardian",
+    )
     .order("name");
 
   if (error) return [];
-  return data;
+  return (data || []).map((player) => ({
+    ...player,
+    on_injury_leave: Boolean(player.on_injury_leave),
+  }));
 }
 
 export async function getPublicPlayers() {
@@ -118,7 +124,30 @@ export async function deletePlayer(playerId) {
   return !error && (data?.length || 0) > 0;
 }
 
-export async function updatePlayerStatus(playerId, status) {
+export async function updatePlayerStatus(playerId, status, actorUser = null) {
+  if (status === "active") {
+    const { data: targetPlayer, error: readError } = await supabase
+      .from("players")
+      .select("id, status")
+      .eq("id", playerId)
+      .maybeSingle();
+
+    if (readError || !targetPlayer) {
+      return {
+        success: false,
+        error: "Nao foi possivel verificar o status atual do jogador.",
+      };
+    }
+
+    const isUnblocking = targetPlayer.status === "blocked";
+    if (isUnblocking && !isSuperAdmin(actorUser)) {
+      return {
+        success: false,
+        error: "Apenas super admins podem desbloquear jogadores.",
+      };
+    }
+  }
+
   const { error } = await supabase
     .from("players")
     .update({ status })
@@ -128,7 +157,21 @@ export async function updatePlayerStatus(playerId, status) {
     await logAction(null, playerId, "penalized", "Penalizado via Admin");
   }
 
-  return !error;
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+export async function updatePlayerInjuryLeave(playerId, onInjuryLeave) {
+  const { error } = await supabase
+    .from("players")
+    .update({ on_injury_leave: Boolean(onInjuryLeave) })
+    .eq("id", playerId);
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
 }
 
 function statusFromWarnings(warnings) {

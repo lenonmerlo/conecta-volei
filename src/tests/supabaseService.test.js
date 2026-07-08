@@ -152,6 +152,7 @@ import {
   promoteFromWaitlist,
   registerPlayer,
   removeGuest,
+  updatePlayerInjuryLeave,
   updatePlayerStatus,
 } from "../data/supabaseService";
 
@@ -507,17 +508,70 @@ describe("supabaseService", () => {
   });
 
   describe("updatePlayerStatus", () => {
-    it("atualiza status do jogador e retorna true", async () => {
+    it("atualiza status do jogador e retorna success true", async () => {
       enqueueResponse("players.update.eq", {
         error: null,
       });
 
       const success = await updatePlayerStatus("p1", "inactive");
 
-      expect(success).toBe(true);
+      expect(success).toEqual({ success: true });
       expect(hoisted.callLog.update[0]).toEqual({
         table: "players",
         payload: { status: "inactive" },
+      });
+    });
+
+    it("retorna erro quando tenta desbloquear sem ser super admin", async () => {
+      enqueueResponse("players.select.maybeSingle", {
+        data: { id: "p1", status: "blocked" },
+        error: null,
+      });
+
+      const result = await updatePlayerStatus("p1", "active", {
+        whatsapp: "27999519575",
+      });
+
+      expect(result).toEqual({
+        success: false,
+        error: "Apenas super admins podem desbloquear jogadores.",
+      });
+      expect(hoisted.callLog.update).toHaveLength(0);
+    });
+
+    it("permite desbloquear quando for super admin", async () => {
+      enqueueResponse("players.select.maybeSingle", {
+        data: { id: "p1", status: "blocked" },
+        error: null,
+      });
+      enqueueResponse("players.update.eq", {
+        error: null,
+      });
+
+      const result = await updatePlayerStatus("p1", "active", {
+        whatsapp: "27997343401",
+      });
+
+      expect(result).toEqual({ success: true });
+      expect(hoisted.callLog.update[0]).toEqual({
+        table: "players",
+        payload: { status: "active" },
+      });
+    });
+  });
+
+  describe("updatePlayerInjuryLeave", () => {
+    it("atualiza on_injury_leave com sucesso", async () => {
+      enqueueResponse("players.update.eq", {
+        error: null,
+      });
+
+      const result = await updatePlayerInjuryLeave("p1", true);
+
+      expect(result).toEqual({ success: true });
+      expect(hoisted.callLog.update[0]).toEqual({
+        table: "players",
+        payload: { on_injury_leave: true },
       });
     });
   });

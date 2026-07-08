@@ -30,6 +30,25 @@ function normalizePlayer(player) {
   };
 }
 
+function isBlockedByWarnings(player) {
+  return Math.max(0, Number(player?.warnings) || 0) >= 3;
+}
+
+function isBlockedByInactivity(player) {
+  const reasonText = [
+    player?.block_reason,
+    player?.blocked_reason,
+    player?.status_reason,
+    player?.suspension_reason,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  if (reasonText.includes("inativ")) return true;
+  return !isBlockedByWarnings(player);
+}
+
 function getSession() {
   const data = localStorage.getItem(SESSION_KEY);
   if (!data) return null;
@@ -59,6 +78,15 @@ export function AuthProvider({ children }) {
       return {
         success: false,
         error: "Seu cadastro está aguardando aprovação de um administrador.",
+      };
+    }
+
+    if (member.status === "blocked") {
+      return {
+        success: false,
+        error: isBlockedByInactivity(member)
+          ? "Seu acesso foi suspenso por inatividade. Entre em contato com um administrador para reativação."
+          : "Você está suspenso. Entre em contato com um administrador.",
       };
     }
 
