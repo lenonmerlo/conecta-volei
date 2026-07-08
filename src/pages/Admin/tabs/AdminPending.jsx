@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useAuth } from "../../../app/AuthContext";
 import Button from "../../../components/Button/Button";
 import {
   deletePlayer,
@@ -23,6 +24,7 @@ function formatDate(value) {
 }
 
 function AdminPending({ players, loadingPlayers, onRefreshPlayers }) {
+  const { user } = useAuth();
   const [error, setError] = useState("");
 
   const pendingPlayers = useMemo(
@@ -31,9 +33,9 @@ function AdminPending({ players, loadingPlayers, onRefreshPlayers }) {
   );
 
   async function approvePlayer(playerId) {
-    const success = await updatePlayerStatus(playerId, "active");
-    if (!success) {
-      setError("Nao foi possivel aprovar o cadastro.");
+    const result = await updatePlayerStatus(playerId, "active", user);
+    if (!result.success) {
+      setError(result.error || "Nao foi possivel aprovar o cadastro.");
       return;
     }
 
@@ -56,7 +58,9 @@ function AdminPending({ players, loadingPlayers, onRefreshPlayers }) {
       null,
       playerId,
       "rejected",
-      player?.name ? `Cadastro recusado: ${player.name}` : "Cadastro recusado no Admin",
+      player?.name
+        ? `Cadastro recusado: ${player.name}`
+        : "Cadastro recusado no Admin",
     );
 
     setError("");
