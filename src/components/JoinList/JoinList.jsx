@@ -324,10 +324,13 @@ function JoinList({ game, onUpdate }) {
 
     const day = new Date().getDay();
     const isGuestWindowClosed = day === 6 || day === 0;
+    const mainCount = registrations.filter((r) => r.slot === "main").length;
 
     const slot = isSundayGame
       ? isGuestWindowClosed
-        ? "waitlist"
+        ? mainCount < MAX_MAIN_LIST
+          ? "main"
+          : "waitlist"
         : "guests"
       : mainListCount < MAX_MAIN_LIST
         ? "main"
