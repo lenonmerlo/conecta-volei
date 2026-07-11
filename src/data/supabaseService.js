@@ -6,10 +6,17 @@ import { supabase } from "../lib/supabase";
 
 const MAX_MAIN_LIST = 21;
 
-export async function logAction(gameId, playerId, action, details = null) {
+export async function logAction(
+  gameId,
+  playerId,
+  action,
+  details = null,
+  guestId = null,
+) {
   const { error } = await supabase.from("audit_log").insert({
     game_id: gameId || null,
     player_id: playerId || null,
+    guest_id: guestId || null,
     action,
     details: details || null,
   });
@@ -18,6 +25,7 @@ export async function logAction(gameId, playerId, action, details = null) {
     console.error("[audit_log] falha ao salvar evento", {
       gameId,
       playerId,
+      guestId,
       action,
       details,
       error,
@@ -969,7 +977,8 @@ export async function joinGame(
         targetGameId,
         playerId,
         action,
-        guestId ? "Convidado" : null,
+        guestId ? "Convidado externo" : null,
+        guestId,
       );
     }
   }
@@ -977,24 +986,31 @@ export async function joinGame(
   return !error;
 }
 
-export async function leaveGame(gameId, playerId) {
+export async function leaveGame(gameId, playerId = null, guestId = null) {
+  if (!playerId && !guestId) return false;
+
   const resolvedGameId = await resolveGameId(gameId);
-  const { data: gameData } = await supabase
-    .from("games")
-    .select("id, day, date")
-    .eq("id", resolvedGameId)
-    .maybeSingle();
+  const { data: gameData } = playerId
+    ? await supabase
+        .from("games")
+        .select("id, day, date")
+        .eq("id", resolvedGameId)
+        .maybeSingle()
+    : { data: null };
 
   const equivalentGameIds = await resolveEquivalentGameIds(gameId);
   const results = await Promise.all(
-    equivalentGameIds.map((id) =>
-      supabase
-        .from("game_registrations")
-        .delete()
-        .eq("game_id", id)
-        .eq("player_id", playerId)
-        .select("id, slot"),
-    ),
+    equivalentGameIds.map((id) => {
+      let query = supabase.from("game_registrations").delete().eq("game_id", id);
+
+      if (guestId) {
+        query = query.eq("guest_id", guestId);
+      } else {
+        query = query.eq("player_id", playerId);
+      }
+
+      return query.select("id, slot, guest_id");
+    }),
   );
 
   const playerError = results.find((result) => result.error)?.error || null;
@@ -1010,9 +1026,17 @@ export async function leaveGame(gameId, playerId) {
   }
 
   if ((removedRegistrations || []).length > 0) {
-    await logAction(gameId, playerId, "left_list", null);
+    const removedGuestId =
+      guestId || removedRegistrations.find((registration) => registration?.guest_id)?.guest_id || null;
+    await logAction(
+      gameId,
+      playerId,
+      "left_list",
+      removedGuestId ? "Convidado externo" : null,
+      removedGuestId,
+    );
 
-    if (isSaturdayAfter21h(gameData)) {
+    if (playerId && isSaturdayAfter21h(gameData)) {
       const warnedPlayer = await addWarning(playerId);
       if (warnedPlayer) {
         await logAction(
@@ -1206,11 +1230,19 @@ export async function removeGuest(registrationId) {
     .delete()
     .eq("id", registrationId)
     .is("player_id", null)
-    .select("id, game_id, slot");
+    .select("id, game_id, slot, guest_id");
 
   if (error || !data?.length) return false;
 
   const removedRegistration = data[0];
+  await logAction(
+    removedRegistration.game_id,
+    null,
+    "left_list",
+    "Convidado externo",
+    removedRegistration.guest_id || null,
+  );
+
   if (removedRegistration.slot === "main" && removedRegistration.game_id) {
     await fillMainListFromWaitlist(removedRegistration.game_id);
   }
@@ -1401,7 +1433,7 @@ export async function getAuditLogs() {
   const { data, error } = await supabase
     .from("audit_log")
     .select(
-      "id, game_id, player_id, action, details, created_at, player:players(id, name, nickname)",
+      "id, game_id, player_id, guest_id, action, details, created_at, player:players(id, name, nickname), guest:guests!audit_log_guest_id_fkey(id, name)",
     )
     .order("created_at", { ascending: false });
 

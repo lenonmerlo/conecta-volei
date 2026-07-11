@@ -31,9 +31,11 @@ function formatDateTime(value) {
 function resolvePlayerName(log) {
   const nickname = log?.player?.nickname;
   const name = log?.player?.name;
+  const guestName = log?.guest?.name;
 
   if (name && nickname) return `${name} (${nickname})`;
   if (name) return name;
+  if (!log?.player_id && guestName) return guestName;
   return "Sistema / Convidado";
 }
 
@@ -158,7 +160,7 @@ function AdminAudit() {
             </div>
 
             <div className="admin-tab__pending-meta">
-              <span>Jogador: {resolvePlayerName(log)}</span>
+              <span>Participante: {resolvePlayerName(log)}</span>
               <span>Jogo: {log.game_id || "Nao informado"}</span>
               <span>Detalhes: {log.details || "-"}</span>
             </div>
