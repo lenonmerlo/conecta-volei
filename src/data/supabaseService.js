@@ -628,46 +628,6 @@ export async function cancelGame(gameId) {
   return !error;
 }
 
-export async function updateGameDates() {
-  const { data, error } = await supabase.from("games").select("id, day, date");
-
-  if (error) {
-    console.error("[updateGameDates] Falha ao buscar jogos:", error);
-    return false;
-  }
-
-  const updates = (data || [])
-    .filter((game) => game.day === "wednesday" || game.day === "sunday")
-    .map((game) => {
-      const nextDate = getNextGameDate(game.day);
-      const currentDate = (game.date || "").toString().split("T")[0];
-      return {
-        id: game.id,
-        currentDate,
-        nextDate,
-      };
-    })
-    .filter((game) => game.currentDate !== game.nextDate);
-
-  if (updates.length === 0) return true;
-
-  const results = await Promise.all(
-    updates.map((game) =>
-      supabase.from("games").update({ date: game.nextDate }).eq("id", game.id),
-    ),
-  );
-
-  const hasError = results.some((result) => result.error);
-  if (hasError) {
-    console.error(
-      "[updateGameDates] Falha ao atualizar uma ou mais datas:",
-      results.filter((result) => result.error).map((result) => result.error),
-    );
-  }
-
-  return !hasError;
-}
-
 export async function getGameById(gameId) {
   const { data, error } = await supabase
     .from("games")
