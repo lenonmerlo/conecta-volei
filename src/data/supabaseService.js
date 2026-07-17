@@ -835,15 +835,129 @@ function isRegistrationInCurrentCycle(registration, game) {
   return registeredAt.getTime() >= openAt.getTime();
 }
 
+function isGuestMigrationWindowOpen(game, now = new Date()) {
+  if (game?.day !== "sunday" || !game?.date) return false;
+
+  const [year, month, day] = String(game.date)
+    .split("T")[0]
+    .split("-")
+    .map((value) => Number.parseInt(value, 10));
+
+  if (!year || !month || !day) return false;
+
+  const saturdayStart = new Date(year, month - 1, day, 0, 0, 0, 0);
+  saturdayStart.setDate(saturdayStart.getDate() - 1);
+
+  return now.getTime() >= saturdayStart.getTime();
+}
+
+export async function autoMigrateGuests(
+  gameId,
+  { now = new Date(), game: preloadedGame = null } = {},
+) {
+  const canonicalGameId = await resolveGameId(gameId);
+  const baseGame = preloadedGame || (await getGameById(canonicalGameId));
+  if (!baseGame) return false;
+  if (!isGuestMigrationWindowOpen(baseGame, now)) return false;
+
+  const equivalentGameIds = await resolveEquivalentGameIds(canonicalGameId);
+  const gamesByIdList = await Promise.all(
+    equivalentGameIds.map((id) => getGameById(id)),
+  );
+
+  const gamesById = new Map();
+  equivalentGameIds.forEach((id, index) => {
+    const game = gamesByIdList[index];
+    if (game) gamesById.set(String(id), game);
+  });
+
+  const { data: allRegistrations, error } = await getRegistrationRowsByGameIds(
+    equivalentGameIds,
+    "id, game_id, slot, registered_at, player_id, guest_id, guest_name",
+  );
+
+  if (error) {
+    console.error(
+      "[Supabase] Falha ao migrar convidados automaticamente:",
+      error,
+    );
+    return false;
+  }
+
+  const currentCycleRegistrations = (allRegistrations || []).filter(
+    (registration) =>
+      isRegistrationInCurrentCycle(
+        registration,
+        gamesById.get(String(registration.game_id)) || baseGame,
+      ),
+  );
+
+  const guestRegistrations = currentCycleRegistrations.filter(
+    (registration) => registration.slot === "guests",
+  );
+
+  if (!guestRegistrations.length) return false;
+
+  let mainCount = currentCycleRegistrations.filter(
+    (registration) => registration.slot === "main",
+  ).length;
+
+  const updates = guestRegistrations.map((registration, index) => {
+    const targetSlot = mainCount < MAX_MAIN_LIST ? "main" : "waitlist";
+    if (targetSlot === "main") {
+      mainCount += 1;
+    }
+
+    const registeredAt = new Date(now.getTime() + index).toISOString();
+
+    return {
+      id: registration.id,
+      slot: targetSlot,
+      registered_at: registeredAt,
+    };
+  });
+
+  const results = await Promise.all(
+    updates.map((updatePayload) =>
+      supabase
+        .from("game_registrations")
+        .update({
+          slot: updatePayload.slot,
+          registered_at: updatePayload.registered_at,
+        })
+        .eq("id", updatePayload.id),
+    ),
+  );
+
+  const updateError = results.find((result) => result.error)?.error || null;
+  if (updateError) {
+    console.error(
+      "[Supabase] Falha ao atualizar convidados na migracao automatica:",
+      updateError,
+    );
+    return false;
+  }
+
+  return true;
+}
+
 // ── Registrations ──────────────────────────────────
 
-export async function getGameRegistrations(gameId) {
+export async function getGameRegistrations(
+  gameId,
+  { autoMigrate = true } = {},
+) {
   const canonicalGameId = await resolveGameId(gameId);
+  const requestedGame = await getGameById(canonicalGameId);
+
+  if (autoMigrate && requestedGame?.day === "sunday") {
+    await autoMigrateGuests(canonicalGameId, { game: requestedGame });
+  }
+
   const equivalentGameIds = await resolveEquivalentGameIds(canonicalGameId);
-  const [requestedGame, gamesByIdList] = await Promise.all([
-    getGameById(canonicalGameId),
-    Promise.all(equivalentGameIds.map((id) => getGameById(id))),
-  ]);
+  const gamesByIdList = await Promise.all(
+    equivalentGameIds.map((id) => getGameById(id)),
+  );
 
   const gamesById = new Map();
   equivalentGameIds.forEach((id, index) => {
@@ -973,7 +1087,9 @@ async function hasMainSpotAvailableForJoin(game, fallbackGameId) {
     countGameId = (await getCurrentGameIdForDay(day)) || fallbackGameId;
   }
 
-  const registrations = await getGameRegistrations(countGameId);
+  const registrations = await getGameRegistrations(countGameId, {
+    autoMigrate: false,
+  });
   const mainCount = (registrations || []).filter(
     (registration) => registration.slot === "main",
   ).length;
@@ -1137,6 +1253,10 @@ export async function leaveGame(gameId, playerId = null, guestId = null) {
   }
 
   await fillMainListFromWaitlist(gameId);
+
+  await autoMigrateGuests(resolvedGameId, {
+    game: gameData || null,
+  });
 
   return true;
 }
