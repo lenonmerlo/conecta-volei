@@ -700,7 +700,15 @@ export async function getCurrentGameIdForDay(day, now = new Date()) {
     return null;
   }
 
-  return pickCurrentGameIdForDay(day, data || [], now);
+  const currentGameId = pickCurrentGameIdForDay(day, data || [], now);
+  if (!currentGameId) {
+    console.error("[Supabase] Nenhum jogo ativo encontrado para o dia:", {
+      day,
+      now: now.toISOString(),
+    });
+  }
+
+  return currentGameId;
 }
 
 function dedupeById(rows) {
@@ -929,8 +937,23 @@ export async function autoMigrateGuests(
     ),
   );
 
-  const updateError = results.find((result) => result.error)?.error || null;
+  const failedUpdates = results
+    .map((result, index) => ({ result, update: updates[index] }))
+    .filter((item) => item.result?.error);
+
+  const updateError = failedUpdates[0]?.result?.error || null;
   if (updateError) {
+    failedUpdates.forEach((item) => {
+      console.error(
+        "[Supabase] Falha ao migrar convidado automaticamente:",
+        {
+          registrationId: item.update?.id,
+          targetSlot: item.update?.slot,
+          error: item.result?.error,
+        },
+      );
+    });
+
     console.error(
       "[Supabase] Falha ao atualizar convidados na migracao automatica:",
       updateError,
@@ -1292,6 +1315,14 @@ export async function promoteFromWaitlist(gameId) {
     .from("game_registrations")
     .update({ slot: "main" })
     .eq("id", firstWaitlist.id);
+
+  if (updateError) {
+    console.error("[Supabase] Falha ao promover da waitlist para main:", {
+      gameId,
+      registrationId: firstWaitlist.id,
+      error: updateError,
+    });
+  }
 
   if (!updateError) {
     await logAction(
