@@ -508,52 +508,26 @@ export async function getGames() {
   if (error) return [];
 
   const games = data || [];
-  const prioritizedDays = ["wednesday", "sunday"];
+  const [currentWednesdayId, currentSundayId] = await Promise.all([
+    getCurrentGameIdForDay("wednesday"),
+    getCurrentGameIdForDay("sunday"),
+  ]);
 
-  const pickMostRecent = (items) => {
-    if (!items.length) return null;
-
-    return items.reduce((latest, current) => {
-      const latestDate = String(latest?.date || "");
-      const currentDate = String(current?.date || "");
-
-      if (currentDate > latestDate) return current;
-      if (currentDate < latestDate) return latest;
-
-      const latestTime = String(latest?.time || "");
-      const currentTime = String(current?.time || "");
-      if (currentTime > latestTime) return current;
-      if (currentTime < latestTime) return latest;
-
-      return String(current?.id || "") > String(latest?.id || "")
-        ? current
-        : latest;
-    });
-  };
-
-  const selectedByDay = prioritizedDays
-    .map((day) => {
-      const dayGames = games.filter((game) => game?.day === day);
-      if (!dayGames.length) return null;
-
-      const preferredNewIdGames = dayGames.filter(
-        (game) => typeof game?.id === "string" && game.id.startsWith(`${day}-`),
-      );
-
-      const source = preferredNewIdGames.length
-        ? preferredNewIdGames
-        : dayGames;
-      return pickMostRecent(source);
-    })
-    .filter(Boolean);
-
-  const selectedIds = new Set(selectedByDay.map((game) => game.id));
+  const currentFixedGameIds = new Map(
+    [
+      ["wednesday", currentWednesdayId],
+      ["sunday", currentSundayId],
+    ].filter(([, gameId]) => Boolean(gameId)),
+  );
 
   return games
-    .filter(
-      (game) =>
-        !prioritizedDays.includes(game?.day) || selectedIds.has(game?.id),
-    )
+    .filter((game) => {
+      if (!isFixedDay(game?.day)) return true;
+
+      const currentId = currentFixedGameIds.get(game.day);
+      if (!currentId) return false;
+      return String(game.id) === String(currentId);
+    })
     .sort((a, b) => {
       const dateCompare = String(a?.date || "").localeCompare(
         String(b?.date || ""),
@@ -649,6 +623,86 @@ function isFixedDay(day) {
   return day === "wednesday" || day === "sunday";
 }
 
+function formatLocalDate(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function isNewFormatGameId(gameId, day) {
+  return typeof gameId === "string" && gameId.startsWith(`${day}-`);
+}
+
+function pickCurrentGameIdForDay(day, games, now = new Date()) {
+  if (!isFixedDay(day)) return null;
+
+  const today = formatLocalDate(now);
+  if (!today) return null;
+
+  const upcomingGames = (games || [])
+    .filter((game) => game?.day === day)
+    .filter((game) => game?.status === "active")
+    .filter((game) => {
+      const normalizedDate = normalizeGameDate(game?.date);
+      return Boolean(normalizedDate && normalizedDate >= today);
+    });
+
+  if (!upcomingGames.length) return null;
+
+  const earliestDate = upcomingGames.reduce((currentEarliest, game) => {
+    const gameDate = normalizeGameDate(game?.date);
+    if (!currentEarliest) return gameDate;
+    if (!gameDate) return currentEarliest;
+    return gameDate < currentEarliest ? gameDate : currentEarliest;
+  }, null);
+
+  const gamesOnCurrentCycle = upcomingGames.filter(
+    (game) => normalizeGameDate(game?.date) === earliestDate,
+  );
+
+  const preferred = gamesOnCurrentCycle.find((game) =>
+    isNewFormatGameId(String(game?.id || ""), day),
+  );
+  if (preferred?.id) return String(preferred.id);
+
+  const firstByTime = [...gamesOnCurrentCycle].sort((a, b) => {
+    const timeCompare = String(a?.time || "").localeCompare(
+      String(b?.time || ""),
+    );
+    if (timeCompare !== 0) return timeCompare;
+    return String(a?.id || "").localeCompare(String(b?.id || ""));
+  })[0];
+
+  if (firstByTime?.id) return String(firstByTime.id);
+  return null;
+}
+
+export async function getCurrentGameIdForDay(day, now = new Date()) {
+  if (!isFixedDay(day)) return null;
+
+  const { data, error } = await supabase
+    .from("games")
+    .select("id, day, date, time, status")
+    .eq("day", day)
+    .eq("status", "active")
+    .order("date")
+    .order("time");
+
+  if (error) {
+    console.error("[Supabase] Falha ao resolver jogo atual por dia:", {
+      day,
+      error,
+    });
+    return null;
+  }
+
+  return pickCurrentGameIdForDay(day, data || [], now);
+}
+
 function dedupeById(rows) {
   const seen = new Set();
   return (rows || []).filter((row) => {
@@ -673,6 +727,9 @@ export async function resolveGameId(gameId) {
     return requestedId;
   }
 
+  const currentGameId = await getCurrentGameIdForDay(requestedGame.day);
+  if (currentGameId) return currentGameId;
+
   const normalizedDate = normalizeGameDate(requestedGame.date);
   if (!normalizedDate) return requestedId;
 
@@ -692,7 +749,7 @@ async function resolveEquivalentGameIds(gameId) {
   if (!requestedId) return [];
 
   const resolvedId = await resolveGameId(requestedId);
-  const ids = new Set([requestedId, resolvedId].filter(Boolean));
+  const ids = new Set([resolvedId].filter(Boolean));
 
   const { data: resolvedGame } = await supabase
     .from("games")
@@ -701,6 +758,7 @@ async function resolveEquivalentGameIds(gameId) {
     .maybeSingle();
 
   if (!resolvedGame || !isFixedDay(resolvedGame.day)) {
+    ids.add(requestedId);
     return Array.from(ids);
   }
 
@@ -780,9 +838,10 @@ function isRegistrationInCurrentCycle(registration, game) {
 // ── Registrations ──────────────────────────────────
 
 export async function getGameRegistrations(gameId) {
-  const equivalentGameIds = await resolveEquivalentGameIds(gameId);
+  const canonicalGameId = await resolveGameId(gameId);
+  const equivalentGameIds = await resolveEquivalentGameIds(canonicalGameId);
   const [requestedGame, gamesByIdList] = await Promise.all([
-    getGameById(gameId),
+    getGameById(canonicalGameId),
     Promise.all(equivalentGameIds.map((id) => getGameById(id))),
   ]);
 
@@ -812,6 +871,17 @@ export async function getGameRegistrations(gameId) {
 
 export async function getRegistrationCountsByGame() {
   const games = await getGames();
+
+  const [currentWednesdayId, currentSundayId] = await Promise.all([
+    getCurrentGameIdForDay("wednesday"),
+    getCurrentGameIdForDay("sunday"),
+  ]);
+  const currentFixedByDay = new Map(
+    [
+      ["wednesday", currentWednesdayId],
+      ["sunday", currentSundayId],
+    ].filter(([, gameId]) => Boolean(gameId)),
+  );
 
   const { data: allGames } = await supabase
     .from("games")
@@ -848,6 +918,12 @@ export async function getRegistrationCountsByGame() {
     const normalizedDate = normalizeGameDate(game.date);
     if (!normalizedDate || !isFixedDay(game.day)) {
       gameIdToCanonical.set(String(game.id), String(game.id));
+      return;
+    }
+
+    const currentId = currentFixedByDay.get(game.day);
+    if (currentId) {
+      gameIdToCanonical.set(String(game.id), String(currentId));
       return;
     }
 
