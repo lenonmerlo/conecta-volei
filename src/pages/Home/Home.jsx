@@ -72,9 +72,23 @@ function normalizeGame(game) {
   };
 }
 
+function getTodayDateString() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function isGameVisible(game) {
+  const normalizedDate = String(game?.date || "").split("T")[0] || "";
+  const today = getTodayDateString();
   const isFixed = game.day === "wednesday" || game.day === "sunday";
-  if (isFixed) return true;
+  if (isFixed) {
+    if (game.status !== "active") return false;
+    if (!normalizedDate) return false;
+    return normalizedDate >= today;
+  }
 
   if (game.status === "cancelled") return false;
 

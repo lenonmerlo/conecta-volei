@@ -9,8 +9,59 @@ export function hasSpotAvailable(currentCount) {
   return currentCount < MAX_PLAYERS;
 }
 
+function parseGameDate(value) {
+  const normalized = String(value || "").split("T")[0];
+  if (!normalized) return null;
+
+  const [year, month, day] = normalized
+    .split("-")
+    .map((item) => Number.parseInt(item, 10));
+
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
+}
+
+function isListOpenForSpecificGame(game, now = new Date()) {
+  if (!game?.day) return false;
+  if (game.force_open === true) return true;
+
+  const gameDate = parseGameDate(game.date);
+  if (!gameDate) return isListOpen(game.day, now);
+
+  if (game.day === GAME_DAYS.WEDNESDAY) {
+    const openAt = new Date(gameDate);
+    openAt.setDate(openAt.getDate() - 2);
+    openAt.setHours(19, 0, 0, 0);
+
+    const closeAt = new Date(gameDate);
+    closeAt.setDate(closeAt.getDate() + 1);
+    closeAt.setHours(0, 0, 0, 0);
+
+    return now >= openAt && now < closeAt;
+  }
+
+  if (game.day === GAME_DAYS.SUNDAY) {
+    const openAt = new Date(gameDate);
+    openAt.setDate(openAt.getDate() - 3);
+    openAt.setHours(19, 0, 0, 0);
+
+    const closeAt = new Date(gameDate);
+    closeAt.setDate(closeAt.getDate() + 1);
+    closeAt.setHours(0, 0, 0, 0);
+
+    return now >= openAt && now < closeAt;
+  }
+
+  return false;
+}
+
 // Verifica se a lista de um jogo esta aberta agora
-export function isListOpen(gameDay, now = new Date()) {
+export function isListOpen(gameOrDay, now = new Date()) {
+  if (gameOrDay && typeof gameOrDay === "object") {
+    return isListOpenForSpecificGame(gameOrDay, now);
+  }
+
+  const gameDay = gameOrDay;
   const day = now.getDay(); // 0=dom, 1=seg, 2=ter, 3=qua, 4=qui, 5=sex, 6=sab
   const hour = now.getHours();
 

@@ -27,7 +27,7 @@ function GameCard({ game, registeredCount = 0 }) {
   const isFull = spotsLeft <= 0;
   const isCancelled = game.status === "cancelled";
   const isFixedGame = game.day === "wednesday" || game.day === "sunday";
-  const listOpen = isFixedGame ? isListOpen(game.day) : true;
+  const listOpen = isFixedGame ? isListOpen(game) : true;
   const isInteractive = listOpen && !isCancelled;
 
   function openGame() {
