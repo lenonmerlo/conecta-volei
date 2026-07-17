@@ -308,6 +308,41 @@ describe("supabaseService", () => {
   });
 
   describe("joinGame", () => {
+    function enqueueSundayJoinContext(gameId = "sunday-2026-06-14") {
+      enqueueResponse("games.select.maybeSingle", {
+        data: { id: gameId, day: "sunday", date: "2026-06-14" },
+        error: null,
+      });
+      enqueueResponse("games.select.await", {
+        data: [
+          {
+            id: gameId,
+            day: "sunday",
+            date: "2026-06-14",
+            time: "09:00",
+            status: "active",
+          },
+        ],
+        error: null,
+      });
+      enqueueResponse("games.select.single", {
+        data: { id: gameId, day: "sunday", date: "2026-06-14" },
+        error: null,
+      });
+      enqueueResponse("games.select.await", {
+        data: [
+          {
+            id: gameId,
+            day: "sunday",
+            date: "2026-06-14",
+            time: "09:00",
+            status: "active",
+          },
+        ],
+        error: null,
+      });
+    }
+
     it("insere registro com slot correto e retorna true em sucesso", async () => {
       enqueueResponse("players.select.maybeSingle", {
         data: { id: "p1", status: "active" },
@@ -378,6 +413,152 @@ describe("supabaseService", () => {
 
       expect(success).toBe(false);
       expect(hoisted.callLog.insert).toHaveLength(0);
+    });
+
+    it("domingo na quinta/sexta coloca membro na main quando ha vaga", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-06-04T12:00:00"));
+
+      enqueueSundayJoinContext();
+      enqueueResponse("players.select.maybeSingle", {
+        data: { id: "p1", status: "active", type: "member" },
+        error: null,
+      });
+      enqueueResponse("game_registrations.insert.await", { error: null });
+
+      const success = await joinGame("sunday-2026-06-14", "p1", "guests");
+
+      expect(success).toBe(true);
+      expect(hoisted.callLog.insert[0]?.payload?.slot).toBe("main");
+      vi.useRealTimers();
+    });
+
+    it("domingo na quinta/sexta coloca convidado em guests", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-06-05T12:00:00"));
+
+      enqueueSundayJoinContext();
+      enqueueResponse("game_registrations.insert.await", { error: null });
+
+      const success = await joinGame(
+        "sunday-2026-06-14",
+        null,
+        "main",
+        "Convidado",
+        "p1",
+        "g-1",
+      );
+
+      expect(success).toBe(true);
+      expect(hoisted.callLog.insert[0]?.payload?.slot).toBe("guests");
+      vi.useRealTimers();
+    });
+
+    it("domingo no sabado coloca convidado na main quando ha vaga", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-06-06T12:00:00"));
+
+      enqueueSundayJoinContext();
+      enqueueResponse("game_registrations.insert.await", { error: null });
+
+      const success = await joinGame(
+        "sunday-2026-06-14",
+        null,
+        "guests",
+        "Convidado",
+        "p1",
+        "g-1",
+      );
+
+      expect(success).toBe(true);
+      expect(hoisted.callLog.insert[0]?.payload?.slot).toBe("main");
+      vi.useRealTimers();
+    });
+
+    it("domingo no sabado coloca convidado em waitlist quando main esta cheia", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-06-06T12:00:00"));
+
+      enqueueSundayJoinContext();
+      enqueueResponse("game_registrations.select.await", {
+        data: new Array(21).fill(null).map((_, index) => ({
+          id: `m${index + 1}`,
+          game_id: "sunday-2026-06-14",
+          slot: "main",
+          registered_at: "2026-06-01T20:00:00.000Z",
+        })),
+        error: null,
+      });
+      enqueueResponse("game_registrations.insert.await", { error: null });
+
+      const success = await joinGame(
+        "sunday-2026-06-14",
+        null,
+        "guests",
+        "Convidado",
+        "p1",
+        "g-1",
+      );
+
+      expect(success).toBe(true);
+      expect(hoisted.callLog.insert[0]?.payload?.slot).toBe("waitlist");
+      vi.useRealTimers();
+    });
+
+    it("quarta e extras nao usam slot guests", async () => {
+      enqueueResponse("games.select.maybeSingle", {
+        data: {
+          id: "wednesday-2026-06-10",
+          day: "wednesday",
+          date: "2026-06-10",
+        },
+        error: null,
+      });
+      enqueueResponse("games.select.await", {
+        data: [
+          {
+            id: "wednesday-2026-06-10",
+            day: "wednesday",
+            date: "2026-06-10",
+            time: "19:30",
+            status: "active",
+          },
+        ],
+        error: null,
+      });
+      enqueueResponse("games.select.single", {
+        data: {
+          id: "wednesday-2026-06-10",
+          day: "wednesday",
+          date: "2026-06-10",
+        },
+        error: null,
+      });
+      enqueueResponse("games.select.await", {
+        data: [
+          {
+            id: "wednesday-2026-06-10",
+            day: "wednesday",
+            date: "2026-06-10",
+            time: "19:30",
+            status: "active",
+          },
+        ],
+        error: null,
+      });
+      enqueueResponse("game_registrations.insert.await", { error: null });
+
+      const success = await joinGame(
+        "wednesday-2026-06-10",
+        null,
+        "guests",
+        "Convidado",
+        "p1",
+        "g-1",
+      );
+
+      expect(success).toBe(true);
+      expect(hoisted.callLog.insert[0]?.payload?.slot).toBe("main");
     });
   });
 
