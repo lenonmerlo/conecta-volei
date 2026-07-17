@@ -24,7 +24,7 @@ function getRegistrationSlot(registration) {
   return "main";
 }
 
-function isAfterSaturday19ForSundayGame(game) {
+function isAfterSaturday21ForSundayGame(game) {
   if (game?.day !== "sunday" || !game?.date) return false;
 
   const sundayDate = new Date(`${game.date}T00:00:00`);
@@ -32,7 +32,7 @@ function isAfterSaturday19ForSundayGame(game) {
 
   const cutoff = new Date(sundayDate);
   cutoff.setDate(cutoff.getDate() - 1);
-  cutoff.setHours(19, 0, 0, 0);
+  cutoff.setHours(21, 0, 0, 0);
 
   return Date.now() >= cutoff.getTime();
 }
@@ -255,7 +255,7 @@ function JoinList({ game, onUpdate }) {
   async function handleLeave() {
     const shouldConfirmPenalty =
       currentUserRegistrationSlot === "main" &&
-      isAfterSaturday19ForSundayGame(game);
+      isAfterSaturday21ForSundayGame(game);
 
     if (shouldConfirmPenalty) {
       setShowLateLeaveModal(true);
