@@ -145,6 +145,7 @@ vi.mock("../lib/supabase", () => ({
 }));
 
 import {
+  getCurrentGameIdForDay,
   getPlayerByWhatsapp,
   isPlayerRegistered,
   joinGame,
@@ -243,6 +244,66 @@ describe("supabaseService", () => {
         success: false,
         error: "insert failed",
       });
+    });
+  });
+
+  describe("getCurrentGameIdForDay", () => {
+    it("prioriza id no formato novo quando ha jogos do mesmo dia e data", async () => {
+      enqueueResponse("games.select.await", {
+        data: [
+          {
+            id: "legacy-sun-1",
+            day: "sunday",
+            date: "2026-06-07",
+            time: "09:00",
+            status: "active",
+          },
+          {
+            id: "sunday-2026-06-07",
+            day: "sunday",
+            date: "2026-06-07",
+            time: "09:00",
+            status: "active",
+          },
+        ],
+        error: null,
+      });
+
+      const gameId = await getCurrentGameIdForDay(
+        "sunday",
+        new Date("2026-06-01T12:00:00"),
+      );
+
+      expect(gameId).toBe("sunday-2026-06-07");
+    });
+
+    it("ignora jogo cancelado ao resolver jogo atual", async () => {
+      enqueueResponse("games.select.await", {
+        data: [
+          {
+            id: "sunday-2026-06-14",
+            day: "sunday",
+            date: "2026-06-14",
+            time: "09:00",
+            status: "cancelled",
+          },
+          {
+            id: "legacy-sun-active",
+            day: "sunday",
+            date: "2026-06-14",
+            time: "09:30",
+            status: "active",
+          },
+        ],
+        error: null,
+      });
+
+      const gameId = await getCurrentGameIdForDay(
+        "sunday",
+        new Date("2026-06-10T12:00:00"),
+      );
+
+      expect(gameId).toBe("legacy-sun-active");
     });
   });
 
