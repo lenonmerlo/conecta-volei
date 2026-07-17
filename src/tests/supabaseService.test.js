@@ -145,6 +145,7 @@ vi.mock("../lib/supabase", () => ({
 }));
 
 import {
+  autoMigrateGuests,
   getCurrentGameIdForDay,
   getPlayerByWhatsapp,
   isPlayerRegistered,
@@ -304,6 +305,152 @@ describe("supabaseService", () => {
       );
 
       expect(gameId).toBe("legacy-sun-active");
+    });
+  });
+
+  describe("autoMigrateGuests", () => {
+    function enqueueAutoMigrateSundayBase(
+      registrations,
+      gameId = "sunday-2026-06-14",
+    ) {
+      enqueueResponse("games.select.maybeSingle", {
+        data: { id: gameId, day: "sunday", date: "2026-06-14" },
+        error: null,
+      });
+      enqueueResponse("games.select.await", {
+        data: [
+          {
+            id: gameId,
+            day: "sunday",
+            date: "2026-06-14",
+            time: "09:00",
+            status: "active",
+          },
+        ],
+        error: null,
+      });
+      enqueueResponse("games.select.single", {
+        data: { id: gameId, day: "sunday", date: "2026-06-14" },
+        error: null,
+      });
+
+      enqueueResponse("games.select.maybeSingle", {
+        data: { id: gameId, day: "sunday", date: "2026-06-14" },
+        error: null,
+      });
+      enqueueResponse("games.select.await", {
+        data: [
+          {
+            id: gameId,
+            day: "sunday",
+            date: "2026-06-14",
+            time: "09:00",
+            status: "active",
+          },
+        ],
+        error: null,
+      });
+      enqueueResponse("games.select.maybeSingle", {
+        data: null,
+        error: null,
+      });
+      enqueueResponse("games.select.single", {
+        data: { id: gameId, day: "sunday", date: "2026-06-14" },
+        error: null,
+      });
+
+      enqueueResponse("game_registrations.select.await", {
+        data: registrations,
+        error: null,
+      });
+    }
+
+    it("convidado em guests com vaga na main migra para main", async () => {
+      enqueueAutoMigrateSundayBase([
+        {
+          id: "m1",
+          game_id: "sunday-2026-06-14",
+          slot: "main",
+          registered_at: "2026-06-13T08:00:00.000Z",
+        },
+        {
+          id: "g1",
+          game_id: "sunday-2026-06-14",
+          slot: "guests",
+          registered_at: "2026-06-13T09:00:00.000Z",
+        },
+      ]);
+      enqueueResponse("game_registrations.update.eq", { error: null });
+
+      const migrated = await autoMigrateGuests("sunday-2026-06-14", {
+        now: new Date("2026-06-14T10:00:00"),
+      });
+
+      expect(migrated).toBe(true);
+      expect(hoisted.callLog.update[0]?.table).toBe("game_registrations");
+      expect(hoisted.callLog.update[0]?.payload?.slot).toBe("main");
+      expect(hoisted.callLog.update[0]?.payload?.registered_at).toMatch(
+        /^\d{4}-\d{2}-\d{2}T/,
+      );
+    });
+
+    it("convidado em guests sem vaga na main migra para waitlist", async () => {
+      enqueueAutoMigrateSundayBase([
+        ...new Array(21).fill(null).map((_, index) => ({
+          id: `m${index + 1}`,
+          game_id: "sunday-2026-06-14",
+          slot: "main",
+          registered_at: "2026-06-13T08:00:00.000Z",
+        })),
+        {
+          id: "g1",
+          game_id: "sunday-2026-06-14",
+          slot: "guests",
+          registered_at: "2026-06-13T09:00:00.000Z",
+        },
+      ]);
+      enqueueResponse("game_registrations.update.eq", { error: null });
+
+      const migrated = await autoMigrateGuests("sunday-2026-06-14", {
+        now: new Date("2026-06-14T10:00:00"),
+      });
+
+      expect(migrated).toBe(true);
+      expect(hoisted.callLog.update[0]?.table).toBe("game_registrations");
+      expect(hoisted.callLog.update[0]?.payload?.slot).toBe("waitlist");
+      expect(hoisted.callLog.update[0]?.payload?.registered_at).toMatch(
+        /^\d{4}-\d{2}-\d{2}T/,
+      );
+    });
+
+    it("nao migra convidados antes de sabado 00h", async () => {
+      enqueueResponse("games.select.maybeSingle", {
+        data: { id: "sunday-2026-06-14", day: "sunday", date: "2026-06-14" },
+        error: null,
+      });
+      enqueueResponse("games.select.await", {
+        data: [
+          {
+            id: "sunday-2026-06-14",
+            day: "sunday",
+            date: "2026-06-14",
+            time: "09:00",
+            status: "active",
+          },
+        ],
+        error: null,
+      });
+      enqueueResponse("games.select.single", {
+        data: { id: "sunday-2026-06-14", day: "sunday", date: "2026-06-14" },
+        error: null,
+      });
+
+      const migrated = await autoMigrateGuests("sunday-2026-06-14", {
+        now: new Date("2026-06-12T23:59:59"),
+      });
+
+      expect(migrated).toBe(false);
+      expect(hoisted.callLog.update).toHaveLength(0);
     });
   });
 
