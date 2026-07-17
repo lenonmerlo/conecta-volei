@@ -1,7 +1,6 @@
 // Serviço de integração com o Supabase
 
 import { isSuperAdmin } from "../domain/admins";
-import { getNextGameDate } from "../domain/gameRules";
 import { supabase } from "../lib/supabase";
 
 const MAX_MAIN_LIST = 21;
@@ -638,13 +637,6 @@ export async function getGameById(gameId) {
   if (error) return null;
   if (!data) return null;
 
-  if (data.day === "wednesday" || data.day === "sunday") {
-    return {
-      ...data,
-      date: getNextGameDate(data.day),
-    };
-  }
-
   return data;
 }
 
@@ -873,7 +865,10 @@ export async function getRegistrationCountsByGame() {
     .select("game_id, slot, registered_at")
     .eq("slot", "main");
 
-  if (error) return {};
+  if (error) {
+    console.error("[Supabase] Falha ao carregar contagem de inscritos:", error);
+    return {};
+  }
 
   return (data || []).reduce((acc, row) => {
     const rawGameId = row.game_id;
@@ -961,7 +956,10 @@ export async function leaveGame(gameId, playerId = null, guestId = null) {
   const equivalentGameIds = await resolveEquivalentGameIds(gameId);
   const results = await Promise.all(
     equivalentGameIds.map((id) => {
-      let query = supabase.from("game_registrations").delete().eq("game_id", id);
+      let query = supabase
+        .from("game_registrations")
+        .delete()
+        .eq("game_id", id);
 
       if (guestId) {
         query = query.eq("guest_id", guestId);
@@ -987,7 +985,10 @@ export async function leaveGame(gameId, playerId = null, guestId = null) {
 
   if ((removedRegistrations || []).length > 0) {
     const removedGuestId =
-      guestId || removedRegistrations.find((registration) => registration?.guest_id)?.guest_id || null;
+      guestId ||
+      removedRegistrations.find((registration) => registration?.guest_id)
+        ?.guest_id ||
+      null;
     await logAction(
       gameId,
       playerId,

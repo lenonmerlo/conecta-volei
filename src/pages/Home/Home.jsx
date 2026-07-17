@@ -164,6 +164,15 @@ function Home() {
         },
         scheduleRealtimeRefresh,
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "game_registrations",
+        },
+        scheduleRealtimeRefresh,
+      )
       .subscribe();
 
     return () => {
