@@ -960,6 +960,39 @@ export async function getRegistrationCountsByGame() {
   }, {});
 }
 
+function isSaturdayOrSunday(now = new Date()) {
+  const day = now.getDay();
+  return day === 6 || day === 0;
+}
+
+async function hasMainSpotAvailableForJoin(game, fallbackGameId) {
+  const day = game?.day;
+  let countGameId = fallbackGameId;
+
+  if (isFixedDay(day)) {
+    countGameId = (await getCurrentGameIdForDay(day)) || fallbackGameId;
+  }
+
+  const registrations = await getGameRegistrations(countGameId);
+  const mainCount = (registrations || []).filter(
+    (registration) => registration.slot === "main",
+  ).length;
+
+  return mainCount < MAX_MAIN_LIST;
+}
+
+function resolveSundaySlot({ isGuest, hasMainSpot, now = new Date() }) {
+  if (!isGuest) {
+    return hasMainSpot ? "main" : "waitlist";
+  }
+
+  if (!isSaturdayOrSunday(now)) {
+    return "guests";
+  }
+
+  return hasMainSpot ? "main" : "waitlist";
+}
+
 export async function joinGame(
   gameId,
   playerId,
@@ -969,22 +1002,39 @@ export async function joinGame(
   guestId = null,
 ) {
   const targetGameId = await resolveGameId(gameId);
-  let effectiveSlot = slot;
+  const game = await getGameById(targetGameId);
+  let effectiveSlot;
+  let playerType = "guest";
+  let isPenalized = false;
 
   if (playerId) {
     const player = await getPlayerById(playerId);
     const playerStatus = player?.status;
+    playerType = player?.type === "guest" ? "guest" : "member";
 
     if (playerStatus === "blocked") {
       return false;
     }
 
     if (playerStatus === "penalized") {
-      effectiveSlot = "waitlist";
+      isPenalized = true;
     }
 
     const alreadyRegistered = await isPlayerRegistered(targetGameId, playerId);
     if (alreadyRegistered) return false;
+  }
+
+  const hasMainSpot = await hasMainSpotAvailableForJoin(game, targetGameId);
+
+  if (isPenalized) {
+    effectiveSlot = "waitlist";
+  } else if (game?.day === "sunday") {
+    effectiveSlot = resolveSundaySlot({
+      isGuest: playerType === "guest",
+      hasMainSpot,
+    });
+  } else {
+    effectiveSlot = hasMainSpot ? "main" : "waitlist";
   }
 
   const { error } = await supabase.from("game_registrations").insert({
