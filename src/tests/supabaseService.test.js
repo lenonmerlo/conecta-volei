@@ -490,6 +490,49 @@ describe("supabaseService", () => {
       });
     }
 
+    function enqueueWednesdayJoinContext(gameId = "wednesday-2026-06-10") {
+      enqueueResponse("games.select.maybeSingle", {
+        data: {
+          id: gameId,
+          day: "wednesday",
+          date: "2026-06-10",
+        },
+        error: null,
+      });
+      enqueueResponse("games.select.await", {
+        data: [
+          {
+            id: gameId,
+            day: "wednesday",
+            date: "2026-06-10",
+            time: "19:30",
+            status: "active",
+          },
+        ],
+        error: null,
+      });
+      enqueueResponse("games.select.single", {
+        data: {
+          id: gameId,
+          day: "wednesday",
+          date: "2026-06-10",
+        },
+        error: null,
+      });
+      enqueueResponse("games.select.await", {
+        data: [
+          {
+            id: gameId,
+            day: "wednesday",
+            date: "2026-06-10",
+            time: "19:30",
+            status: "active",
+          },
+        ],
+        error: null,
+      });
+    }
+
     it("insere registro com slot correto e retorna true em sucesso", async () => {
       enqueueResponse("players.select.maybeSingle", {
         data: { id: "p1", status: "active" },
@@ -653,44 +696,31 @@ describe("supabaseService", () => {
     });
 
     it("quarta e extras nao usam slot guests", async () => {
-      enqueueResponse("games.select.maybeSingle", {
-        data: {
-          id: "wednesday-2026-06-10",
-          day: "wednesday",
-          date: "2026-06-10",
-        },
-        error: null,
-      });
-      enqueueResponse("games.select.await", {
-        data: [
-          {
-            id: "wednesday-2026-06-10",
-            day: "wednesday",
-            date: "2026-06-10",
-            time: "19:30",
-            status: "active",
-          },
-        ],
-        error: null,
-      });
-      enqueueResponse("games.select.single", {
-        data: {
-          id: "wednesday-2026-06-10",
-          day: "wednesday",
-          date: "2026-06-10",
-        },
-        error: null,
-      });
-      enqueueResponse("games.select.await", {
-        data: [
-          {
-            id: "wednesday-2026-06-10",
-            day: "wednesday",
-            date: "2026-06-10",
-            time: "19:30",
-            status: "active",
-          },
-        ],
+      enqueueWednesdayJoinContext();
+      enqueueResponse("game_registrations.insert.await", { error: null });
+
+      const success = await joinGame(
+        "wednesday-2026-06-10",
+        null,
+        "guests",
+        "Convidado",
+        "p1",
+        "g-1",
+      );
+
+      expect(success).toBe(true);
+      expect(hoisted.callLog.insert[0]?.payload?.slot).toBe("main");
+    });
+
+    it("quarta envia convidado para waitlist somente quando main esta cheia", async () => {
+      enqueueWednesdayJoinContext();
+      enqueueResponse("game_registrations.select.await", {
+        data: new Array(21).fill(null).map((_, index) => ({
+          id: `m${index + 1}`,
+          game_id: "wednesday-2026-06-10",
+          slot: "main",
+          registered_at: "2026-06-08T20:00:00.000Z",
+        })),
         error: null,
       });
       enqueueResponse("game_registrations.insert.await", { error: null });
@@ -702,6 +732,26 @@ describe("supabaseService", () => {
         "Convidado",
         "p1",
         "g-1",
+      );
+
+      expect(success).toBe(true);
+      expect(hoisted.callLog.insert[0]?.payload?.slot).toBe("waitlist");
+    });
+
+    it("quarta nao manda convidado para waitlist com vaga mesmo se status vier penalized", async () => {
+      enqueueWednesdayJoinContext();
+      enqueueResponse("players.select.maybeSingle", {
+        data: { id: "g-player", status: "penalized", type: "guest" },
+        error: null,
+      });
+      enqueueResponse("game_registrations.insert.await", { error: null });
+
+      const success = await joinGame(
+        "wednesday-2026-06-10",
+        "g-player",
+        "main",
+        null,
+        null,
       );
 
       expect(success).toBe(true);

@@ -944,14 +944,11 @@ export async function autoMigrateGuests(
   const updateError = failedUpdates[0]?.result?.error || null;
   if (updateError) {
     failedUpdates.forEach((item) => {
-      console.error(
-        "[Supabase] Falha ao migrar convidado automaticamente:",
-        {
-          registrationId: item.update?.id,
-          targetSlot: item.update?.slot,
-          error: item.result?.error,
-        },
-      );
+      console.error("[Supabase] Falha ao migrar convidado automaticamente:", {
+        registrationId: item.update?.id,
+        targetSlot: item.update?.slot,
+        error: item.result?.error,
+      });
     });
 
     console.error(
@@ -1132,6 +1129,32 @@ function resolveSundaySlot({ isGuest, hasMainSpot, now = new Date() }) {
   return hasMainSpot ? "main" : "waitlist";
 }
 
+function resolveJoinSlot({
+  game,
+  isGuest,
+  isPenalized,
+  hasMainSpot,
+  now = new Date(),
+}) {
+  if (game?.day === "wednesday" && isGuest) {
+    return hasMainSpot ? "main" : "waitlist";
+  }
+
+  if (isPenalized) {
+    return "waitlist";
+  }
+
+  if (game?.day === "sunday") {
+    return resolveSundaySlot({
+      isGuest,
+      hasMainSpot,
+      now,
+    });
+  }
+
+  return hasMainSpot ? "main" : "waitlist";
+}
+
 export async function joinGame(
   gameId,
   playerId,
@@ -1164,17 +1187,14 @@ export async function joinGame(
   }
 
   const hasMainSpot = await hasMainSpotAvailableForJoin(game, targetGameId);
-
-  if (isPenalized) {
-    effectiveSlot = "waitlist";
-  } else if (game?.day === "sunday") {
-    effectiveSlot = resolveSundaySlot({
-      isGuest: playerType === "guest",
-      hasMainSpot,
-    });
-  } else {
-    effectiveSlot = hasMainSpot ? "main" : "waitlist";
-  }
+  const isGuest =
+    playerType === "guest" || Boolean(guestId || (guestName || "").trim());
+  effectiveSlot = resolveJoinSlot({
+    game,
+    isGuest,
+    isPenalized,
+    hasMainSpot,
+  });
 
   const { error } = await supabase.from("game_registrations").insert({
     game_id: targetGameId,
