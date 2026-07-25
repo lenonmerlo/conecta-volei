@@ -910,18 +910,15 @@ export async function autoMigrateGuests(
     (registration) => registration.slot === "main",
   ).length;
 
-  const updates = guestRegistrations.map((registration, index) => {
+  const updates = guestRegistrations.map((registration) => {
     const targetSlot = mainCount < MAX_MAIN_LIST ? "main" : "waitlist";
     if (targetSlot === "main") {
       mainCount += 1;
     }
 
-    const registeredAt = new Date(now.getTime() + index).toISOString();
-
     return {
       id: registration.id,
       slot: targetSlot,
-      registered_at: registeredAt,
     };
   });
 
@@ -929,10 +926,7 @@ export async function autoMigrateGuests(
     updates.map((updatePayload) =>
       supabase
         .from("game_registrations")
-        .update({
-          slot: updatePayload.slot,
-          registered_at: updatePayload.registered_at,
-        })
+        .update({ slot: updatePayload.slot })
         .eq("id", updatePayload.id),
     ),
   );
@@ -1362,10 +1356,7 @@ export async function migrateGuestsToWaitlist(gameId) {
     equivalentGameIds.map((id) =>
       supabase
         .from("game_registrations")
-        .update({
-          slot: "waitlist",
-          registered_at: new Date().toISOString(),
-        })
+        .update({ slot: "waitlist" })
         .eq("game_id", id)
         .eq("slot", "guests"),
     ),

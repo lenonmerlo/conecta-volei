@@ -2,14 +2,13 @@
 
 import { describe, expect, it } from "vitest";
 
-function migrateGuestsToWaitlistMock(registrations, nowIso) {
+function migrateGuestsToWaitlistMock(registrations) {
   return registrations.map((registration) => {
     if (registration.slot !== "guests") return registration;
 
     return {
       ...registration,
       slot: "waitlist",
-      registered_at: nowIso,
     };
   });
 }
@@ -21,7 +20,7 @@ function sortByRegisteredAtAsc(registrations) {
 }
 
 describe("migrateGuestsToWaitlistMock", () => {
-  it("migracao coloca convidados no fim da waitlist por registered_at", () => {
+  it("migracao preserva registered_at original dos convidados", () => {
     const lastThursday = new Date("2026-05-21T00:00:00.000Z");
 
     // 3 membros ja na waitlist desde quinta passada.
@@ -78,22 +77,26 @@ describe("migrateGuestsToWaitlistMock", () => {
     ];
 
     const initialRegistrations = [...membersWaitlist, ...guests];
-    const nowIso = new Date("2026-05-30T10:00:00.000Z").toISOString();
-
-    const migrated = migrateGuestsToWaitlistMock(initialRegistrations, nowIso);
+    const migrated = migrateGuestsToWaitlistMock(initialRegistrations);
     const finalWaitlistOrder = sortByRegisteredAtAsc(
       migrated.filter((registration) => registration.slot === "waitlist"),
     );
 
-    const firstThreeAreMembers = finalWaitlistOrder
-      .slice(0, 3)
-      .every((registration) => registration.type === "member");
-    const lastTwoAreGuests = finalWaitlistOrder
-      .slice(3)
+    const firstTwoAreGuests = finalWaitlistOrder
+      .slice(0, 2)
       .every((registration) => registration.type === "guest");
+    const lastThreeAreMembers = finalWaitlistOrder
+      .slice(2)
+      .every((registration) => registration.type === "member");
 
-    expect(firstThreeAreMembers).toBe(true);
-    expect(lastTwoAreGuests).toBe(true);
+    expect(firstTwoAreGuests).toBe(true);
+    expect(lastThreeAreMembers).toBe(true);
+    expect(
+      migrated.find((registration) => registration.id === "g1")?.registered_at,
+    ).toBe(guests[0].registered_at);
+    expect(
+      migrated.find((registration) => registration.id === "g2")?.registered_at,
+    ).toBe(guests[1].registered_at);
 
     console.log("[migrateGuests.test] Ordem final da lista de espera:");
     console.table(

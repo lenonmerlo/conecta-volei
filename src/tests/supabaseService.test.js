@@ -389,8 +389,8 @@ describe("supabaseService", () => {
       expect(migrated).toBe(true);
       expect(hoisted.callLog.update[0]?.table).toBe("game_registrations");
       expect(hoisted.callLog.update[0]?.payload?.slot).toBe("main");
-      expect(hoisted.callLog.update[0]?.payload?.registered_at).toMatch(
-        /^\d{4}-\d{2}-\d{2}T/,
+      expect(hoisted.callLog.update[0]?.payload).not.toHaveProperty(
+        "registered_at",
       );
     });
 
@@ -418,8 +418,8 @@ describe("supabaseService", () => {
       expect(migrated).toBe(true);
       expect(hoisted.callLog.update[0]?.table).toBe("game_registrations");
       expect(hoisted.callLog.update[0]?.payload?.slot).toBe("waitlist");
-      expect(hoisted.callLog.update[0]?.payload?.registered_at).toMatch(
-        /^\d{4}-\d{2}-\d{2}T/,
+      expect(hoisted.callLog.update[0]?.payload).not.toHaveProperty(
+        "registered_at",
       );
     });
 
