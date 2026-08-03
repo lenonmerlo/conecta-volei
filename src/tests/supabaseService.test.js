@@ -760,9 +760,12 @@ describe("supabaseService", () => {
   });
 
   describe("leaveGame", () => {
-    it("deleta o registro do jogador e retorna true", async () => {
-      enqueueResponse("game_registrations.delete.select.await", {
+    it("marca left_at no registro do jogador e retorna true", async () => {
+      enqueueResponse("game_registrations.select.await", {
         data: [{ id: "r1", slot: "main" }],
+        error: null,
+      });
+      enqueueResponse("game_registrations.update.eq", {
         error: null,
       });
       enqueueResponse("games.select.single", {
@@ -781,8 +784,11 @@ describe("supabaseService", () => {
       const success = await leaveGame("g1", "p1");
 
       expect(success).toBe(true);
-      expect(hoisted.callLog.delete[0]).toEqual({
+      expect(hoisted.callLog.update[0]).toEqual({
         table: "game_registrations",
+        payload: {
+          left_at: expect.any(String),
+        },
       });
     });
   });

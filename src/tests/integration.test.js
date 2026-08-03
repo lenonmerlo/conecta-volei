@@ -27,7 +27,9 @@ function resetDb() {
 }
 
 function getNested(row, path) {
-  return path.split(".").reduce((acc, key) => (acc ? acc[key] : undefined), row);
+  return path
+    .split(".")
+    .reduce((acc, key) => (acc ? acc[key] : undefined), row);
 }
 
 function toIsoNow() {
@@ -125,7 +127,9 @@ class QueryBuilder {
       }
 
       if (filter.type === "is") {
-        return filter.value === null ? value === null || value === undefined : value === filter.value;
+        return filter.value === null
+          ? value === null || value === undefined
+          : value === filter.value;
       }
 
       if (filter.type === "not") {
@@ -160,17 +164,32 @@ class QueryBuilder {
 
   decorateRegistration(row) {
     const registration = clone(row);
-    const player = hoisted.db.players.find((item) => item.id === registration.player_id) || null;
-    const inviter = hoisted.db.players.find((item) => item.id === registration.invited_by) || null;
-    const guest = hoisted.db.guests.find((item) => item.id === registration.guest_id) || null;
+    const player =
+      hoisted.db.players.find((item) => item.id === registration.player_id) ||
+      null;
+    const inviter =
+      hoisted.db.players.find((item) => item.id === registration.invited_by) ||
+      null;
+    const guest =
+      hoisted.db.guests.find((item) => item.id === registration.guest_id) ||
+      null;
 
-    if (this.selectedColumns && String(this.selectedColumns).includes("player:")) {
+    if (
+      this.selectedColumns &&
+      String(this.selectedColumns).includes("player:")
+    ) {
       registration.player = player ? clone(player) : null;
     }
-    if (this.selectedColumns && String(this.selectedColumns).includes("inviter:")) {
+    if (
+      this.selectedColumns &&
+      String(this.selectedColumns).includes("inviter:")
+    ) {
       registration.inviter = inviter ? clone(inviter) : null;
     }
-    if (this.selectedColumns && String(this.selectedColumns).includes("guest:")) {
+    if (
+      this.selectedColumns &&
+      String(this.selectedColumns).includes("guest:")
+    ) {
       registration.guest = guest ? clone(guest) : null;
     }
 
@@ -364,7 +383,9 @@ describe("integration flows", () => {
     );
 
     expect(success).toBe(true);
-    const inserted = hoisted.db.game_registrations.find((row) => row.guest_id === "g1");
+    const inserted = hoisted.db.game_registrations.find(
+      (row) => row.guest_id === "g1",
+    );
     expect(inserted?.slot).toBe("main");
 
     vi.useRealTimers();
@@ -404,7 +425,9 @@ describe("integration flows", () => {
     );
 
     expect(success).toBe(true);
-    const inserted = hoisted.db.game_registrations.find((row) => row.guest_id === "g2");
+    const inserted = hoisted.db.game_registrations.find(
+      (row) => row.guest_id === "g2",
+    );
     expect(inserted?.slot).toBe("waitlist");
 
     vi.useRealTimers();
@@ -426,7 +449,11 @@ describe("integration flows", () => {
       { id: "p-leave", status: "active", type: "member" },
       { id: "p-wait", status: "active", type: "member" },
     );
-    hoisted.db.guests.push({ id: "g3", name: "Convidado 3", invited_by: "p-leave" });
+    hoisted.db.guests.push({
+      id: "g3",
+      name: "Convidado 3",
+      invited_by: "p-leave",
+    });
 
     hoisted.db.game_registrations.push({
       id: "leave-main",
@@ -467,11 +494,18 @@ describe("integration flows", () => {
 
     expect(success).toBe(true);
 
-    const waitlistPromoted = hoisted.db.game_registrations.find((row) => row.id === "wait-1");
-    const guestMigrated = hoisted.db.game_registrations.find((row) => row.id === "guest-3");
-    const leaverRegistration = hoisted.db.game_registrations.find((row) => row.id === "leave-main");
+    const waitlistPromoted = hoisted.db.game_registrations.find(
+      (row) => row.id === "wait-1",
+    );
+    const guestMigrated = hoisted.db.game_registrations.find(
+      (row) => row.id === "guest-3",
+    );
+    const leaverRegistration = hoisted.db.game_registrations.find(
+      (row) => row.id === "leave-main",
+    );
 
-    expect(leaverRegistration).toBeUndefined();
+    expect(leaverRegistration).toBeDefined();
+    expect(leaverRegistration?.left_at).toEqual(expect.any(String));
     expect(waitlistPromoted?.slot).toBe("main");
     expect(guestMigrated?.slot).toBe("main");
 
@@ -498,7 +532,9 @@ describe("integration flows", () => {
 
     expect(success).toBe(true);
 
-    const inserted = hoisted.db.game_registrations.find((row) => row.player_id === "p-pen");
+    const inserted = hoisted.db.game_registrations.find(
+      (row) => row.player_id === "p-pen",
+    );
     expect(inserted?.slot).toBe("waitlist");
   });
 
@@ -522,7 +558,9 @@ describe("integration flows", () => {
 
     expect(success).toBe(true);
 
-    const inserted = hoisted.db.game_registrations.find((row) => row.player_id === "p-injury");
+    const inserted = hoisted.db.game_registrations.find(
+      (row) => row.player_id === "p-injury",
+    );
     expect(inserted?.slot).toBe("main");
   });
 });

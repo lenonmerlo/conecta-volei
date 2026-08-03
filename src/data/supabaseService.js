@@ -352,7 +352,7 @@ export async function getPlayerStats(playerId) {
     supabase
       .from("game_registrations")
       .select(
-        "game_id, registered_at, game:games!game_registrations_game_id_fkey(id, day, date)",
+        "game_id, registered_at, left_at, game:games!game_registrations_game_id_fkey(id, day, date)",
       )
       .eq("player_id", playerId)
       .eq("slot", "main"),
@@ -398,6 +398,8 @@ export async function getPlayerStats(playerId) {
   const cutoffDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   const totalGames = safeMainRegistrations.filter((row) => {
+    if (row.left_at) return true;
+
     const registeredAt = new Date(row.registered_at);
     if (Number.isNaN(registeredAt.getTime())) return false;
     return registeredAt.getTime() < cutoffDate.getTime();
@@ -789,14 +791,27 @@ async function resolveEquivalentGameIds(gameId) {
   return Array.from(ids);
 }
 
-async function getRegistrationRowsByGameIds(gameIds, columns) {
+async function getRegistrationRowsByGameIds(
+  gameIds,
+  columns,
+  { onlyActive = false } = {},
+) {
   const uniqueGameIds = Array.from(new Set((gameIds || []).filter(Boolean)));
   if (!uniqueGameIds.length) return { data: [], error: null };
 
   const results = await Promise.all(
-    uniqueGameIds.map((id) =>
-      supabase.from("game_registrations").select(columns).eq("game_id", id),
-    ),
+    uniqueGameIds.map((id) => {
+      let query = supabase
+        .from("game_registrations")
+        .select(columns)
+        .eq("game_id", id);
+
+      if (onlyActive) {
+        query = query.is("left_at", null);
+      }
+
+      return query;
+    }),
   );
 
   const firstErrorResult = results.find((result) => result.error);
@@ -882,6 +897,7 @@ export async function autoMigrateGuests(
   const { data: allRegistrations, error } = await getRegistrationRowsByGameIds(
     equivalentGameIds,
     "id, game_id, slot, registered_at, player_id, guest_id, guest_name",
+    { onlyActive: true },
   );
 
   if (error) {
@@ -982,6 +998,7 @@ export async function getGameRegistrations(
   const { data, error } = await getRegistrationRowsByGameIds(
     equivalentGameIds,
     "*, player:players!game_registrations_player_id_fkey(*), inviter:players!game_registrations_invited_by_fkey(id, name, nickname, gender, status, type, is_captain, is_setter, position), guest:guests!game_registrations_guest_id_fkey(id, name, gender, skill_level, invited_by)",
+    { onlyActive: true },
   );
 
   if (error) {
@@ -1067,7 +1084,8 @@ export async function getRegistrationCountsByGame() {
   const { data, error } = await supabase
     .from("game_registrations")
     .select("game_id, slot, registered_at")
-    .eq("slot", "main");
+    .eq("slot", "main")
+    .is("left_at", null);
 
   if (error) {
     console.error("[Supabase] Falha ao carregar contagem de inscritos:", error);
@@ -1233,12 +1251,13 @@ export async function leaveGame(gameId, playerId = null, guestId = null) {
     : { data: null };
 
   const equivalentGameIds = await resolveEquivalentGameIds(gameId);
-  const results = await Promise.all(
+  const selectResults = await Promise.all(
     equivalentGameIds.map((id) => {
       let query = supabase
         .from("game_registrations")
-        .delete()
-        .eq("game_id", id);
+        .select("id, slot, guest_id")
+        .eq("game_id", id)
+        .is("left_at", null);
 
       if (guestId) {
         query = query.eq("guest_id", guestId);
@@ -1246,15 +1265,48 @@ export async function leaveGame(gameId, playerId = null, guestId = null) {
         query = query.eq("player_id", playerId);
       }
 
-      return query.select("id, slot, guest_id");
+      return query;
+    }),
+  );
+
+  const selectError =
+    selectResults.find((result) => result.error)?.error || null;
+  if (selectError) {
+    console.error("[leaveGame] failed to load active registrations", {
+      gameId,
+      playerId,
+      selectError,
+    });
+    return false;
+  }
+
+  const leftRegistrations = selectResults.flatMap(
+    (result) => result.data || [],
+  );
+
+  const leftAt = new Date().toISOString();
+  const results = await Promise.all(
+    equivalentGameIds.map((id) => {
+      let query = supabase
+        .from("game_registrations")
+        .update({ left_at: leftAt })
+        .eq("game_id", id)
+        .is("left_at", null);
+
+      if (guestId) {
+        query = query.eq("guest_id", guestId);
+      } else {
+        query = query.eq("player_id", playerId);
+      }
+
+      return query;
     }),
   );
 
   const playerError = results.find((result) => result.error)?.error || null;
-  const removedRegistrations = results.flatMap((result) => result.data || []);
 
   if (playerError) {
-    console.error("[leaveGame] delete failed, skipping promotion", {
+    console.error("[leaveGame] update left_at failed, skipping promotion", {
       gameId,
       playerId,
       playerError,
@@ -1262,10 +1314,10 @@ export async function leaveGame(gameId, playerId = null, guestId = null) {
     return false;
   }
 
-  if ((removedRegistrations || []).length > 0) {
+  if ((leftRegistrations || []).length > 0) {
     const removedGuestId =
       guestId ||
-      removedRegistrations.find((registration) => registration?.guest_id)
+      leftRegistrations.find((registration) => registration?.guest_id)
         ?.guest_id ||
       null;
     await logAction(
@@ -1358,7 +1410,8 @@ export async function migrateGuestsToWaitlist(gameId) {
         .from("game_registrations")
         .update({ slot: "waitlist" })
         .eq("game_id", id)
-        .eq("slot", "guests"),
+        .eq("slot", "guests")
+        .is("left_at", null),
     ),
   );
 
@@ -1382,6 +1435,7 @@ export async function isPlayerRegistered(gameId, playerId) {
           .select("id, game_id, registered_at")
           .eq("game_id", id)
           .eq("player_id", playerId)
+          .is("left_at", null)
           .maybeSingle(),
       ),
     ),
@@ -1415,6 +1469,7 @@ export async function getGuestsByInviter(gameId, inviterId) {
         .eq("game_id", id)
         .eq("invited_by", inviterId)
         .is("player_id", null)
+        .is("left_at", null)
         .order("registered_at"),
     ),
   );
@@ -1451,6 +1506,7 @@ export async function getGuestsByInviterFromTable(gameId, invitedById) {
         )
         .eq("game_id", id)
         .not("guest_id", "is", null)
+        .is("left_at", null)
         .eq("guest.invited_by", invitedById)
         .order("registered_at"),
     ),
