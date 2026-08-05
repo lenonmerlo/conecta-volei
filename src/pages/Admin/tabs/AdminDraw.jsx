@@ -188,8 +188,8 @@ function AdminDraw() {
       return;
     }
 
-    if (players.length < 8) {
-      setError("Jogadores insuficientes para sortear");
+    if (players.length < 12) {
+      setError("Minimo de 12 jogadores necessario");
       return;
     }
 

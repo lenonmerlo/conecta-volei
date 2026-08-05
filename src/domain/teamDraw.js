@@ -13,22 +13,72 @@ function sumLevels(team) {
   return team.reduce((acc, p) => acc + Number(p.skillLevel || 0), 0);
 }
 
-function getTeamCount(totalPlayers) {
-  if (totalPlayers >= 14) return 3;
-  if (totalPlayers >= 8) return 2;
-  return 0;
+function getSkillLevel(player) {
+  return Number(player?.skillLevel || 0);
+}
+
+function isFemale(player) {
+  return player?.gender === "F";
+}
+
+function isLowSkill(player) {
+  return getSkillLevel(player) < 3;
+}
+
+function isHighSkill(player) {
+  return getSkillLevel(player) > 4.5;
+}
+
+function isCaptain(player) {
+  return Boolean(player?.is_captain);
+}
+
+function isSetter(player) {
+  return Boolean(player?.is_setter) || player?.position === "setter";
+}
+
+function getTeamPlan(totalPlayers) {
+  if (totalPlayers < 12) return null;
+
+  if (totalPlayers <= 14) {
+    const minSize = Math.floor(totalPlayers / 2);
+    const maxSize = Math.ceil(totalPlayers / 2);
+    return {
+      teamCount: 2,
+      capacities: [minSize, maxSize],
+    };
+  }
+
+  const capacities = [6, 6, 6];
+  const delta = totalPlayers - 18;
+
+  if (delta < 0) {
+    capacities[2] = 6 + delta;
+  } else if (delta > 0) {
+    for (let i = 0; i < delta; i += 1) {
+      capacities[i % 3] += 1;
+    }
+  }
+
+  return {
+    teamCount: 3,
+    capacities,
+  };
 }
 
 export function drawTeams(players) {
-  const teamCount = getTeamCount(players.length);
-  if (teamCount === 0) return [];
+  const plan = getTeamPlan(players.length);
+  if (!plan) {
+    throw new Error("Minimo de 12 jogadores necessario");
+  }
+
+  const { teamCount, capacities } = plan;
   const teams = Array.from({ length: teamCount }, () => []);
-  const maxPerTeam = Math.ceil(players.length / teamCount);
 
   const assignedIds = new Set();
 
   function canAddToTeam(teamIndex) {
-    return teams[teamIndex].length < maxPerTeam;
+    return teams[teamIndex].length < capacities[teamIndex];
   }
 
   function tryAdd(teamIndex, player) {
@@ -45,11 +95,19 @@ export function drawTeams(players) {
       .map((team, index) => ({
         index,
         size: team.length,
+        capacity: capacities[index],
         sum: sumLevels(team),
-        femaleCount: team.filter((p) => p.gender === "F").length,
+        femaleCount: team.filter(isFemale).length,
+        lowSkillCount: team.filter(isLowSkill).length,
+        highSkillCount: team.filter(isHighSkill).length,
+        captainCount: team.filter(isCaptain).length,
+        setterCount: team.filter(isSetter).length,
       }))
-      .filter((meta) => meta.size < maxPerTeam)
+      .filter((meta) => meta.size < meta.capacity)
       .sort((a, b) => {
+        const aFill = a.size / a.capacity;
+        const bFill = b.size / b.capacity;
+        if (aFill !== bFill) return aFill - bFill;
         if (a.size !== b.size) return a.size - b.size;
         if (a.sum !== b.sum) return a.sum - b.sum;
         return a.femaleCount - b.femaleCount;
@@ -57,19 +115,43 @@ export function drawTeams(players) {
   }
 
   function assignToBestTeam(player, options = {}) {
-    const { preferFemaleBalance = false } = options;
+    const {
+      preferFemaleBalance = false,
+      balanceLowSkill = false,
+      balanceHighSkill = false,
+    } = options;
 
     const targets = getSortedTargets();
     if (targets.length === 0) return false;
 
-    const sortedTargets = preferFemaleBalance
-      ? [...targets].sort((a, b) => {
-          if (a.size !== b.size) return a.size - b.size;
-          if (a.femaleCount !== b.femaleCount)
-            return a.femaleCount - b.femaleCount;
-          return a.sum - b.sum;
-        })
-      : targets;
+    const sortedTargets = [...targets].sort((a, b) => {
+      const aFill = a.size / a.capacity;
+      const bFill = b.size / b.capacity;
+      if (aFill !== bFill) return aFill - bFill;
+
+      if (balanceLowSkill && a.lowSkillCount !== b.lowSkillCount) {
+        return a.lowSkillCount - b.lowSkillCount;
+      }
+
+      if (balanceHighSkill && a.highSkillCount !== b.highSkillCount) {
+        return a.highSkillCount - b.highSkillCount;
+      }
+
+      if (preferFemaleBalance && a.femaleCount !== b.femaleCount) {
+        return a.femaleCount - b.femaleCount;
+      }
+
+      if (a.captainCount !== b.captainCount) {
+        return a.captainCount - b.captainCount;
+      }
+
+      if (a.setterCount !== b.setterCount) {
+        return a.setterCount - b.setterCount;
+      }
+
+      if (a.sum !== b.sum) return a.sum - b.sum;
+      return a.size - b.size;
+    });
 
     return tryAdd(sortedTargets[0].index, player);
   }
@@ -119,17 +201,47 @@ export function drawTeams(players) {
   fixedSetters.forEach((player) => assignToBestTeam(player));
   optionalSetters.forEach((player) => assignToBestTeam(player));
 
-  // 3) Distribui atacantes equilibrando entre os times
-  attackers.forEach((player) => assignToBestTeam(player));
+  // 3) Balanceia extremos tecnicos antes do restante
+  const allNonRolePlayers = [...attackers, ...remaining];
+  const lowSkillPlayers = shuffleArray(allNonRolePlayers.filter(isLowSkill));
+  const highSkillPlayers = shuffleArray(allNonRolePlayers.filter(isHighSkill));
 
-  // 4) Completa com os demais equilibrando nivel e genero
+  lowSkillPlayers.forEach((player) => {
+    if (assignedIds.has(player.id)) return;
+    assignToBestTeam(player, { balanceLowSkill: true });
+  });
+
+  highSkillPlayers.forEach((player) => {
+    if (assignedIds.has(player.id)) return;
+    assignToBestTeam(player, { balanceHighSkill: true });
+  });
+
+  // 4) Distribui atacantes equilibrando entre os times
+  attackers.forEach((player) => {
+    if (assignedIds.has(player.id)) return;
+    assignToBestTeam(player);
+  });
+
+  // 5) Completa com os demais equilibrando nivel e genero
   remaining.forEach((player) =>
-    assignToBestTeam(player, { preferFemaleBalance: player.gender === "F" }),
+    assignedIds.has(player.id)
+      ? null
+      : assignToBestTeam(player, {
+          preferFemaleBalance: isFemale(player),
+          balanceLowSkill: isLowSkill(player),
+          balanceHighSkill: isHighSkill(player),
+        }),
   );
 
   // Garantia: adiciona qualquer jogador nao distribuido por limite/parcial
   const notAssigned = players.filter((p) => !assignedIds.has(p.id));
-  notAssigned.forEach((player) => assignToBestTeam(player));
+  notAssigned.forEach((player) =>
+    assignToBestTeam(player, {
+      preferFemaleBalance: isFemale(player),
+      balanceLowSkill: isLowSkill(player),
+      balanceHighSkill: isHighSkill(player),
+    }),
+  );
 
   return teams.map((team, i) => ({
     name: `Time ${String.fromCharCode(65 + i)}`, // Time A, B, C

@@ -15,6 +15,16 @@ function makePlayer(index, overrides = {}) {
 }
 
 describe("teamDraw", () => {
+  it("drawTeams com menos de 12 jogadores retorna erro", () => {
+    const players = Array.from({ length: 11 }, (_, index) =>
+      makePlayer(index + 1),
+    );
+
+    expect(() => drawTeams(players)).toThrow(
+      "Minimo de 12 jogadores necessario",
+    );
+  });
+
   it("drawTeams com 21 jogadores gera 3 times de 7", () => {
     const players = Array.from({ length: 21 }, (_, index) =>
       makePlayer(index + 1),
@@ -26,25 +36,29 @@ describe("teamDraw", () => {
     expect(teams.every((team) => team.players.length === 7)).toBe(true);
   });
 
-  it("drawTeams com 10 jogadores gera 2 times de 5", () => {
-    const players = Array.from({ length: 10 }, (_, index) =>
+  it("drawTeams com 14 jogadores gera 2 times de 7", () => {
+    const players = Array.from({ length: 14 }, (_, index) =>
       makePlayer(index + 1),
     );
 
     const teams = drawTeams(players);
 
     expect(teams).toHaveLength(2);
-    expect(teams.every((team) => team.players.length === 5)).toBe(true);
+    expect(teams.every((team) => team.players.length === 7)).toBe(true);
   });
 
-  it("drawTeams com 7 jogadores retorna vazio (insuficiente)", () => {
-    const players = Array.from({ length: 7 }, (_, index) =>
+  it("drawTeams com 15 jogadores gera 3 times com capacidade 6, 6 e 3", () => {
+    const players = Array.from({ length: 15 }, (_, index) =>
       makePlayer(index + 1),
     );
 
     const teams = drawTeams(players);
 
-    expect(teams).toEqual([]);
+    const sortedSizes = teams
+      .map((team) => team.players.length)
+      .sort((a, b) => b - a);
+    expect(teams).toHaveLength(3);
+    expect(sortedSizes).toEqual([6, 6, 3]);
   });
 
   it("drawTeams distribui capitaes em times diferentes", () => {
@@ -80,6 +94,35 @@ describe("teamDraw", () => {
     );
 
     expect(femaleCounts).toEqual([1, 1, 1]);
+  });
+
+  it("drawTeams distribui jogadores abaixo de 3 e acima de 4.5 de forma equilibrada", () => {
+    const players = Array.from({ length: 18 }, (_, index) =>
+      makePlayer(index + 1, {
+        skillLevel: 3.5,
+      }),
+    );
+
+    [0, 1, 2].forEach((index) => {
+      players[index].skillLevel = 2.4;
+    });
+
+    [3, 4, 5].forEach((index) => {
+      players[index].skillLevel = 4.8;
+    });
+
+    const teams = drawTeams(players);
+    const lowCounts = teams.map(
+      (team) =>
+        team.players.filter((player) => Number(player.skillLevel) < 3).length,
+    );
+    const highCounts = teams.map(
+      (team) =>
+        team.players.filter((player) => Number(player.skillLevel) > 4.5).length,
+    );
+
+    expect(lowCounts).toEqual([1, 1, 1]);
+    expect(highCounts).toEqual([1, 1, 1]);
   });
 
   it("swapPlayers troca jogadores entre times corretamente", () => {
