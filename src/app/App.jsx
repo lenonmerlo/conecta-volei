@@ -16,7 +16,6 @@ const Home = lazy(() => import("../pages/Home/Home"));
 const Login = lazy(() => import("../pages/Login/Login"));
 const Profile = lazy(() => import("../pages/Profile/Profile"));
 const Rules = lazy(() => import("../pages/Rules/Rules"));
-const Scrapbook = lazy(() => import("../pages/Scrapbook/Scrapbook"));
 const Teams = lazy(() => import("../pages/Teams/Teams"));
 
 function RoutesFallback() {
@@ -34,7 +33,6 @@ function AppShell() {
             <Route path="/" element={<Login />} />
             <Route path="/athletes" element={<Athletes />} />
             <Route path="/athlete/:id" element={<AthleteProfile />} />
-            <Route path="/scrapbook" element={<Scrapbook />} />
             <Route path="/rules" element={<Rules />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
@@ -75,7 +73,6 @@ function AppShell() {
             <Route path="/" element={<Home />} />
             <Route path="/athletes" element={<Athletes />} />
             <Route path="/athlete/:id" element={<AthleteProfile />} />
-            <Route path="/scrapbook" element={<Scrapbook />} />
             <Route path="/rules" element={<Rules />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/game/:id" element={<GameDetail />} />

@@ -454,51 +454,6 @@ export async function getPlayerStats(playerId) {
   };
 }
 
-export async function getScraps(playerId) {
-  const { data, error } = await supabase
-    .from("scraps")
-    .select(
-      "id, from_player_id, to_player_id, message, created_at, from_player:players!scraps_from_player_id_fkey(id, name, nickname, avatar_url)",
-    )
-    .eq("to_player_id", playerId)
-    .order("created_at", { ascending: false });
-
-  if (error) return [];
-  return data || [];
-}
-
-export async function getAllScraps() {
-  const { data, error } = await supabase
-    .from("scraps")
-    .select(
-      "id, from_player_id, to_player_id, message, created_at, from_player:players!scraps_from_player_id_fkey(id, name, nickname, avatar_url), to_player:players!scraps_to_player_id_fkey(id, name, nickname, avatar_url)",
-    )
-    .order("created_at", { ascending: false });
-
-  if (error) return [];
-  return data || [];
-}
-
-export async function createScrap(fromPlayerId, toPlayerId, message) {
-  const { data, error } = await supabase
-    .from("scraps")
-    .insert({
-      from_player_id: fromPlayerId,
-      to_player_id: toPlayerId,
-      message,
-    })
-    .select()
-    .single();
-
-  if (error) return { success: false, error: error.message };
-  return { success: true, scrap: data };
-}
-
-export async function deleteScrap(scrapId) {
-  const { error } = await supabase.from("scraps").delete().eq("id", scrapId);
-  return !error;
-}
-
 // ── Games ──────────────────────────────────────────
 
 export async function getGames() {
