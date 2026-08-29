@@ -11,7 +11,13 @@ import {
   updatePlayerStatus,
 } from "../../../data/supabaseService";
 import { isSuperAdmin } from "../../../domain/admins";
-import { PLAYER_TYPE } from "../../../domain/constants";
+import {
+  PLAYER_POSITIONS,
+  PLAYER_POSITION_LABELS,
+  PLAYER_TYPE,
+  SKILL_LEVELS,
+  SPECIAL_BADGE_FIELDS,
+} from "../../../domain/constants";
 import "./AdminTabs.css";
 
 function statusLabel(status) {
@@ -28,18 +34,55 @@ function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
   const { user } = useAuth();
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [levelFilter, setLevelFilter] = useState("all");
+  const [positionFilter, setPositionFilter] = useState("all");
+  const [badgeFilters, setBadgeFilters] = useState({});
   const userCanUnblock = isSuperAdmin(user);
+
+  function toggleBadgeFilter(key) {
+    setBadgeFilters((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
 
   const filteredPlayers = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    if (!term) return players;
-
-    return players.filter((player) =>
-      String(player.name || "")
-        .toLowerCase()
-        .includes(term),
+    const activeBadgeKeys = SPECIAL_BADGE_FIELDS.filter(
+      (badge) => badgeFilters[badge.key],
     );
-  }, [players, searchTerm]);
+
+    return players.filter((player) => {
+      if (
+        term &&
+        !String(player.name || "")
+          .toLowerCase()
+          .includes(term)
+      ) {
+        return false;
+      }
+
+      if (
+        levelFilter !== "all" &&
+        Number(player.skill_level) !== Number(levelFilter)
+      ) {
+        return false;
+      }
+
+      if (
+        positionFilter !== "all" &&
+        (player.position || "all-around") !== positionFilter
+      ) {
+        return false;
+      }
+
+      if (
+        activeBadgeKeys.length > 0 &&
+        !activeBadgeKeys.some((badge) => Boolean(player[badge.field]))
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [players, searchTerm, levelFilter, positionFilter, badgeFilters]);
 
   async function applyWarningAction(playerId, action) {
     let updatedPlayer = null;
@@ -62,7 +105,7 @@ function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
     }
 
     setError("");
-    await onRefreshPlayers();
+    await onRefreshPlayers({ silent: true });
   }
 
   async function handleToggleInjuryLeave(playerId, checked) {
@@ -76,7 +119,7 @@ function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
     }
 
     setError("");
-    await onRefreshPlayers();
+    await onRefreshPlayers({ silent: true });
   }
 
   async function handleUnblockPlayer(playerId) {
@@ -88,7 +131,7 @@ function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
     }
 
     setError("");
-    await onRefreshPlayers();
+    await onRefreshPlayers({ silent: true });
   }
 
   if (loadingPlayers) {
@@ -112,6 +155,58 @@ function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
           onChange={(event) => setSearchTerm(event.target.value)}
           aria-label="Buscar atleta por nome"
         />
+      </div>
+
+      <div className="admin-tab__filters">
+        <label className="admin-tab__filter-item">
+          <span>Nivel</span>
+          <select
+            className="admin-tab__select"
+            value={levelFilter}
+            onChange={(event) => setLevelFilter(event.target.value)}
+          >
+            <option value="all">Todos</option>
+            {SKILL_LEVELS.map((level) => (
+              <option key={level} value={level}>
+                {level}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="admin-tab__filter-item">
+          <span>Posicao</span>
+          <select
+            className="admin-tab__select"
+            value={positionFilter}
+            onChange={(event) => setPositionFilter(event.target.value)}
+          >
+            <option value="all">Todas</option>
+            {PLAYER_POSITIONS.map((position) => (
+              <option key={position} value={position}>
+                {PLAYER_POSITION_LABELS[position] || position}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="admin-tab__position-row">
+        {SPECIAL_BADGE_FIELDS.map((badge) => (
+          <label
+            key={badge.key}
+            className={`admin-tab__check-label${
+              badgeFilters[badge.key] ? " admin-tab__check-label--active" : ""
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={Boolean(badgeFilters[badge.key])}
+              onChange={() => toggleBadgeFilter(badge.key)}
+            />
+            {badge.label}
+          </label>
+        ))}
       </div>
 
       {filteredPlayers.length === 0 && (

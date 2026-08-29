@@ -102,7 +102,7 @@ export async function getPublicPlayers() {
   const { data, error } = await supabase
     .from("players")
     .select(
-      "id, name, nickname, gender, status, avatar_url, is_captain, is_setter, badge_monster_block, badge_super_spike, badge_guardian",
+      "id, name, nickname, gender, status, avatar_url, is_captain, is_setter, position, skill_level, badge_monster_block, badge_super_spike, badge_guardian",
     )
     .order("name");
 

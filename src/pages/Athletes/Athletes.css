@@ -34,6 +34,62 @@
   box-shadow: 0 0 0 3px rgba(30, 167, 255, 0.15);
 }
 
+.athletes__filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.6rem;
+}
+
+.athletes__filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  color: var(--cv-muted);
+  font-size: 0.78rem;
+}
+
+.athletes__filter-item select {
+  background: rgba(16, 54, 86, 0.58);
+  border: 1px solid rgba(143, 215, 255, 0.25);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  color: var(--cv-text);
+  font-size: 0.85rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.athletes__badge-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.athletes__badge-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: #d7e9f8;
+  padding: 0.32rem 0.6rem;
+  border: 1px solid rgba(143, 215, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(8, 31, 52, 0.52);
+}
+
+.athletes__badge-filter input {
+  accent-color: #6ecdfd;
+}
+
+.athletes__badge-filter--active {
+  border-color: rgba(110, 205, 253, 0.6);
+  background: linear-gradient(
+    120deg,
+    rgba(24, 71, 107, 0.7),
+    rgba(14, 56, 88, 0.62)
+  );
+}
+
 .athletes__list {
   list-style: none;
   margin: 0;

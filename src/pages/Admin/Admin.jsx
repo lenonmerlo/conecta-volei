@@ -21,8 +21,8 @@ function Admin() {
   const [players, setPlayers] = useState([]);
   const [loadingPlayers, setLoadingPlayers] = useState(true);
 
-  const refreshPlayers = useCallback(async () => {
-    setLoadingPlayers(true);
+  const refreshPlayers = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoadingPlayers(true);
     const allPlayers = await getAllPlayers();
     setPlayers(allPlayers || []);
     setLoadingPlayers(false);

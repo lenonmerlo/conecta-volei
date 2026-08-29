@@ -1,9 +1,15 @@
 // Pagina publica de atletas do grupo
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getPublicPlayers } from "../../data/supabaseService";
-import { PLAYER_STATUS } from "../../domain/constants";
+import {
+  PLAYER_POSITIONS,
+  PLAYER_POSITION_LABELS,
+  PLAYER_STATUS,
+  SKILL_LEVELS,
+  SPECIAL_BADGE_FIELDS,
+} from "../../domain/constants";
 import "./Athletes.css";
 
 function statusBadge(status) {
@@ -40,6 +46,9 @@ function Athletes() {
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [levelFilter, setLevelFilter] = useState("all");
+  const [positionFilter, setPositionFilter] = useState("all");
+  const [badgeFilters, setBadgeFilters] = useState({});
 
   useEffect(() => {
     async function fetchPlayers() {
@@ -50,11 +59,46 @@ function Athletes() {
     fetchPlayers();
   }, []);
 
-  const filtered = players.filter(
-    (p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      (p.nickname && p.nickname.toLowerCase().includes(search.toLowerCase())),
-  );
+  function toggleBadgeFilter(key) {
+    setBadgeFilters((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  const filtered = useMemo(() => {
+    const term = search.toLowerCase();
+    const activeBadgeKeys = SPECIAL_BADGE_FIELDS.filter(
+      (badge) => badgeFilters[badge.key],
+    );
+
+    return players.filter((p) => {
+      const matchesSearch =
+        p.name.toLowerCase().includes(term) ||
+        (p.nickname && p.nickname.toLowerCase().includes(term));
+      if (term && !matchesSearch) return false;
+
+      if (
+        levelFilter !== "all" &&
+        Number(p.skill_level) !== Number(levelFilter)
+      ) {
+        return false;
+      }
+
+      if (
+        positionFilter !== "all" &&
+        (p.position || "all-around") !== positionFilter
+      ) {
+        return false;
+      }
+
+      if (
+        activeBadgeKeys.length > 0 &&
+        !activeBadgeKeys.some((badge) => Boolean(p[badge.field]))
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [players, search, levelFilter, positionFilter, badgeFilters]);
 
   if (loading) {
     return (
@@ -74,6 +118,56 @@ function Athletes() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+      </div>
+
+      <div className="athletes__filters">
+        <label className="athletes__filter-item">
+          <span>Nivel</span>
+          <select
+            value={levelFilter}
+            onChange={(e) => setLevelFilter(e.target.value)}
+          >
+            <option value="all">Todos</option>
+            {SKILL_LEVELS.map((level) => (
+              <option key={level} value={level}>
+                {level}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="athletes__filter-item">
+          <span>Posicao</span>
+          <select
+            value={positionFilter}
+            onChange={(e) => setPositionFilter(e.target.value)}
+          >
+            <option value="all">Todas</option>
+            {PLAYER_POSITIONS.map((position) => (
+              <option key={position} value={position}>
+                {PLAYER_POSITION_LABELS[position] || position}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="athletes__badge-filters">
+        {SPECIAL_BADGE_FIELDS.map((badge) => (
+          <label
+            key={badge.key}
+            className={`athletes__badge-filter${
+              badgeFilters[badge.key] ? " athletes__badge-filter--active" : ""
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={Boolean(badgeFilters[badge.key])}
+              onChange={() => toggleBadgeFilter(badge.key)}
+            />
+            {badge.label}
+          </label>
+        ))}
       </div>
 
       <ul className="athletes__list">

@@ -1,6 +1,6 @@
 // Aba de níveis técnicos — exclusivo para super admin
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   getGameRegistrations,
   getGames,
@@ -9,14 +9,22 @@ import {
   updatePlayerPosition,
   updatePlayerSpecialBadges,
 } from "../../../data/supabaseService";
-import { SKILL_LEVELS } from "../../../domain/constants";
+import {
+  PLAYER_POSITIONS,
+  PLAYER_POSITION_LABELS,
+  SKILL_LEVELS,
+  SPECIAL_BADGE_FIELDS,
+} from "../../../domain/constants";
 import "./AdminTabs.css";
 
-const POSITION_OPTIONS = ["all-around", "attacker", "setter", "libero"];
+const POSITION_OPTIONS = PLAYER_POSITIONS;
 
 function AdminLevels({ players, loadingPlayers, onRefreshPlayers }) {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  const [levelFilter, setLevelFilter] = useState("all");
+  const [positionFilter, setPositionFilter] = useState("all");
+  const [badgeFilters, setBadgeFilters] = useState({});
   const [games, setGames] = useState([]);
   const [selectedGameId, setSelectedGameId] = useState("");
   const [gameGuests, setGameGuests] = useState([]);
@@ -29,6 +37,50 @@ function AdminLevels({ players, loadingPlayers, onRefreshPlayers }) {
       .replace(/[\u0300-\u036f]/g, "")
       .trim();
   }
+
+  function toggleBadgeFilter(key) {
+    setBadgeFilters((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  const filteredPlayers = useMemo(() => {
+    const searchValue = normalizeSearch(search);
+    const activeBadgeKeys = SPECIAL_BADGE_FIELDS.filter(
+      (badge) => badgeFilters[badge.key],
+    );
+
+    return players.filter((player) => {
+      if (searchValue) {
+        const name = normalizeSearch(player.name);
+        const nickname = normalizeSearch(player.nickname || "");
+        if (!name.includes(searchValue) && !nickname.includes(searchValue)) {
+          return false;
+        }
+      }
+
+      if (
+        levelFilter !== "all" &&
+        Number(player.skill_level) !== Number(levelFilter)
+      ) {
+        return false;
+      }
+
+      if (
+        positionFilter !== "all" &&
+        (player.position || "all-around") !== positionFilter
+      ) {
+        return false;
+      }
+
+      if (
+        activeBadgeKeys.length > 0 &&
+        !activeBadgeKeys.some((badge) => Boolean(player[badge.field]))
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [players, search, levelFilter, positionFilter, badgeFilters]);
 
   useEffect(() => {
     let active = true;
@@ -102,7 +154,7 @@ function AdminLevels({ players, loadingPlayers, onRefreshPlayers }) {
     }
 
     setError("");
-    await onRefreshPlayers();
+    await onRefreshPlayers({ silent: true });
   }
 
   async function updatePosition(id, nextValues) {
@@ -114,7 +166,7 @@ function AdminLevels({ players, loadingPlayers, onRefreshPlayers }) {
     }
 
     setError("");
-    await onRefreshPlayers();
+    await onRefreshPlayers({ silent: true });
   }
 
   function handleCaptainChange(player, checked) {
@@ -150,7 +202,7 @@ function AdminLevels({ players, loadingPlayers, onRefreshPlayers }) {
     }
 
     setError("");
-    await onRefreshPlayers();
+    await onRefreshPlayers({ silent: true });
   }
 
   function handleSpecialBadgeChange(player, field, checked) {
@@ -195,15 +247,6 @@ function AdminLevels({ players, loadingPlayers, onRefreshPlayers }) {
     );
   }
 
-  const searchValue = normalizeSearch(search);
-  const filteredPlayers = players.filter((player) => {
-    if (!searchValue) return true;
-
-    const name = normalizeSearch(player.name);
-    const nickname = normalizeSearch(player.nickname || "");
-    return name.includes(searchValue) || nickname.includes(searchValue);
-  });
-
   return (
     <div className="admin-tab">
       {error && <p className="admin-tab__restricted">{error}</p>}
@@ -217,6 +260,58 @@ function AdminLevels({ players, loadingPlayers, onRefreshPlayers }) {
           onChange={(e) => setSearch(e.target.value)}
           aria-label="Buscar jogador por nome"
         />
+      </div>
+
+      <div className="admin-tab__filters">
+        <label className="admin-tab__filter-item">
+          <span>Nivel</span>
+          <select
+            className="admin-tab__select"
+            value={levelFilter}
+            onChange={(e) => setLevelFilter(e.target.value)}
+          >
+            <option value="all">Todos</option>
+            {SKILL_LEVELS.map((level) => (
+              <option key={level} value={level}>
+                {level}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="admin-tab__filter-item">
+          <span>Posicao</span>
+          <select
+            className="admin-tab__select"
+            value={positionFilter}
+            onChange={(e) => setPositionFilter(e.target.value)}
+          >
+            <option value="all">Todas</option>
+            {PLAYER_POSITIONS.map((position) => (
+              <option key={position} value={position}>
+                {PLAYER_POSITION_LABELS[position] || position}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="admin-tab__position-row">
+        {SPECIAL_BADGE_FIELDS.map((badge) => (
+          <label
+            key={badge.key}
+            className={`admin-tab__check-label${
+              badgeFilters[badge.key] ? " admin-tab__check-label--active" : ""
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={Boolean(badgeFilters[badge.key])}
+              onChange={() => toggleBadgeFilter(badge.key)}
+            />
+            {badge.label}
+          </label>
+        ))}
       </div>
 
       {filteredPlayers.length === 0 && (
