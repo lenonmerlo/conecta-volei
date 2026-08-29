@@ -7,7 +7,6 @@ import {
   PLAYER_POSITIONS,
   PLAYER_POSITION_LABELS,
   PLAYER_STATUS,
-  SKILL_LEVELS,
   SPECIAL_BADGE_FIELDS,
 } from "../../domain/constants";
 import "./Athletes.css";
@@ -46,7 +45,6 @@ function Athletes() {
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [levelFilter, setLevelFilter] = useState("all");
   const [positionFilter, setPositionFilter] = useState("all");
   const [badgeFilters, setBadgeFilters] = useState({});
 
@@ -76,13 +74,6 @@ function Athletes() {
       if (term && !matchesSearch) return false;
 
       if (
-        levelFilter !== "all" &&
-        Number(p.skill_level) !== Number(levelFilter)
-      ) {
-        return false;
-      }
-
-      if (
         positionFilter !== "all" &&
         (p.position || "all-around") !== positionFilter
       ) {
@@ -98,7 +89,7 @@ function Athletes() {
 
       return true;
     });
-  }, [players, search, levelFilter, positionFilter, badgeFilters]);
+  }, [players, search, positionFilter, badgeFilters]);
 
   if (loading) {
     return (
@@ -121,21 +112,6 @@ function Athletes() {
       </div>
 
       <div className="athletes__filters">
-        <label className="athletes__filter-item">
-          <span>Nivel</span>
-          <select
-            value={levelFilter}
-            onChange={(e) => setLevelFilter(e.target.value)}
-          >
-            <option value="all">Todos</option>
-            {SKILL_LEVELS.map((level) => (
-              <option key={level} value={level}>
-                {level}
-              </option>
-            ))}
-          </select>
-        </label>
-
         <label className="athletes__filter-item">
           <span>Posicao</span>
           <select
