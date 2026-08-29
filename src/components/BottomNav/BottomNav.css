@@ -11,7 +11,7 @@
     rgba(8, 31, 52, 0.9),
     rgba(16, 54, 85, 0.85)
   );
-  border: 1px solid rgba(143, 215, 255, 0.28);
+  border: 1px solid rgba(62, 111, 176, 0.28);
   border-radius: 18px;
   backdrop-filter: blur(8px);
   display: flex;
@@ -50,15 +50,15 @@
 
 .bottom-nav__item:hover {
   color: var(--cv-primary-soft);
-  background-color: rgba(143, 215, 255, 0.08);
+  background-color: rgba(62, 111, 176, 0.08);
 }
 
 .bottom-nav__item--active {
   color: #ffffff;
   background: linear-gradient(
     130deg,
-    rgba(255, 156, 47, 0.2),
-    rgba(255, 156, 47, 0.06)
+    rgba(62, 111, 176, 0.2),
+    rgba(62, 111, 176, 0.06)
   );
 }
 

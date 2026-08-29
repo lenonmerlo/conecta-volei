@@ -1,7 +1,7 @@
 import { RefreshCw } from "lucide-react";
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import escudoConecta from "../assets/escudo-conecta-prata.png";
+import escudoConecta from "../assets/conecta-logo.png";
 import BottomNav from "../components/BottomNav/BottomNav";
 import { isAdmin } from "../domain/admins";
 import "./App.css";

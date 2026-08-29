@@ -11,16 +11,16 @@
 .app__header {
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(143, 215, 255, 0.28);
+  border: 1px solid rgba(62, 111, 176, 0.28);
   border-radius: 18px;
   background:
     linear-gradient(
       130deg,
       rgba(14, 51, 82, 0.95) 0%,
       rgba(8, 29, 49, 0.92) 55%,
-      rgba(31, 167, 255, 0.18) 100%
+      rgba(38, 92, 168, 0.18) 100%
     ),
-    linear-gradient(90deg, rgba(255, 156, 47, 0.15), transparent);
+    linear-gradient(90deg, rgba(62, 111, 176, 0.15), transparent);
   box-shadow: var(--cv-shadow);
 }
 
@@ -33,7 +33,7 @@
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    rgba(255, 156, 47, 0.28),
+    rgba(62, 111, 176, 0.28),
     transparent 70%
   );
   pointer-events: none;
@@ -53,7 +53,7 @@
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  border: 1px solid rgba(143, 215, 255, 0.28);
+  border: 1px solid rgba(62, 111, 176, 0.28);
   background: rgba(16, 54, 86, 0.36);
   color: var(--cv-primary-soft);
   display: grid;
@@ -82,7 +82,8 @@
   width: 64px;
   height: 64px;
   object-fit: contain;
-  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.35));
+  border-radius: 22%;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.35);
 }
 
 .app__brand-text {
@@ -107,7 +108,7 @@
 
 .app__main {
   margin-top: 0.85rem;
-  border: 1px solid rgba(143, 215, 255, 0.22);
+  border: 1px solid rgba(62, 111, 176, 0.22);
   border-radius: 16px;
   max-width: 100%;
   background: linear-gradient(

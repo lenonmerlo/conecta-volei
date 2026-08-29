@@ -18,7 +18,7 @@
 .athletes__search input {
   width: 100%;
   background: rgba(16, 54, 86, 0.58);
-  border: 1px solid rgba(143, 215, 255, 0.25);
+  border: 1px solid rgba(62, 111, 176, 0.25);
   border-radius: 12px;
   padding: 0.72rem 0.85rem;
   color: var(--cv-text);
@@ -50,7 +50,7 @@
 
 .athletes__filter-item select {
   background: rgba(16, 54, 86, 0.58);
-  border: 1px solid rgba(143, 215, 255, 0.25);
+  border: 1px solid rgba(62, 111, 176, 0.25);
   border-radius: 8px;
   padding: 0.5rem 0.65rem;
   color: var(--cv-text);
@@ -72,17 +72,17 @@
   font-size: 0.78rem;
   color: #d7e9f8;
   padding: 0.32rem 0.6rem;
-  border: 1px solid rgba(143, 215, 255, 0.2);
+  border: 1px solid rgba(62, 111, 176, 0.2);
   border-radius: 999px;
   background: rgba(8, 31, 52, 0.52);
 }
 
 .athletes__badge-filter input {
-  accent-color: #6ecdfd;
+  accent-color: #6fa0d8;
 }
 
 .athletes__badge-filter--active {
-  border-color: rgba(110, 205, 253, 0.6);
+  border-color: rgba(111, 160, 216, 0.6);
   background: linear-gradient(
     120deg,
     rgba(24, 71, 107, 0.7),
@@ -100,7 +100,7 @@
 }
 
 .athletes__item {
-  border: 1px solid rgba(143, 215, 255, 0.2);
+  border: 1px solid rgba(62, 111, 176, 0.2);
   border-radius: 12px;
   background: linear-gradient(
     145deg,
@@ -119,7 +119,7 @@
 }
 
 .athletes__item:hover {
-  border-color: rgba(143, 215, 255, 0.4);
+  border-color: rgba(62, 111, 176, 0.4);
   transform: translateY(-1px);
 }
 

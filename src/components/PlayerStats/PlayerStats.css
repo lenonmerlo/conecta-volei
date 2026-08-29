@@ -1,5 +1,5 @@
 .player-stats {
-  border: 1px solid rgba(143, 215, 255, 0.2);
+  border: 1px solid rgba(62, 111, 176, 0.2);
   border-radius: 12px;
   background: linear-gradient(
     145deg,
@@ -29,7 +29,7 @@
 }
 
 .player-stats__number-card {
-  border: 1px solid rgba(143, 215, 255, 0.22);
+  border: 1px solid rgba(62, 111, 176, 0.22);
   border-radius: 10px;
   background-color: rgba(16, 54, 86, 0.5);
   padding: 0.4rem 0.45rem;
@@ -57,7 +57,7 @@
 }
 
 .player-stats__badge {
-  border: 1px solid rgba(143, 215, 255, 0.18);
+  border: 1px solid rgba(62, 111, 176, 0.18);
   border-radius: 10px;
   background-color: rgba(16, 54, 86, 0.48);
   display: flex;
@@ -71,6 +71,11 @@
 
 .player-stats__badge--locked {
   opacity: 0.55;
+}
+
+.player-stats__badge--earned {
+  border-color: rgba(255, 111, 168, 0.55);
+  background-color: rgba(255, 111, 168, 0.12);
 }
 
 .player-stats__badge-name {
