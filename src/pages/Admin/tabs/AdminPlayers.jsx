@@ -15,7 +15,6 @@ import {
   PLAYER_POSITIONS,
   PLAYER_POSITION_LABELS,
   PLAYER_TYPE,
-  SKILL_LEVELS,
   SPECIAL_BADGE_FIELDS,
 } from "../../../domain/constants";
 import "./AdminTabs.css";
@@ -34,7 +33,6 @@ function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
   const { user } = useAuth();
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [levelFilter, setLevelFilter] = useState("all");
   const [positionFilter, setPositionFilter] = useState("all");
   const [badgeFilters, setBadgeFilters] = useState({});
   const userCanUnblock = isSuperAdmin(user);
@@ -60,13 +58,6 @@ function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
       }
 
       if (
-        levelFilter !== "all" &&
-        Number(player.skill_level) !== Number(levelFilter)
-      ) {
-        return false;
-      }
-
-      if (
         positionFilter !== "all" &&
         (player.position || "all-around") !== positionFilter
       ) {
@@ -82,7 +73,7 @@ function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
 
       return true;
     });
-  }, [players, searchTerm, levelFilter, positionFilter, badgeFilters]);
+  }, [players, searchTerm, positionFilter, badgeFilters]);
 
   async function applyWarningAction(playerId, action) {
     let updatedPlayer = null;
@@ -158,22 +149,6 @@ function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
       </div>
 
       <div className="admin-tab__filters">
-        <label className="admin-tab__filter-item">
-          <span>Nivel</span>
-          <select
-            className="admin-tab__select"
-            value={levelFilter}
-            onChange={(event) => setLevelFilter(event.target.value)}
-          >
-            <option value="all">Todos</option>
-            {SKILL_LEVELS.map((level) => (
-              <option key={level} value={level}>
-                {level}
-              </option>
-            ))}
-          </select>
-        </label>
-
         <label className="admin-tab__filter-item">
           <span>Posicao</span>
           <select
