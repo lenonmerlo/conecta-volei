@@ -33,7 +33,7 @@
 }
 
 .game-detail__header {
-  border: 1px solid rgba(143, 215, 255, 0.24);
+  border: 1px solid rgba(62, 111, 176, 0.24);
   border-radius: var(--cv-radius);
   background: linear-gradient(
     140deg,
@@ -59,7 +59,7 @@
 .game-detail__map-link {
   align-self: flex-start;
   margin-top: 0.2rem;
-  border: 1px solid rgba(143, 215, 255, 0.34);
+  border: 1px solid rgba(62, 111, 176, 0.34);
   border-radius: 999px;
   padding: 0.24rem 0.62rem;
   color: var(--cv-primary-soft);
@@ -91,7 +91,7 @@
 }
 
 .game-detail__section {
-  border: 1px solid rgba(143, 215, 255, 0.18);
+  border: 1px solid rgba(62, 111, 176, 0.18);
   border-radius: 14px;
   background-color: rgba(8, 31, 52, 0.65);
   padding: 0.85rem;
@@ -104,7 +104,7 @@
   font-size: 1.3rem;
   line-height: 1;
   color: #ffffff;
-  border-bottom: 1px solid rgba(143, 215, 255, 0.2);
+  border-bottom: 1px solid rgba(62, 111, 176, 0.2);
   padding-bottom: 0.4rem;
 }
 
@@ -124,7 +124,7 @@
 .game-detail__share-button {
   background: rgba(16, 54, 86, 0.62);
   color: var(--cv-primary-soft);
-  border: 1px solid rgba(143, 215, 255, 0.3);
+  border: 1px solid rgba(62, 111, 176, 0.3);
   border-radius: 10px;
   padding: 0.5rem 0.85rem;
   font-size: 0.8rem;
@@ -160,7 +160,7 @@
   align-items: center;
   gap: 0.75rem;
   background-color: rgba(16, 54, 86, 0.62);
-  border: 1px solid rgba(143, 215, 255, 0.14);
+  border: 1px solid rgba(62, 111, 176, 0.14);
   padding: 0.6rem 0.75rem;
   border-radius: 10px;
 }
@@ -243,14 +243,14 @@
 }
 
 .game-detail__team-card {
-  border: 1px solid rgba(143, 215, 255, 0.18);
+  border: 1px solid rgba(62, 111, 176, 0.18);
   border-radius: 12px;
   background-color: rgba(13, 45, 74, 0.55);
   padding: 0.7rem;
 }
 
 .game-detail__team-head {
-  border-bottom: 1px solid rgba(143, 215, 255, 0.2);
+  border-bottom: 1px solid rgba(62, 111, 176, 0.2);
   margin-bottom: 0.5rem;
   padding-bottom: 0.3rem;
 }

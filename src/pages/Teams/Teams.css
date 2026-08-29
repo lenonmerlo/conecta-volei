@@ -57,7 +57,7 @@
 }
 
 .teams__team {
-  border: 1px solid rgba(143, 215, 255, 0.2);
+  border: 1px solid rgba(62, 111, 176, 0.2);
   background: linear-gradient(
     150deg,
     rgba(15, 42, 69, 0.88),
@@ -74,7 +74,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid rgba(143, 215, 255, 0.2);
+  border-bottom: 1px solid rgba(62, 111, 176, 0.2);
   padding-bottom: 0.4rem;
 }
 
@@ -99,7 +99,7 @@
   align-items: center;
   padding: 0.45rem 0.5rem;
   border-radius: 8px;
-  border: 1px solid rgba(143, 215, 255, 0.12);
+  border: 1px solid rgba(62, 111, 176, 0.12);
   background-color: rgba(16, 54, 86, 0.56);
 }
 
@@ -152,7 +152,7 @@
 .teams__back {
   background: rgba(16, 54, 86, 0.62);
   color: var(--cv-primary-soft);
-  border: 1px solid rgba(143, 215, 255, 0.3);
+  border: 1px solid rgba(62, 111, 176, 0.3);
   border-radius: 10px;
   padding: 0.62rem 1.15rem;
   font-size: 0.84rem;

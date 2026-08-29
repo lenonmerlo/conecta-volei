@@ -1,20 +1,23 @@
 @import url("https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Teko:wght@500;600;700&display=swap");
 
 :root {
-  --cv-bg-0: #0a1622;
-  --cv-bg-1: #102132;
-  --cv-bg-2: #132637;
-  --cv-surface: #162c3f;
-  --cv-surface-soft: #1d354a;
-  --cv-border: #38566e;
-  --cv-primary: #8fb1c8;
-  --cv-primary-soft: #d0deea;
-  --cv-energy: #c9a46a;
-  --cv-energy-soft: #e8d7ba;
-  --cv-text: #f2f6fa;
-  --cv-muted: #b7c5d2;
-  --cv-success: #6aa58f;
-  --cv-danger: #b57575;
+  --cv-bg-0: #0a1420;
+  --cv-bg-1: #0f2035;
+  --cv-bg-2: #142c46;
+  --cv-surface: #163050;
+  --cv-surface-soft: #1d3c5c;
+  --cv-border: #35577a;
+  --cv-stroke: #35577a;
+  --cv-primary: #3e6fb0;
+  --cv-primary-soft: #a8c8ed;
+  --cv-energy: #3e6fb0;
+  --cv-energy-soft: #a8c8ed;
+  --cv-pink: #ff6fa8;
+  --cv-pink-soft: #ffd3e6;
+  --cv-text: #f4f7fb;
+  --cv-muted: #b8c6d6;
+  --cv-success: #5fae8e;
+  --cv-danger: #cf6f7f;
   --cv-radius: 16px;
   --cv-shadow: 0 16px 40px rgba(2, 12, 22, 0.45);
   --cv-shadow-soft: 0 10px 24px rgba(5, 15, 26, 0.35);

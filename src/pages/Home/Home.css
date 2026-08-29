@@ -66,16 +66,16 @@
   gap: 0.3rem;
   padding: 0.65rem 0.75rem;
   border-radius: 12px;
-  border: 1px solid rgba(110, 205, 253, 0.28);
+  border: 1px solid rgba(111, 160, 216, 0.28);
   background: rgba(10, 52, 93, 0.45);
 }
 
 .home__announcements-item--urgent {
-  border-color: rgba(255, 135, 135, 0.6);
+  border-color: rgba(255, 111, 168, 0.6);
   background: linear-gradient(
     160deg,
-    rgba(102, 34, 42, 0.45),
-    rgba(34, 13, 19, 0.45)
+    rgba(94, 26, 58, 0.45),
+    rgba(31, 10, 20, 0.45)
   );
 }
 

@@ -1,7 +1,7 @@
 .game-card {
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(143, 215, 255, 0.24);
+  border: 1px solid rgba(62, 111, 176, 0.24);
   background: linear-gradient(
     145deg,
     rgba(17, 49, 79, 0.9),
@@ -68,7 +68,7 @@
 .game-card__time {
   padding: 0.22rem 0.58rem;
   border-radius: 999px;
-  border: 1px solid rgba(143, 215, 255, 0.34);
+  border: 1px solid rgba(62, 111, 176, 0.34);
   color: var(--cv-primary-soft);
   font-size: 0.76rem;
   font-weight: 700;
@@ -103,7 +103,7 @@
   margin-top: 0.2rem;
   padding: 0.2rem 0.58rem;
   border-radius: 999px;
-  border: 1px solid rgba(143, 215, 255, 0.34);
+  border: 1px solid rgba(62, 111, 176, 0.34);
   color: var(--cv-primary-soft);
   font-size: 0.73rem;
   text-decoration: none;
@@ -200,7 +200,7 @@
 
 .game-card--list-closed {
   filter: saturate(0.62) brightness(0.72) contrast(0.92);
-  border-color: rgba(143, 215, 255, 0.1);
+  border-color: rgba(62, 111, 176, 0.1);
 }
 
 .game-card--list-closed::before {
