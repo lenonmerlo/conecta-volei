@@ -42,3 +42,18 @@ export const PLAYER_TYPE = {
 };
 
 export const SKILL_LEVELS = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+
+export const PLAYER_POSITIONS = ["all-around", "attacker", "setter", "libero"];
+
+export const PLAYER_POSITION_LABELS = {
+  "all-around": "Ala (versatil)",
+  attacker: "Atacante",
+  setter: "Levantador",
+  libero: "Libero",
+};
+
+export const SPECIAL_BADGE_FIELDS = [
+  { key: "monsterBlock", field: "badge_monster_block", label: "Monster Block" },
+  { key: "superSpike", field: "badge_super_spike", label: "Super Spike" },
+  { key: "guardian", field: "badge_guardian", label: "Guardian" },
+];
