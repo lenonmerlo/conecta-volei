@@ -37,7 +37,6 @@ describe("BottomNav", () => {
 
     expect(screen.getByText("Início")).toBeInTheDocument();
     expect(screen.getByText("Regras")).toBeInTheDocument();
-    expect(screen.getByText("Scrapbook")).toBeInTheDocument();
     expect(screen.getByText("Atletas")).toBeInTheDocument();
     expect(screen.getByText("Perfil")).toBeInTheDocument();
   });
@@ -60,12 +59,12 @@ describe("BottomNav", () => {
 
   it("marca link ativo com classe correta", () => {
     mockUseAuth.mockReturnValue({ user: { whatsapp: "27900000000" } });
-    mockPathname = "/scrapbook";
+    mockPathname = "/athletes";
 
     const { container } = render(<BottomNav />);
 
     const active = container.querySelector(
-      "a[href='/scrapbook'].bottom-nav__item--active",
+      "a[href='/athletes'].bottom-nav__item--active",
     );
 
     expect(active).toBeInTheDocument();

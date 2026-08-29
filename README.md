@@ -1,6 +1,6 @@
 # Conecta Vôlei
 
-Aplicação web mobile-first para organizar os jogos do grupo Conecta Vôlei: inscrição em listas, gestão de presença, sorteio de times, perfil de atletas e feed de scraps.
+Aplicação web mobile-first para organizar os jogos do grupo Conecta Vôlei: inscrição em listas, gestão de presença, sorteio de times e perfil de atletas.
 
 ## Badges de tecnologia
 
@@ -24,7 +24,6 @@ Principais objetivos:
 - organizar presença e histórico
 - permitir sorteio equilibrado de times
 - oferecer painel administrativo
-- criar interação social via scrapbook
 
 ## Funcionalidades atuais
 
@@ -34,8 +33,6 @@ Principais objetivos:
 - inscrições com regras diferentes por dia do jogo
 - promoção automática da lista de espera
 - perfil do atleta com estatísticas e badges
-- scrapbook por atleta e feed global de scraps
-- exclusão de scrap com regra de permissão (autor, destinatário ou admin)
 - painel administrativo para operação de jogos
 - navegação mobile com barra inferior
 
@@ -74,7 +71,6 @@ src/
 - `/rules` regras e aceite
 - `/athletes` lista de atletas
 - `/athlete/:id` perfil público de atleta
-- `/scrapbook` feed global de scraps
 - `/profile` perfil do usuário
 - `/game/:id` detalhes de jogo
 - `/teams` visualização de times
@@ -91,7 +87,6 @@ Entidades usadas no app:
 - `game_registrations`
 - `game_presences`
 - `game_teams`
-- `scraps`
 - bucket `avatars` no Supabase Storage
 
 ## Variáveis de ambiente
