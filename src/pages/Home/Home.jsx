@@ -1,10 +1,12 @@
 // Página inicial — exibe os jogos da semana
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAuth } from "../../app/AuthContext";
 import GameCard from "../../components/GameCard/GameCard";
 import {
   getActiveAnnouncements,
   getGames,
+  getPlayerStats,
   getRegistrationCountsByGame,
 } from "../../data/supabaseService";
 import { supabase } from "../../lib/supabase";
@@ -80,6 +82,26 @@ function getTodayDateString() {
   return `${year}-${month}-${day}`;
 }
 
+function getGameDateTime(game) {
+  if (!game?.date || !game?.time) return null;
+  const dateTime = new Date(`${game.date}T${game.time}:00`);
+  return Number.isNaN(dateTime.getTime()) ? null : dateTime;
+}
+
+function formatCountdown(targetDate, now) {
+  const diffMs = targetDate.getTime() - now;
+  if (diffMs <= 0) return null;
+
+  const totalMinutes = Math.floor(diffMs / 60000);
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}min`;
+  return `${minutes}min`;
+}
+
 function isGameVisible(game) {
   const normalizedDate = String(game?.date || "").split("T")[0] || "";
   const today = getTodayDateString();
@@ -111,18 +133,23 @@ function isGameVisible(game) {
 }
 
 function Home() {
+  const { user } = useAuth();
   const [games, setGames] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [streak, setStreak] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
   const realtimeDebounceRef = useRef(null);
 
   const fetchGames = useCallback(async () => {
     setLoading(true);
-    const [data, registrationCounts, activeAnnouncements] = await Promise.all([
-      getGames(),
-      getRegistrationCountsByGame(),
-      getActiveAnnouncements(),
-    ]);
+    const [data, registrationCounts, activeAnnouncements, playerStats] =
+      await Promise.all([
+        getGames(),
+        getRegistrationCountsByGame(),
+        getActiveAnnouncements(),
+        user?.id ? getPlayerStats(user.id) : Promise.resolve(null),
+      ]);
 
     const normalizedGames = (data || [])
       .map(normalizeGame)
@@ -134,8 +161,9 @@ function Home() {
 
     setGames(gamesWithCounts);
     setAnnouncements(activeAnnouncements || []);
+    setStreak(playerStats?.currentStreak || 0);
     setLoading(false);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -146,6 +174,24 @@ function Home() {
       clearTimeout(timeoutId);
     };
   }, [fetchGames]);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const nextGame = useMemo(() => {
+    const upcoming = games
+      .map((game) => ({ game, dateTime: getGameDateTime(game) }))
+      .filter((entry) => entry.dateTime && entry.dateTime.getTime() > now)
+      .sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
+
+    return upcoming[0] || null;
+  }, [games, now]);
+
+  const countdownLabel = nextGame
+    ? formatCountdown(nextGame.dateTime, now)
+    : null;
 
   useEffect(() => {
     function scheduleRealtimeRefresh() {
@@ -205,6 +251,22 @@ function Home() {
           Quadra pronta, energia no alto e organização em tempo real.
         </p>
       </div>
+
+      {!loading && (streak > 0 || countdownLabel) && (
+        <div className="home__highlights">
+          {streak > 0 && (
+            <span className="home__highlight-chip home__highlight-chip--streak">
+              🔥 Sequência de {streak} {streak === 1 ? "jogo" : "jogos"}
+            </span>
+          )}
+          {countdownLabel && (
+            <span className="home__highlight-chip home__highlight-chip--countdown">
+              ⏳ Faltam {countdownLabel} para o próximo jogo
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="home__list">
         {loading && <p className="home__state">Carregando jogos...</p>}
         {!loading && games.length === 0 && (
