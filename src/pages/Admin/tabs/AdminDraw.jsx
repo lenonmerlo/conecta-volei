@@ -297,7 +297,8 @@ function AdminDraw() {
                 <div className="admin-draw__team-header">
                   <span className="admin-draw__team-name">{team.name}</span>
                   <span className="admin-draw__team-level">
-                    Nível: {team.totalLevel.toFixed(1)}
+                    Nível: {team.totalLevel.toFixed(1)} (média{" "}
+                    {team.averageLevel.toFixed(2)})
                   </span>
                 </div>
                 <ul className="admin-draw__player-list">
