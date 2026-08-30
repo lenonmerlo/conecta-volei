@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { drawTeams, swapPlayers } from "../domain/teamDraw";
+import { drawTeams, scoreDraw, swapPlayers } from "../domain/teamDraw";
 
 function makePlayer(index, overrides = {}) {
   return {
@@ -125,6 +125,82 @@ describe("teamDraw", () => {
     expect(highCounts).toEqual([1, 1, 1]);
   });
 
+  it("drawTeams mantem a media de nivel dos times proxima entre si", () => {
+    const levels = [1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+    const players = Array.from({ length: 21 }, (_, index) =>
+      makePlayer(index + 1, {
+        skillLevel: levels[index % levels.length],
+        gender: index % 2 === 0 ? "M" : "F",
+      }),
+    );
+
+    const teams = drawTeams(players);
+    const averages = teams.map((team) => team.averageLevel);
+
+    expect(Math.max(...averages) - Math.min(...averages)).toBeLessThanOrEqual(
+      0.5,
+    );
+  });
+
+  it("drawTeams distribui jogadores de nivel 4.5 de forma equilibrada", () => {
+    const players = Array.from({ length: 21 }, (_, index) =>
+      makePlayer(index + 1, { skillLevel: 3 }),
+    );
+
+    [0, 1, 2, 3, 4, 5].forEach((index) => {
+      players[index].skillLevel = 4.5;
+    });
+
+    const teams = drawTeams(players);
+    const counts = teams.map(
+      (team) =>
+        team.players.filter((player) => Number(player.skillLevel) === 4.5)
+          .length,
+    );
+
+    expect(Math.max(...counts) - Math.min(...counts)).toBeLessThanOrEqual(1);
+  });
+
+  it("scoreDraw pontua pior um sorteio desequilibrado do que um equilibrado", () => {
+    const balancedTeams = [
+      {
+        name: "Time A",
+        players: [
+          makePlayer(1, { skillLevel: 2, gender: "F" }),
+          makePlayer(2, { skillLevel: 4 }),
+        ],
+      },
+      {
+        name: "Time B",
+        players: [
+          makePlayer(3, { skillLevel: 2, gender: "F" }),
+          makePlayer(4, { skillLevel: 4 }),
+        ],
+      },
+    ];
+
+    const unbalancedTeams = [
+      {
+        name: "Time A",
+        players: [
+          makePlayer(1, { skillLevel: 5 }),
+          makePlayer(2, { skillLevel: 4.8 }),
+        ],
+      },
+      {
+        name: "Time B",
+        players: [
+          makePlayer(3, { skillLevel: 1.5, gender: "F" }),
+          makePlayer(4, { skillLevel: 2, gender: "F" }),
+        ],
+      },
+    ];
+
+    expect(scoreDraw(unbalancedTeams)).toBeGreaterThan(
+      scoreDraw(balancedTeams),
+    );
+  });
+
   it("swapPlayers troca jogadores entre times corretamente", () => {
     const teams = [
       {
@@ -157,5 +233,33 @@ describe("teamDraw", () => {
     ]);
     expect(swapped[0].totalLevel).toBe(5);
     expect(swapped[1].totalLevel).toBe(5);
+  });
+
+  it("swapPlayers recalcula o averageLevel dos times apos a troca", () => {
+    const teams = [
+      {
+        name: "Time A",
+        players: [
+          makePlayer(1, { skillLevel: 1 }),
+          makePlayer(2, { skillLevel: 2 }),
+        ],
+        totalLevel: 3,
+        averageLevel: 1.5,
+      },
+      {
+        name: "Time B",
+        players: [
+          makePlayer(3, { skillLevel: 3 }),
+          makePlayer(4, { skillLevel: 4 }),
+        ],
+        totalLevel: 7,
+        averageLevel: 3.5,
+      },
+    ];
+
+    const swapped = swapPlayers(teams, 0, "p-1", 1, "p-3");
+
+    expect(swapped[0].averageLevel).toBe(2.5);
+    expect(swapped[1].averageLevel).toBe(2.5);
   });
 });

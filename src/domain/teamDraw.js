@@ -26,7 +26,7 @@ function isLowSkill(player) {
 }
 
 function isHighSkill(player) {
-  return getSkillLevel(player) > 4.5;
+  return getSkillLevel(player) >= 4.5;
 }
 
 function isCaptain(player) {
@@ -66,7 +66,82 @@ function getTeamPlan(totalPlayers) {
   };
 }
 
-export function drawTeams(players) {
+export function drawTeams(players, attempts = 50) {
+  let bestResult = null;
+  let bestScore = Infinity;
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const result = drawTeamsOnce(players);
+    const score = scoreDraw(result);
+
+    if (score < bestScore) {
+      bestScore = score;
+      bestResult = result;
+    }
+  }
+
+  return bestResult;
+}
+
+function average(values) {
+  if (!values.length) return 0;
+  return values.reduce((acc, value) => acc + value, 0) / values.length;
+}
+
+function spread(values) {
+  return Math.max(...values) - Math.min(...values);
+}
+
+export function scoreDraw(teams) {
+  if (!Array.isArray(teams) || teams.length === 0) return 0;
+
+  const teamCount = teams.length;
+  const totalCaptains = teams.reduce(
+    (acc, team) => acc + team.players.filter(isCaptain).length,
+    0,
+  );
+  const totalSetters = teams.reduce(
+    (acc, team) => acc + team.players.filter(isSetter).length,
+    0,
+  );
+
+  const averageLevels = teams.map((team) =>
+    average(team.players.map(getSkillLevel)),
+  );
+  const femaleCounts = teams.map(
+    (team) => team.players.filter(isFemale).length,
+  );
+  const highSkillCounts = teams.map(
+    (team) => team.players.filter(isHighSkill).length,
+  );
+  const lowSkillCounts = teams.map(
+    (team) => team.players.filter(isLowSkill).length,
+  );
+  const setterCounts = teams.map(
+    (team) => team.players.filter(isSetter).length,
+  );
+  const captainCounts = teams.map(
+    (team) => team.players.filter(isCaptain).length,
+  );
+
+  let score = 0;
+  score += spread(averageLevels) * 10;
+  score += spread(femaleCounts) * 5;
+  score += spread(highSkillCounts) * 3;
+  score += spread(lowSkillCounts) * 3;
+
+  if (totalSetters >= teamCount) {
+    score += setterCounts.filter((count) => count === 0).length * 8;
+  }
+
+  if (totalCaptains >= teamCount) {
+    score += captainCounts.filter((count) => count > 1).length * 8;
+  }
+
+  return score;
+}
+
+function drawTeamsOnce(players) {
   const plan = getTeamPlan(players.length);
   if (!plan) {
     throw new Error("Minimo de 12 jogadores necessario");
@@ -103,15 +178,7 @@ export function drawTeams(players) {
         captainCount: team.filter(isCaptain).length,
         setterCount: team.filter(isSetter).length,
       }))
-      .filter((meta) => meta.size < meta.capacity)
-      .sort((a, b) => {
-        const aFill = a.size / a.capacity;
-        const bFill = b.size / b.capacity;
-        if (aFill !== bFill) return aFill - bFill;
-        if (a.size !== b.size) return a.size - b.size;
-        if (a.sum !== b.sum) return a.sum - b.sum;
-        return a.femaleCount - b.femaleCount;
-      });
+      .filter((meta) => meta.size < meta.capacity);
   }
 
   function assignToBestTeam(player, options = {}) {
@@ -247,6 +314,9 @@ export function drawTeams(players) {
     name: `Time ${String.fromCharCode(65 + i)}`, // Time A, B, C
     players: team,
     totalLevel: sumLevels(team),
+    averageLevel: team.length
+      ? Number((sumLevels(team) / team.length).toFixed(2))
+      : 0,
   }));
 }
 
@@ -280,6 +350,13 @@ export function swapPlayers(
 
   newTeams[fromTeamIndex].totalLevel = sumLevels(fromTeam.players);
   newTeams[toTeamIndex].totalLevel = sumLevels(toTeam.players);
+
+  newTeams[fromTeamIndex].averageLevel = Number(
+    (sumLevels(fromTeam.players) / fromTeam.players.length).toFixed(2),
+  );
+  newTeams[toTeamIndex].averageLevel = Number(
+    (sumLevels(toTeam.players) / toTeam.players.length).toFixed(2),
+  );
 
   return newTeams;
 }
