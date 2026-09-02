@@ -29,12 +29,42 @@ function statusLabel(status) {
   return map[status] || status;
 }
 
+const STATUS_FILTER_OPTIONS = ["active", "inactive", "penalized", "blocked"];
+
+function buildWarningsReport(players) {
+  const withWarnings = players
+    .filter((player) => Math.max(0, Number(player.warnings) || 0) > 0)
+    .sort((a, b) => {
+      const diff = (Number(b.warnings) || 0) - (Number(a.warnings) || 0);
+      if (diff !== 0) return diff;
+      return String(a.name || "").localeCompare(String(b.name || ""));
+    });
+
+  const today = new Date().toLocaleDateString("pt-BR");
+  const header = `Advertencias - Conecta Volei (${today})`;
+
+  if (withWarnings.length === 0) {
+    return `${header}\n\nNenhum atleta com advertencias no momento.`;
+  }
+
+  const lines = withWarnings.map((player, index) => {
+    const warnings = Math.max(0, Number(player.warnings) || 0);
+    const plural = warnings > 1 ? "advertencias" : "advertencia";
+    return `${index + 1}. ${player.name}${player.nickname ? ` (${player.nickname})` : ""} - ${warnings} ${plural} - ${statusLabel(player.status)}`;
+  });
+
+  return [header, "", ...lines].join("\n");
+}
+
 function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
   const { user } = useAuth();
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [positionFilter, setPositionFilter] = useState("all");
   const [badgeFilters, setBadgeFilters] = useState({});
+  const [onlyWithWarnings, setOnlyWithWarnings] = useState(false);
   const userCanUnblock = isSuperAdmin(user);
 
   function toggleBadgeFilter(key) {
@@ -47,33 +77,60 @@ function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
       (badge) => badgeFilters[badge.key],
     );
 
-    return players.filter((player) => {
-      if (
-        term &&
-        !String(player.name || "")
-          .toLowerCase()
-          .includes(term)
-      ) {
-        return false;
-      }
+    return players
+      .filter((player) => {
+        if (
+          term &&
+          !String(player.name || "")
+            .toLowerCase()
+            .includes(term)
+        ) {
+          return false;
+        }
 
-      if (
-        positionFilter !== "all" &&
-        (player.position || "all-around") !== positionFilter
-      ) {
-        return false;
-      }
+        if (
+          positionFilter !== "all" &&
+          (player.position || "all-around") !== positionFilter
+        ) {
+          return false;
+        }
 
-      if (
-        activeBadgeKeys.length > 0 &&
-        !activeBadgeKeys.some((badge) => Boolean(player[badge.field]))
-      ) {
-        return false;
-      }
+        if (statusFilter !== "all" && player.status !== statusFilter) {
+          return false;
+        }
 
-      return true;
-    });
-  }, [players, searchTerm, positionFilter, badgeFilters]);
+        if (
+          onlyWithWarnings &&
+          Math.max(0, Number(player.warnings) || 0) <= 0
+        ) {
+          return false;
+        }
+
+        if (
+          activeBadgeKeys.length > 0 &&
+          !activeBadgeKeys.some((badge) => Boolean(player[badge.field]))
+        ) {
+          return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        if (!onlyWithWarnings) return 0;
+
+        const warningsDiff =
+          (Number(b.warnings) || 0) - (Number(a.warnings) || 0);
+        if (warningsDiff !== 0) return warningsDiff;
+        return String(a.name || "").localeCompare(String(b.name || ""));
+      });
+  }, [
+    players,
+    searchTerm,
+    positionFilter,
+    statusFilter,
+    badgeFilters,
+    onlyWithWarnings,
+  ]);
 
   async function applyWarningAction(playerId, action) {
     let updatedPlayer = null;
@@ -125,6 +182,29 @@ function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
     await onRefreshPlayers({ silent: true });
   }
 
+  async function handleExportWarnings() {
+    setError("");
+    setNotice("");
+
+    const report = buildWarningsReport(players);
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: report });
+        return;
+      } catch {
+        // usuario cancelou o compartilhamento ou o navegador nao suporta; tenta copiar
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(report);
+      setNotice("Lista de advertencias copiada! Cole no grupo.");
+    } catch {
+      setError("Nao foi possivel exportar a lista de advertencias.");
+    }
+  }
+
   if (loadingPlayers) {
     return (
       <div className="admin-tab">
@@ -136,6 +216,7 @@ function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
   return (
     <div className="admin-tab">
       {error && <p className="admin-tab__restricted">{error}</p>}
+      {notice && <p className="admin-tab__restricted">{notice}</p>}
 
       <div className="admin-tab__search-wrap">
         <input
@@ -149,6 +230,22 @@ function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
       </div>
 
       <div className="admin-tab__filters">
+        <label className="admin-tab__filter-item">
+          <span>Status</span>
+          <select
+            className="admin-tab__select"
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+          >
+            <option value="all">Todos</option>
+            {STATUS_FILTER_OPTIONS.map((status) => (
+              <option key={status} value={status}>
+                {statusLabel(status)}
+              </option>
+            ))}
+          </select>
+        </label>
+
         <label className="admin-tab__filter-item">
           <span>Posicao</span>
           <select
@@ -167,6 +264,26 @@ function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
       </div>
 
       <div className="admin-tab__position-row">
+        <label
+          className={`admin-tab__check-label${
+            onlyWithWarnings ? " admin-tab__check-label--active" : ""
+          }`}
+        >
+          <input
+            type="checkbox"
+            checked={onlyWithWarnings}
+            onChange={(event) => setOnlyWithWarnings(event.target.checked)}
+          />
+          Somente com advertencias
+        </label>
+        <Button
+          size="sm"
+          variant="secondary"
+          className="admin-tab__btn"
+          onClick={handleExportWarnings}
+        >
+          Exportar advertencias
+        </Button>
         {SPECIAL_BADGE_FIELDS.map((badge) => (
           <label
             key={badge.key}
