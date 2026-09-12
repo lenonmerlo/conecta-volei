@@ -184,7 +184,7 @@ function buildListsFromRegistrations(registrations, isSundayGame) {
           : false,
         is_setter: isPenalizedMemberProxy
           ? Boolean(inviter?.is_setter ?? inviter?.isSetter)
-          : false,
+          : Boolean(r.guest?.is_setter),
         position: isPenalizedMemberProxy
           ? inviter?.position || "all-around"
           : "all-around",
@@ -462,7 +462,7 @@ function GameDetail() {
                   C
                 </span>
               )}
-              {p.type === PLAYER_TYPE.MEMBER && p.is_setter && (
+              {p.is_setter && (
                 <span className="game-detail__badge game-detail__badge--setter">
                   L
                 </span>

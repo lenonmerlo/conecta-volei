@@ -49,7 +49,7 @@ function normalizeGuest(guest) {
     gender: guest.gender || null,
     skillLevel: Number(guest.skill_level ?? 3),
     is_captain: false,
-    is_setter: false,
+    is_setter: Boolean(guest.is_setter),
     position: "all-around",
     status: "active",
     type: "guest",

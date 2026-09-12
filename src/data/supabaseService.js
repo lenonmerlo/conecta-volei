@@ -305,7 +305,12 @@ export async function updatePlayerProfile(playerId, { nickname, whatsapp }) {
   return { success: true, player: data };
 }
 
-export async function registerGuest(name, gender, invitedById) {
+export async function registerGuest(
+  name,
+  gender,
+  invitedById,
+  isSetter = false,
+) {
   const guestName = (name || "").trim();
   if (!guestName) {
     return { success: false, error: "Nome do convidado é obrigatório." };
@@ -318,6 +323,7 @@ export async function registerGuest(name, gender, invitedById) {
       gender,
       skill_level: 3,
       invited_by: invitedById,
+      is_setter: isSetter,
     })
     .select("*")
     .single();
@@ -952,7 +958,7 @@ export async function getGameRegistrations(
 
   const { data, error } = await getRegistrationRowsByGameIds(
     equivalentGameIds,
-    "*, player:players!game_registrations_player_id_fkey(*), inviter:players!game_registrations_invited_by_fkey(id, name, nickname, gender, status, type, is_captain, is_setter, position), guest:guests!game_registrations_guest_id_fkey(id, name, gender, skill_level, invited_by)",
+    "*, player:players!game_registrations_player_id_fkey(*), inviter:players!game_registrations_invited_by_fkey(id, name, nickname, gender, status, type, is_captain, is_setter, position), guest:guests!game_registrations_guest_id_fkey(id, name, gender, skill_level, invited_by, is_setter)",
     { onlyActive: true },
   );
 

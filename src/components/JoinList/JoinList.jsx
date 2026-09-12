@@ -60,6 +60,7 @@ function JoinList({ game, onUpdate }) {
   const [selectedMember, setSelectedMember] = useState(null);
   const [guestName, setGuestName] = useState("");
   const [guestGender, setGuestGender] = useState("M");
+  const [guestIsSetter, setGuestIsSetter] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [players, setPlayers] = useState([]);
@@ -247,6 +248,7 @@ function JoinList({ game, onUpdate }) {
     setSelectedMember(null);
     setGuestName("");
     setGuestGender("M");
+    setGuestIsSetter(false);
     setError("");
     await refreshData();
     onUpdate();
@@ -340,6 +342,7 @@ function JoinList({ game, onUpdate }) {
       guestName.trim(),
       guestGender,
       user.id,
+      guestIsSetter,
     );
     if (!guestResult.success || !guestResult.guest?.id) {
       setError(guestResult.error || "Nao foi possivel cadastrar o convidado.");
@@ -364,6 +367,7 @@ function JoinList({ game, onUpdate }) {
     setAddMode(null);
     setGuestName("");
     setGuestGender("M");
+    setGuestIsSetter(false);
     setError("");
     await refreshData();
     onUpdate();
@@ -575,6 +579,15 @@ function JoinList({ game, onUpdate }) {
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
             />
+            <label htmlFor="guest-position">Posição</label>
+            <select
+              id="guest-position"
+              value={guestIsSetter ? "setter" : "line"}
+              onChange={(e) => setGuestIsSetter(e.target.value === "setter")}
+            >
+              <option value="line">Linha</option>
+              <option value="setter">Levantador</option>
+            </select>
             <select
               value={guestGender}
               onChange={(e) => setGuestGender(e.target.value)}
@@ -590,6 +603,7 @@ function JoinList({ game, onUpdate }) {
                   setAddMode(null);
                   setGuestName("");
                   setGuestGender("M");
+                  setGuestIsSetter(false);
                 }}
               >
                 Voltar
