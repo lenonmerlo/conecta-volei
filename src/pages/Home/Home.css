@@ -51,6 +51,27 @@
   gap: 1rem;
 }
 
+.home__game-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.home__vote-btn {
+  border: 1px solid var(--cv-primary);
+  background: linear-gradient(
+    130deg,
+    rgba(62, 111, 176, 0.28),
+    rgba(62, 111, 176, 0.14)
+  );
+  color: #ffffff;
+  border-radius: 12px;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .home__state {
   font-size: 0.9rem;
   color: var(--cv-muted);

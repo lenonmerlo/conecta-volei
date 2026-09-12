@@ -1,0 +1,116 @@
+.icon-lab {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: clamp(1rem, 2.2vw, 1.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.icon-lab__hero {
+  border: 1px solid rgba(62, 111, 176, 0.22);
+  border-radius: 18px;
+  background: linear-gradient(
+    120deg,
+    rgba(16, 53, 85, 0.92),
+    rgba(11, 35, 57, 0.9)
+  );
+  padding: 1rem 1.1rem;
+  box-shadow: var(--cv-shadow-soft);
+}
+
+.icon-lab__title {
+  font-size: clamp(1.45rem, 3vw, 1.9rem);
+  line-height: 1;
+  margin: 0;
+}
+
+.icon-lab__subtitle {
+  margin: 0.35rem 0 0;
+  color: var(--cv-primary-soft);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.icon-lab__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 0.8rem;
+}
+
+.icon-lab__card {
+  border: 1px solid rgba(62, 111, 176, 0.2);
+  background: linear-gradient(
+    155deg,
+    rgba(15, 42, 69, 0.92),
+    rgba(10, 34, 56, 0.88)
+  );
+  border-radius: 16px;
+  padding: 0.9rem;
+  box-shadow: var(--cv-shadow-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.icon-lab__card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.icon-lab__card-title {
+  margin: 0;
+  font-size: 0.97rem;
+}
+
+.icon-lab__card-key {
+  margin: 0.14rem 0 0;
+  color: var(--cv-muted);
+  font-size: 0.73rem;
+}
+
+.icon-lab__sizes {
+  display: flex;
+  gap: 0.7rem;
+}
+
+.icon-lab__size-item {
+  flex: 1;
+  border: 1px dashed rgba(168, 200, 237, 0.22);
+  border-radius: 12px;
+  padding: 0.48rem 0.42rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.icon-lab__size-label {
+  font-size: 0.68rem;
+  color: var(--cv-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.icon-lab__emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  filter: saturate(0.95) brightness(1.04);
+}
+
+.icon-lab__emoji-sm {
+  font-size: 1rem;
+}
+
+.icon-lab__emoji-md {
+  font-size: 1.38rem;
+}
+
+.icon-lab__emoji-lg {
+  font-size: 1.9rem;
+}

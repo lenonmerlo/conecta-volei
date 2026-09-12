@@ -5,6 +5,7 @@ import {
   isGuestAllowedInMainList,
   isListOpen,
   isMemberPriorityWindow,
+  isVotingOpen,
 } from "../domain/gameRules";
 
 describe("gameRules", () => {
@@ -108,6 +109,36 @@ describe("gameRules", () => {
     it("avanca para o proximo domingo apos virar para segunda", () => {
       const monday = new Date(2026, 5, 8, 0, 0, 1);
       expect(getNextGameDate("sunday", monday)).toBe("2026-06-14");
+    });
+  });
+
+  describe("isVotingOpen", () => {
+    const sundayGame = { day: "sunday", date: "2026-05-31" };
+
+    it("retorna false antes das 12h de domingo", () => {
+      const before = new Date(2026, 4, 31, 11, 59, 0);
+      expect(isVotingOpen(sundayGame, before)).toBe(false);
+    });
+
+    it("retorna true as 12h de domingo", () => {
+      const noon = new Date(2026, 4, 31, 12, 0, 0);
+      expect(isVotingOpen(sundayGame, noon)).toBe(true);
+    });
+
+    it("retorna true as 23h59 de domingo", () => {
+      const lateNight = new Date(2026, 4, 31, 23, 59, 0);
+      expect(isVotingOpen(sundayGame, lateNight)).toBe(true);
+    });
+
+    it("retorna false apos meia-noite de segunda", () => {
+      const monday = new Date(2026, 5, 1, 0, 0, 0);
+      expect(isVotingOpen(sundayGame, monday)).toBe(false);
+    });
+
+    it("retorna false para jogo de quarta", () => {
+      const wednesdayGame = { day: "wednesday", date: "2026-06-03" };
+      const now = new Date(2026, 5, 3, 13, 0, 0);
+      expect(isVotingOpen(wednesdayGame, now)).toBe(false);
     });
   });
 });
