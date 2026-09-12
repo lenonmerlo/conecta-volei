@@ -182,7 +182,9 @@ function Awards() {
               </button>
             </div>
             {copyNotice?.gameId === game.id && (
-              <p className={`awards__copy-notice awards__copy-notice--${copyNotice.type}`}>
+              <p
+                className={`awards__copy-notice awards__copy-notice--${copyNotice.type}`}
+              >
                 {copyNotice.message}
               </p>
             )}
