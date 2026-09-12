@@ -1,6 +1,6 @@
 // Navegação inferior mobile
 
-import { BookOpen, Home, Shield, User, Users } from "lucide-react";
+import { BookOpen, Home, Shield, Trophy, User, Users } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../app/AuthContext";
 import { isAdmin } from "../../domain/admins";
@@ -38,6 +38,15 @@ function BottomNav() {
       >
         <Users size={22} />
         <span>Atletas</span>
+      </NavLink>
+      <NavLink
+        to="/awards"
+        className={({ isActive }) =>
+          `bottom-nav__item ${isActive ? "bottom-nav__item--active" : ""}`
+        }
+      >
+        <Trophy size={22} />
+        <span>Prêmios</span>
       </NavLink>
       <NavLink
         to="/profile"

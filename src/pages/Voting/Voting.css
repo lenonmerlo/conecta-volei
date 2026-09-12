@@ -1,0 +1,141 @@
+.voting {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: clamp(1rem, 2.2vw, 1.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.voting__state {
+  text-align: center;
+  color: var(--cv-muted);
+  padding: 2rem 0;
+}
+
+.voting__header {
+  border: 1px solid rgba(62, 111, 176, 0.22);
+  border-radius: var(--cv-radius);
+  background: linear-gradient(
+    140deg,
+    rgba(13, 45, 74, 0.94),
+    rgba(9, 27, 45, 0.88)
+  );
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  box-shadow: var(--cv-shadow-soft);
+}
+
+.voting__title {
+  font-size: clamp(1.5rem, 3vw, 1.9rem);
+  line-height: 0.95;
+}
+
+.voting__subtitle {
+  font-size: 0.86rem;
+  color: var(--cv-primary-soft);
+  font-weight: 600;
+}
+
+.voting__info,
+.voting__notice,
+.voting__error {
+  border-radius: 12px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.voting__info {
+  background: rgba(62, 111, 176, 0.12);
+  color: var(--cv-primary-soft);
+}
+
+.voting__notice {
+  background: rgba(95, 174, 142, 0.15);
+  color: var(--cv-success);
+}
+
+.voting__error {
+  background: rgba(207, 111, 127, 0.15);
+  color: var(--cv-danger);
+}
+
+.voting__categories {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.voting__category {
+  border: 1px solid rgba(62, 111, 176, 0.2);
+  background: linear-gradient(
+    155deg,
+    rgba(15, 42, 69, 0.92),
+    rgba(8, 31, 52, 0.85)
+  );
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  box-shadow: var(--cv-shadow-soft);
+}
+
+.voting__category-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  font-size: 1rem;
+  color: #ffffff;
+}
+
+.voting__category-icon {
+  font-size: 1rem;
+  line-height: 1;
+  filter: saturate(0.95) brightness(1.04);
+}
+
+.voting__candidates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.voting__candidate {
+  border: 1px solid var(--cv-border);
+  background: var(--cv-surface);
+  color: var(--cv-text);
+  border-radius: 999px;
+  padding: 0.42rem 0.85rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.voting__candidate:hover {
+  border-color: var(--cv-primary);
+}
+
+.voting__candidate--selected {
+  background: var(--cv-primary);
+  border-color: var(--cv-primary);
+  color: #ffffff;
+}
+
+.voting__empty {
+  color: var(--cv-muted);
+  font-size: 0.84rem;
+}
+
+.voting__winner {
+  color: var(--cv-primary-soft);
+  font-weight: 700;
+  font-size: 0.94rem;
+}

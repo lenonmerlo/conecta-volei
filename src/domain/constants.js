@@ -57,3 +57,12 @@ export const SPECIAL_BADGE_FIELDS = [
   { key: "superSpike", field: "badge_super_spike", label: "Super Spike" },
   { key: "guardian", field: "badge_guardian", label: "Guardian" },
 ];
+
+export const VOTE_CATEGORIES = [
+  { key: "mvp", label: "MVP", icon: "🏆" },
+  { key: "best_attack", label: "Melhor Ataque", icon: "⚡" },
+  { key: "best_block", label: "Melhor Bloqueio", icon: "🛡️" },
+  { key: "best_serve", label: "Melhor Saque", icon: "🎯" },
+  { key: "best_setting", label: "Melhor Levantamento", icon: "🤝" },
+  { key: "best_defense", label: "Melhor Defesa", icon: "🤿" },
+];
