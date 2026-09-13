@@ -1793,7 +1793,14 @@ export async function getMyVotes(gameId, voterId) {
 }
 
 export async function getVotingResults(gameId) {
-  const votes = await getVotesByGame(gameId);
+  const { data, error } = await supabase
+    .from("votes")
+    .select(
+      "category, voted_player_id, voted_guest_id, voted_player:players!votes_voted_player_id_fkey(name), voted_guest:guests!votes_voted_guest_id_fkey(name)",
+    )
+    .eq("game_id", gameId);
+
+  const votes = error ? [] : data || [];
   const results = {};
 
   VOTE_CATEGORIES.forEach(({ key }) => {
@@ -1806,7 +1813,7 @@ export async function getVotingResults(gameId) {
         if (!candidateId) return;
 
         const name =
-          vote.voted_player?.name || vote.voted_guest?.name || "Desconhecido";
+          vote.voted_player?.name ?? vote.voted_guest?.name ?? "Desconhecido";
         const current = tally.get(candidateId) || {
           id: candidateId,
           name,
