@@ -104,7 +104,7 @@ export function isGuestAllowedInMainList(date) {
   return day === 6 || day === 0;
 }
 
-// Votacao do melhor do jogo: abre domingo as 12h e fecha na virada para segunda
+// Votacao do melhor do jogo: abre domingo as 12h e fecha domingo as 18h
 export function isVotingOpen(game, now = new Date()) {
   if (game?.day !== GAME_DAYS.SUNDAY) return false;
 
@@ -115,8 +115,7 @@ export function isVotingOpen(game, now = new Date()) {
   openAt.setHours(12, 0, 0, 0);
 
   const closeAt = new Date(gameDate);
-  closeAt.setDate(closeAt.getDate() + 1);
-  closeAt.setHours(0, 0, 0, 0);
+  closeAt.setHours(18, 0, 0, 0);
 
   return now >= openAt && now < closeAt;
 }

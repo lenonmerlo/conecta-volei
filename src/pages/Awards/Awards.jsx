@@ -57,7 +57,10 @@ function Awards() {
         getSundayGamesHistory(),
       ]);
       const today = getTodayDateString();
-      const pastGames = (sundayGames || []).filter((game) => game.date < today);
+      const pastGames = (sundayGames || []).filter(
+        (game) =>
+          game.date < today || (game.date === today && !isVotingOpen(game)),
+      );
       const sundayCurrentGame =
         (games || []).find((game) => game.day === "sunday") || null;
 

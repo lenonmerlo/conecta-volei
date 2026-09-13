@@ -125,14 +125,14 @@ describe("gameRules", () => {
       expect(isVotingOpen(sundayGame, noon)).toBe(true);
     });
 
-    it("retorna true as 23h59 de domingo", () => {
-      const lateNight = new Date(2026, 4, 31, 23, 59, 0);
-      expect(isVotingOpen(sundayGame, lateNight)).toBe(true);
+    it("retorna true as 17h59 de domingo", () => {
+      const beforeClose = new Date(2026, 4, 31, 17, 59, 0);
+      expect(isVotingOpen(sundayGame, beforeClose)).toBe(true);
     });
 
-    it("retorna false apos meia-noite de segunda", () => {
-      const monday = new Date(2026, 5, 1, 0, 0, 0);
-      expect(isVotingOpen(sundayGame, monday)).toBe(false);
+    it("retorna false as 18h de domingo", () => {
+      const closeTime = new Date(2026, 4, 31, 18, 0, 0);
+      expect(isVotingOpen(sundayGame, closeTime)).toBe(false);
     });
 
     it("retorna false para jogo de quarta", () => {
