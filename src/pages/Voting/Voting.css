@@ -123,6 +123,15 @@
   border-color: var(--cv-primary);
 }
 
+.voting__candidate:disabled {
+  cursor: not-allowed;
+  opacity: 0.78;
+}
+
+.voting__candidate:disabled:hover {
+  border-color: var(--cv-border);
+}
+
 .voting__candidate--selected {
   background: var(--cv-primary);
   border-color: var(--cv-primary);

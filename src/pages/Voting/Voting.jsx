@@ -104,6 +104,8 @@ function Voting() {
   }, [loadData]);
 
   async function handleVote(category, candidateId) {
+    if (myVotes[category]) return;
+
     setSubmittingCategory(category);
     setError("");
 
@@ -179,7 +181,7 @@ function Voting() {
                         ? "voting__candidate--selected"
                         : ""
                     }`}
-                    disabled={submittingCategory === key}
+                    disabled={submittingCategory === key || Boolean(myVotes[key])}
                     onClick={() => handleVote(key, candidate.id)}
                   >
                     {candidate.name}
