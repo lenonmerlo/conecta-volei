@@ -41,6 +41,10 @@ function buildCandidates(registrations, currentUserId) {
     .filter((candidate) => candidate.id && candidate.id !== currentUserId);
 }
 
+function getWinnerName(winner) {
+  return winner?.name || winner?.nome || "Desconhecido";
+}
+
 function Voting() {
   const { gameId } = useParams();
   const { user } = useAuth();
@@ -235,7 +239,7 @@ function Voting() {
             ) : (
               <p className="voting__winner">
                 {results[key]
-                  ? `🏆 ${results[key].name} (${results[key].count} ${
+                  ? `🏆 ${getWinnerName(results[key])} (${results[key].count} ${
                       results[key].count === 1 ? "voto" : "votos"
                     })`
                   : "Sem votos ainda."}

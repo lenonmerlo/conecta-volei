@@ -19,6 +19,10 @@ function getTodayDateString() {
   return `${year}-${month}-${day}`;
 }
 
+function getWinnerName(winner) {
+  return winner?.name || winner?.nome || "Desconhecido";
+}
+
 function buildAwardsWhatsappText(game, results) {
   const lines = [
     "🏐 *Melhores do Jogo*",
@@ -28,7 +32,9 @@ function buildAwardsWhatsappText(game, results) {
 
   VOTE_CATEGORIES.forEach(({ key, label, icon }) => {
     const winner = results[key];
-    lines.push(`${icon} *${label}*: ${winner ? winner.name : "Sem votos"}`);
+    lines.push(
+      `${icon} *${label}*: ${winner ? getWinnerName(winner) : "Sem votos"}`,
+    );
   });
 
   return lines.join("\n").trim();
@@ -198,7 +204,7 @@ function Awards() {
                     {label}
                   </span>
                   <span className="awards__winner-name">
-                    {results[key] ? `🏆 ${results[key].name}` : "—"}
+                    {results[key] ? `🏆 ${getWinnerName(results[key])}` : "—"}
                   </span>
                 </li>
               ))}
