@@ -51,6 +51,7 @@ function Voting() {
   const [candidates, setCandidates] = useState([]);
   const [canVote, setCanVote] = useState(false);
   const [myVotes, setMyVotes] = useState({});
+  const [selectedVotes, setSelectedVotes] = useState({});
   const [results, setResults] = useState({});
   const [submittingCategory, setSubmittingCategory] = useState(null);
   const [notice, setNotice] = useState("");
@@ -86,6 +87,7 @@ function Voting() {
           (vote.voted_guest_id ? `guest-${vote.voted_guest_id}` : null);
       });
       setMyVotes(votesByCategory);
+      setSelectedVotes({});
     } else {
       setResults(await getVotingResults(gameId));
     }
@@ -103,8 +105,23 @@ function Voting() {
     };
   }, [loadData]);
 
-  async function handleVote(category, candidateId) {
+  function handleSelectVote(category, candidateId) {
     if (myVotes[category]) return;
+
+    setSelectedVotes((prev) => ({
+      ...prev,
+      [category]: candidateId,
+    }));
+  }
+
+  async function handleVote(category) {
+    if (myVotes[category]) return;
+
+    const candidateId = selectedVotes[category];
+    if (!candidateId) {
+      setError("Selecione um jogador antes de confirmar o voto.");
+      return;
+    }
 
     setSubmittingCategory(category);
     setError("");
@@ -118,6 +135,11 @@ function Voting() {
     }
 
     setMyVotes((prev) => ({ ...prev, [category]: candidateId }));
+    setSelectedVotes((prev) => {
+      const next = { ...prev };
+      delete next[category];
+      return next;
+    });
     setNotice("Voto registrado!");
   }
 
@@ -177,16 +199,38 @@ function Voting() {
                     key={candidate.id}
                     type="button"
                     className={`voting__candidate ${
-                      myVotes[key] === candidate.id
+                      myVotes[key] === candidate.id ||
+                      selectedVotes[key] === candidate.id
                         ? "voting__candidate--selected"
                         : ""
                     }`}
-                    disabled={submittingCategory === key || Boolean(myVotes[key])}
-                    onClick={() => handleVote(key, candidate.id)}
+                    disabled={
+                      submittingCategory === key || Boolean(myVotes[key])
+                    }
+                    onClick={() => handleSelectVote(key, candidate.id)}
                   >
                     {candidate.name}
                   </button>
                 ))}
+              </div>
+            ) : null}
+
+            {canVote ? (
+              <div className="voting__category-actions">
+                {myVotes[key] ? (
+                  <span className="voting__confirmed">Voto confirmado</span>
+                ) : (
+                  <button
+                    type="button"
+                    className="voting__confirm-btn"
+                    disabled={submittingCategory === key || !selectedVotes[key]}
+                    onClick={() => handleVote(key)}
+                  >
+                    {submittingCategory === key
+                      ? "Confirmando..."
+                      : "Confirmar voto"}
+                  </button>
+                )}
               </div>
             ) : (
               <p className="voting__winner">
