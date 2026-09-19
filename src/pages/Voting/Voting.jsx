@@ -4,15 +4,15 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../app/AuthContext";
 import Button from "../../components/Button/Button";
+import { VOTE_CATEGORIES } from "../../domain/constants";
+import { isVotingOpen } from "../../domain/gameRules";
 import {
   getGameById,
   getGameRegistrations,
   getMyVotes,
   getVotingResults,
   submitVote,
-} from "../../data/supabaseService";
-import { VOTE_CATEGORIES } from "../../domain/constants";
-import { isVotingOpen } from "../../domain/gameRules";
+} from "../../services/supabaseService.js";
 import "./Voting.css";
 
 function getCandidateName(registration) {

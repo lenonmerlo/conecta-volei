@@ -7,7 +7,7 @@ import {
   deleteAnnouncement,
   getAllAnnouncements,
   updateAnnouncement,
-} from "../../../data/supabaseService";
+} from "../../../services/supabaseService.js";
 
 function AdminAnnouncements() {
   const [announcements, setAnnouncements] = useState([]);

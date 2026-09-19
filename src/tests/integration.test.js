@@ -51,9 +51,15 @@ class QueryBuilder {
   select(columns, options) {
     this.selectedColumns = columns;
     this.selectOptions = options || null;
-    if (this.mode !== "insert" && this.mode !== "delete") {
+
+    if (
+      this.mode !== "insert" &&
+      this.mode !== "update" &&
+      this.mode !== "delete"
+    ) {
       this.mode = "select";
     }
+
     return this;
   }
 
@@ -136,6 +142,7 @@ class QueryBuilder {
         if (filter.operator === "is" && filter.value === null) {
           return value !== null && value !== undefined;
         }
+
         return value !== filter.value;
       }
 
@@ -180,12 +187,14 @@ class QueryBuilder {
     ) {
       registration.player = player ? clone(player) : null;
     }
+
     if (
       this.selectedColumns &&
       String(this.selectedColumns).includes("inviter:")
     ) {
       registration.inviter = inviter ? clone(inviter) : null;
     }
+
     if (
       this.selectedColumns &&
       String(this.selectedColumns).includes("guest:")
@@ -219,6 +228,7 @@ class QueryBuilder {
       if (!rows.length) {
         return { data: null, error: { message: "not found" } };
       }
+
       return { data: rows[0], error: null };
     }
 
@@ -227,10 +237,9 @@ class QueryBuilder {
 
   executeInsert(terminal) {
     const rows = Array.isArray(this.payload) ? this.payload : [this.payload];
+
     const inserted = rows.map((row) => {
-      const item = {
-        ...clone(row),
-      };
+      const item = clone(row);
 
       if (!item.id) {
         item.id = `${this.table}-${hoisted.idCounter++}`;
@@ -257,6 +266,7 @@ class QueryBuilder {
 
     tableRows.forEach((row, index) => {
       if (!this.matchesFilters(row)) return;
+
       const next = { ...row, ...clone(this.payload) };
       hoisted.db[this.table][index] = next;
       updated.push(clone(next));
@@ -279,7 +289,6 @@ class QueryBuilder {
     });
 
     hoisted.db[this.table] = kept;
-
     return { data: removed, error: null };
   }
 }
@@ -295,7 +304,8 @@ import {
   getRegistrationCountsByGame,
   joinGame,
   leaveGame,
-} from "../data/supabaseService";
+  promoteFromWaitlist,
+} from "../services/supabaseService.js";
 
 describe("integration flows", () => {
   beforeEach(() => {
@@ -303,9 +313,9 @@ describe("integration flows", () => {
     vi.useRealTimers();
   });
 
-  it("cenario 1: Home com 2 domingos mesma data usa contagem do ID novo", async () => {
+  it("cenario 1: Home com 2 domingos na mesma data usa contagem do ID novo", async () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-06-15T10:00:00"));
+    vi.setSystemTime(new Date("2026-06-15T10:00:00Z"));
 
     hoisted.db.games.push(
       {
@@ -360,7 +370,7 @@ describe("integration flows", () => {
 
   it("cenario 2: convidado no sabado com vaga entra direto na main", async () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-06-20T10:00:00"));
+    vi.setSystemTime(new Date("2026-06-20T10:00:00Z"));
 
     hoisted.db.games.push({
       id: "sunday-2026-06-21",
@@ -370,8 +380,16 @@ describe("integration flows", () => {
       status: "active",
     });
 
-    hoisted.db.players.push({ id: "p1", status: "active", type: "member" });
-    hoisted.db.guests.push({ id: "g1", name: "Convidado 1", invited_by: "p1" });
+    hoisted.db.players.push({
+      id: "p1",
+      status: "active",
+      type: "member",
+    });
+    hoisted.db.guests.push({
+      id: "g1",
+      name: "Convidado 1",
+      invited_by: "p1",
+    });
 
     const success = await joinGame(
       "sunday-2026-06-21",
@@ -383,6 +401,7 @@ describe("integration flows", () => {
     );
 
     expect(success).toBe(true);
+
     const inserted = hoisted.db.game_registrations.find(
       (row) => row.guest_id === "g1",
     );
@@ -393,7 +412,7 @@ describe("integration flows", () => {
 
   it("cenario 3: convidado no sabado sem vaga vai para waitlist", async () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-06-20T10:00:00"));
+    vi.setSystemTime(new Date("2026-06-20T10:00:00Z"));
 
     hoisted.db.games.push({
       id: "sunday-2026-06-21",
@@ -403,8 +422,16 @@ describe("integration flows", () => {
       status: "active",
     });
 
-    hoisted.db.players.push({ id: "p1", status: "active", type: "member" });
-    hoisted.db.guests.push({ id: "g2", name: "Convidado 2", invited_by: "p1" });
+    hoisted.db.players.push({
+      id: "p1",
+      status: "active",
+      type: "member",
+    });
+    hoisted.db.guests.push({
+      id: "g2",
+      name: "Convidado 2",
+      invited_by: "p1",
+    });
 
     for (let index = 0; index < 21; index += 1) {
       hoisted.db.game_registrations.push({
@@ -425,6 +452,7 @@ describe("integration flows", () => {
     );
 
     expect(success).toBe(true);
+
     const inserted = hoisted.db.game_registrations.find(
       (row) => row.guest_id === "g2",
     );
@@ -433,9 +461,9 @@ describe("integration flows", () => {
     vi.useRealTimers();
   });
 
-  it("cenario 4: leave promove waitlist e convidado de guests sobe para main quando abre vaga", async () => {
+  it("cenario 4: saida promove espera e convidado entra na principal quando abre vaga", async () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-06-20T12:00:00"));
+    vi.setSystemTime(new Date("2026-06-20T12:00:00Z"));
 
     hoisted.db.games.push({
       id: "sunday-2026-06-21",
@@ -512,12 +540,15 @@ describe("integration flows", () => {
     vi.useRealTimers();
   });
 
-  it("cenario 5: penalizado tentando entrar na main vai para waitlist", async () => {
+  it("cenario 5: penalizado so sobe para a principal a partir de sabado 0h", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-19T02:59:59Z"));
+
     hoisted.db.games.push({
-      id: "wednesday-2026-06-17",
-      day: "wednesday",
-      date: "2026-06-17",
-      time: "19:30",
+      id: "sunday-2026-09-20",
+      day: "sunday",
+      date: "2026-09-20",
+      time: "09:00",
       status: "active",
     });
 
@@ -525,20 +556,37 @@ describe("integration flows", () => {
       id: "p-pen",
       status: "penalized",
       type: "member",
-      on_injury_leave: false,
     });
 
-    const success = await joinGame("wednesday-2026-06-17", "p-pen", "main");
+    const joined = await joinGame("sunday-2026-09-20", "p-pen", "main");
+    expect(joined).toBe(true);
 
-    expect(success).toBe(true);
-
-    const inserted = hoisted.db.game_registrations.find(
+    const registrationBeforeSaturday = hoisted.db.game_registrations.find(
       (row) => row.player_id === "p-pen",
     );
-    expect(inserted?.slot).toBe("waitlist");
+
+    // Sexta-feira, 23:59:59 em São Paulo.
+    expect(registrationBeforeSaturday?.slot).toBe("waitlist");
+
+    vi.setSystemTime(new Date("2026-09-19T03:00:00Z"));
+
+    // Sábado, 0h em São Paulo.
+    const promoted = await promoteFromWaitlist("sunday-2026-09-20");
+
+    expect(promoted).toBe(true);
+
+    const registrationAfterSaturday = hoisted.db.game_registrations.find(
+      (row) => row.player_id === "p-pen",
+    );
+    expect(registrationAfterSaturday?.slot).toBe("main");
+
+    vi.useRealTimers();
   });
 
-  it("cenario 6: on_injury_leave=true nao bloqueia entrada de jogador ativo", async () => {
+  it("cenario 6: lesao nao bloqueia entrada de jogador ativo", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-16T15:00:00Z"));
+
     hoisted.db.games.push({
       id: "wednesday-2026-06-17",
       day: "wednesday",
@@ -562,5 +610,7 @@ describe("integration flows", () => {
       (row) => row.player_id === "p-injury",
     );
     expect(inserted?.slot).toBe("main");
+
+    vi.useRealTimers();
   });
 });

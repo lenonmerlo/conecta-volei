@@ -7,7 +7,7 @@ import {
   createGame,
   getGames,
   updateGame,
-} from "../../../data/supabaseService";
+} from "../../../services/supabaseService.js";
 import "./AdminTabs.css";
 
 const EMPTY_NEW_GAME = {

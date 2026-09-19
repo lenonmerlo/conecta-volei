@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Button from "../../components/Button/Button";
 import PlayerStats from "../../components/PlayerStats/PlayerStats";
-import { getPlayerById } from "../../data/supabaseService";
+import { getPlayerById } from "../../services/supabaseService.js";
 import "./AthleteProfile.css";
 
 function AthleteProfile() {

@@ -1,0 +1,106 @@
+export const RULE_SECTIONS = [
+  {
+    id: "inscricoes",
+    title: "Inscrições e prioridade",
+    items: [
+      "1.1. A lista de inscrição será aberta toda quinta-feira às 19h.",
+      "1.2. Na quinta e na sexta-feira, a inscrição é reservada aos membros do grupo.",
+      "1.3. A partir de sábado, convidados poderão ocupar vagas na lista principal, conforme a disponibilidade e as demais regras deste regulamento.",
+      "1.4. A lista principal comporta até 21 jogadores. Após esse limite, novas inscrições entram na lista de espera.",
+      "1.5. A lista de espera segue a ordem de inscrição entre membros e convidados. Um convidado inscrito antes de um membro permanece à frente dele. A exceção é o membro penalizado: se houver outro membro não penalizado na espera, o penalizado passa para o fim da fila, independentemente da ordem de inscrição. Entre membros penalizados, permanece a ordem em que se inscreveram. Se não houver membro não penalizado na espera, o penalizado segue a ordem de inscrição junto aos convidados.",
+      "1.6. Cada membro pode inscrever seu próprio nome e o de, no máximo, mais um membro. Não há limite numérico de convidados externos que um membro pode inscrever, observadas as demais regras de participação e a decisão dos administradores.",
+    ],
+  },
+  {
+    id: "prazo-saida",
+    title: "Prazo para sair da lista",
+    items: [
+      "2.1. Quem não puder jogar deve retirar sua inscrição até as 21h de sábado.",
+      "2.2. O prazo vale para a lista principal e para a lista de espera. Quem está na espera deve manter sua inscrição apenas se puder jogar, pois poderá ser promovido automaticamente.",
+      "2.3. O prazo também vale para convidados. O membro que os inscreveu deve acompanhar sua permanência e movimentação nas listas.",
+      "2.4. A desistência após as 21h de sábado está sujeita a advertência, mesmo que seja comunicada ao grupo. Os administradores avaliarão eventuais justificativas.",
+      "2.5. Quem ocupar uma vaga na lista principal e não comparecer, sem justificativa aceita pelos administradores, está sujeito à suspensão da lista na semana seguinte. Isso inclui quem for promovido da lista de espera para a principal. Se a pessoa ausente for um convidado, a suspensão cabível será aplicada ao membro que o convidou. Quem permanecer apenas na lista de espera, sem ser promovido, não será considerado faltante.",
+    ],
+  },
+  {
+    id: "faltas-advertencias",
+    title: "Advertências e suspensões",
+    items: [
+      "3.1. As advertências são acumulativas. A primeira ocorrência gera uma advertência.",
+      "3.2. Ao receber a segunda advertência, o membro perde a prioridade na lista de espera na semana seguinte.",
+      "3.3. Durante essa penalização, se houver outro membro não penalizado na lista de espera, o membro penalizado vai para o fim da fila, independentemente da ordem de inscrição. Se não houver membro não penalizado na espera, ele segue a ordem de inscrição junto aos convidados.",
+      "3.4. Ao receber a terceira advertência, o membro fica suspenso da lista na semana seguinte. A contagem de advertências volta a zero após o cumprimento da suspensão.",
+      "3.5. Emergências e imprevistos serão avaliados pelos administradores. Em caso de falta sem aviso, a gravidade da ocorrência poderá justificar suspensão já na primeira vez.",
+      "3.6. Lesão, viagem, trabalho, questões familiares e outros motivos comunicados previamente não serão considerados abandono do grupo. A justificativa para uma desistência fora do prazo ou para uma ausência será avaliada pelos administradores.",
+    ],
+  },
+  {
+    id: "convidados",
+    title: "Convidados e responsabilidade do membro",
+    items: [
+      "4.1. A participação de convidados depende da autorização dos administradores, das vagas disponíveis e do equilíbrio dos times.",
+      "4.2. O membro que inscreveu um convidado é responsável por sua presença, seu comportamento e sua movimentação nas listas, inclusive enquanto o convidado estiver na lista de espera.",
+      "4.3. O convidado não recebe a penalização diretamente. Se sua desistência, ausência ou conduta estiver sujeita a advertência ou suspensão, o membro que o convidou responderá por ela.",
+      "4.4. Permanecer na lista de espera após o prazo não constitui, por si só, uma falta. Se o convidado for promovido à lista principal e não comparecer, aplica-se ao membro responsável a regra de ausência prevista no item 2.5.",
+    ],
+  },
+  {
+    id: "pontualidade",
+    title: "Horário e pontualidade",
+    items: [
+      "5.1. Todos devem respeitar os horários para evitar atrasos e equipes desfalcadas.",
+      "5.2. Quem chegar atrasado poderá ter de esperar a próxima rodada para entrar em quadra.",
+      "5.3. O atraso máximo permitido é de 30 minutos. Após esse período, o jogador poderá perder a vaga na rodada do dia, a critério dos administradores.",
+      "5.4. Quem precisar sair mais cedo deve comunicar a saída e respeitar o limite de 30 minutos antes do encerramento, para não prejudicar a organização das equipes e partidas.",
+    ],
+  },
+  {
+    id: "rodizio",
+    title: "Rodízio e formação dos times",
+    items: [
+      "6.1. O rodízio é contínuo: quando o jogador que está na posição de saída vai para o saque, o jogador que está fora de quadra entra, e a sequência prossegue nas rotações seguintes.",
+      "6.2. Trocas de jogadores devem ocorrer entre as partidas, exceto em caso de lesão.",
+      "6.3. Os administradores poderão ajustar os times para manter o equilíbrio das partidas.",
+      "6.4. Uma equipe que disputar três partidas consecutivas deverá sair da quadra para dar lugar ao time de fora, mesmo que vença a terceira partida.",
+    ],
+  },
+  {
+    id: "convivencia",
+    title: "Arbitragem, convivência e jogo limpo",
+    items: [
+      "7.1. O time que estiver fora da quadra deverá se revezar na arbitragem: um integrante atuará como árbitro principal junto à rede e dois atuarão como árbitros de linha nos fundos e nas laterais.",
+      "7.2. Os jogadores devem respeitar as decisões da arbitragem. Divergências sobre uma jogada devem ser tratadas após o encerramento do ponto.",
+      "7.3. Se um time interromper a jogada por conta própria, o ponto será atribuído ao adversário, salvo em situação de risco imediato ou lesão.",
+      "7.4. Se a bola tocar o teto ou os fios, a jogada continua desde que ela não ultrapasse para o lado adversário.",
+      "7.5. Discussões, xingamentos e ofensas não são permitidos. Críticas devem ser feitas com respeito.",
+      "7.6. Brincadeiras não devem envolver ofensas pessoais nem provocações excessivas.",
+    ],
+  },
+  {
+    id: "infracoes-graves",
+    title: "Comportamentos antidesportivos",
+    items: [
+      "8.1. Comportamentos que comprometam o respeito, a segurança ou o andamento dos jogos são considerados infrações graves.",
+      "8.2. São exemplos de infração grave:",
+      "8.2.1. Brigas ou tentativas de agressão.",
+      "8.2.2. Discussões excessivas, ofensas, provocações ou ameaças.",
+      "8.2.3. Chutes, arremessos ou outras ações agressivas contra a bola, os equipamentos ou a estrutura da quadra.",
+      "8.2.4. Agressão física ou contato intencional para intimidar ou machucar.",
+      "8.2.5. Desrespeito recorrente a jogadores, organizadores ou árbitros.",
+      "8.2.6. Atitudes que coloquem outros participantes em risco.",
+      "8.2.7. Ações deliberadas para tumultuar, interromper ou prejudicar os jogos.",
+      "8.3. Essas condutas poderão resultar em advertência, suspensão ou afastamento do grupo, conforme a gravidade e a reincidência, após avaliação dos administradores.",
+    ],
+  },
+  {
+    id: "materiais",
+    title: "Organização da quadra e materiais",
+    items: [
+      "9.1. Todos devem colaborar com a montagem da quadra e da rede quando necessário.",
+      "9.2. Ao final dos jogos, o time perdedor da última partida é obrigatoriamente responsável por recolher a rede e os demais materiais utilizados.",
+      "9.3. Cada participante deve recolher e descartar corretamente o próprio lixo. Todos devem colaborar para deixar o ambiente limpo após os jogos.",
+      "9.4. Em dias de chuva, os participantes devem chegar mais cedo para ajudar a limpar e secar a quadra antes do início das partidas.",
+      "9.5. Qualquer dano aos materiais ou à estrutura da quadra deve ser comunicado imediatamente aos administradores.",
+    ],
+  },
+];

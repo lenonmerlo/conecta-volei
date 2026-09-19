@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../app/AuthContext";
 import Button from "../../components/Button/Button";
-import { getAllPlayers } from "../../data/supabaseService";
 import { isSuperAdmin } from "../../domain/admins";
+import { getAllPlayers } from "../../services/supabaseService.js";
 import "./Admin.css";
 import AdminAnnouncements from "./tabs/AdminAnnouncements";
 import AdminAudit from "./tabs/AdminAudit";
@@ -20,6 +20,7 @@ function Admin() {
   const userIsSuperAdmin = isSuperAdmin(user);
   const [players, setPlayers] = useState([]);
   const [loadingPlayers, setLoadingPlayers] = useState(true);
+  const [auditRefreshKey, setAuditRefreshKey] = useState(0);
 
   const refreshPlayers = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoadingPlayers(true);
@@ -55,6 +56,14 @@ function Admin() {
 
   const [activeTab, setActiveTab] = useState("pending");
 
+  function handleRefresh() {
+  refreshPlayers();
+
+  if (activeTab === "audit") {
+    setAuditRefreshKey((current) => current + 1);
+  }
+}
+
   return (
     <div className="admin">
       <div className="admin__header">
@@ -63,7 +72,7 @@ function Admin() {
           size="sm"
           variant="secondary"
           className="admin__refresh"
-          onClick={refreshPlayers}
+          onClick={handleRefresh}
           disabled={loadingPlayers}
         >
           {loadingPlayers ? "Atualizando..." : "Atualizar"}
@@ -100,7 +109,9 @@ function Admin() {
         {activeTab === "games" && <AdminGames />}
         {activeTab === "announcements" && <AdminAnnouncements />}
         {activeTab === "presence" && <AdminPresence />}
-        {activeTab === "audit" && <AdminAudit />}
+        {activeTab === "audit" && (
+          <AdminAudit refreshKey={auditRefreshKey} />
+        )}
         {activeTab === "levels" && userIsSuperAdmin && (
           <AdminLevels
             players={players}

@@ -16,7 +16,7 @@ vi.mock("../app/AuthContext", () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-vi.mock("../data/supabaseService", () => ({
+vi.mock("../services/supabaseService.js", () => ({
   getAllPlayers: (...args) => mockGetAllPlayers(...args),
   getGameRegistrations: (...args) => mockGetGameRegistrations(...args),
   getGuestsByInviterFromTable: (...args) =>

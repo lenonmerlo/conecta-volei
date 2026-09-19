@@ -4,12 +4,12 @@ import { useRef, useState } from "react";
 import { useAuth } from "../../app/AuthContext";
 import Button from "../../components/Button/Button";
 import PlayerStats from "../../components/PlayerStats/PlayerStats";
+import { isAdmin, isSuperAdmin } from "../../domain/admins";
 import {
   updatePlayerAvatar,
   updatePlayerProfile,
   uploadAvatar,
-} from "../../data/supabaseService";
-import { isAdmin, isSuperAdmin } from "../../domain/admins";
+} from "../../services/supabaseService.js";
 import "./Profile.css";
 
 function LoggedIn({ user, onLogout, onUpdateUser }) {

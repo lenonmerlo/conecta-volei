@@ -2,13 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getPublicPlayers } from "../../data/supabaseService";
 import {
   PLAYER_POSITIONS,
   PLAYER_POSITION_LABELS,
   PLAYER_STATUS,
   SPECIAL_BADGE_FIELDS,
 } from "../../domain/constants";
+import { getPublicPlayers } from "../../services/supabaseService.js";
 import "./Athletes.css";
 
 function statusBadge(status) {

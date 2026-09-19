@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../app/AuthContext";
+import { PLAYER_TYPE } from "../../domain/constants";
 import {
   getAllPlayers,
   getGameRegistrations,
@@ -11,8 +12,7 @@ import {
   leaveGame,
   registerGuest,
   removeGuest,
-} from "../../data/supabaseService";
-import { PLAYER_TYPE } from "../../domain/constants";
+} from "../../services/supabaseService.js";
 import Button from "../Button/Button";
 import "./JoinList.css";
 

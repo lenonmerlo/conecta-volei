@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { getAuditLogs, getGames } from "../../../data/supabaseService";
+import {
+  getAuditGameOptions,
+  getAuditLogs,
+} from "../../../services/supabaseService.js";
 import "./AdminTabs.css";
+
+const PAGE_SIZE = 20;
 
 const ACTION_LABELS = {
   joined_main: "Entrou na lista principal",
@@ -9,15 +14,16 @@ const ACTION_LABELS = {
   left_list: "Saiu da lista",
   promoted_to_main: "Promovido para lista principal",
   penalized: "Penalizado",
+  warning_added: "Recebeu advertência",
   approved: "Cadastro aprovado",
   rejected: "Cadastro recusado",
 };
 
 function formatDateTime(value) {
-  if (!value) return "Data indisponivel";
+  if (!value) return "Data indisponível";
 
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Data indisponivel";
+  if (Number.isNaN(date.getTime())) return "Data indisponível";
 
   return date.toLocaleString("pt-BR", {
     day: "2-digit",
@@ -35,17 +41,44 @@ function resolvePlayerName(log) {
 
   if (name && nickname) return `${name} (${nickname})`;
   if (name) return name;
-  if (!log?.player_id && guestName) return guestName;
-  return "Sistema / Convidado";
+  if (guestName) return guestName;
+
+  if (
+    log?.action === "promoted_to_main" &&
+    log?.details?.startsWith("Convidado promovido")
+  ) {
+    return "Convidado não identificado (registro antigo)";
+  }
+
+  return "Sistema";
+}
+
+function resolveDetails(log) {
+  const inviter = log?.inviter;
+  if (!inviter) return log.details || "-";
+
+  const inviterName = inviter.nickname
+    ? `${inviter.name} (${inviter.nickname})`
+    : inviter.name;
+
+  if (log.details === "Convidado externo") {
+    return `Convidado externo - por ${inviterName}`;
+  }
+
+  return [log.details, `por ${inviterName}`]
+    .filter(Boolean)
+    .join(" - ");
 }
 
 function resolveActionLabel(action) {
   return ACTION_LABELS[action] || action;
 }
 
-function AdminAudit() {
+function AdminAudit({ refreshKey = 0 }) {
   const [logs, setLogs] = useState([]);
   const [games, setGames] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedGameId, setSelectedGameId] = useState("all");
@@ -54,72 +87,98 @@ function AdminAudit() {
   useEffect(() => {
     let active = true;
 
-    async function loadData() {
-      setLoading(true);
-      setError("");
-
-      const [auditRows, gameRows] = await Promise.all([getAuditLogs(), getGames()]);
-      if (!active) return;
-
-      setLogs(auditRows || []);
-      setGames(gameRows || []);
-      setLoading(false);
-    }
-
-    loadData().catch(() => {
-      if (!active) return;
-      setError("Nao foi possivel carregar os logs de auditoria.");
-      setLoading(false);
-    });
+    getAuditGameOptions()
+      .then((rows) => {
+        if (active) setGames(rows || []);
+      })
+      .catch((loadError) => {
+        console.error("[AdminAudit] falha ao carregar jogos", loadError);
+      });
 
     return () => {
       active = false;
     };
-  }, []);
+  }, [refreshKey]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadLogs() {
+      setLoading(true);
+      setError("");
+
+      try {
+        const result = await getAuditLogs({
+          page,
+          pageSize: PAGE_SIZE,
+          gameId: selectedGameId,
+          action: selectedAction,
+        });
+
+        if (!active) return;
+
+        const lastPage = Math.max(1, Math.ceil(result.total / PAGE_SIZE));
+
+        if (page > lastPage) {
+          setPage(lastPage);
+          return;
+        }
+
+        setLogs(result.logs);
+        setTotal(result.total);
+      } catch (loadError) {
+        if (!active) return;
+
+        console.error("[AdminAudit] falha ao carregar auditoria", loadError);
+        setLogs([]);
+        setTotal(0);
+        setError("Não foi possível carregar os logs de auditoria.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    loadLogs();
+
+    return () => {
+      active = false;
+    };
+  }, [page, selectedGameId, selectedAction, refreshKey]);
 
   const gameOptions = useMemo(() => {
     const seen = new Set();
-    return (games || []).filter((game) => {
+
+    return games.filter((game) => {
       if (!game?.id || seen.has(game.id)) return false;
       seen.add(game.id);
       return true;
     });
   }, [games]);
 
-  const actionOptions = useMemo(() => {
-    const values = new Set((logs || []).map((row) => row.action).filter(Boolean));
-    return Array.from(values).sort((a, b) => a.localeCompare(b));
-  }, [logs]);
-
-  const filteredLogs = useMemo(
+  const actionOptions = useMemo(
     () =>
-      (logs || []).filter((row) => {
-        const byGame = selectedGameId === "all" || row.game_id === selectedGameId;
-        const byAction = selectedAction === "all" || row.action === selectedAction;
-        return byGame && byAction;
-      }),
-    [logs, selectedGameId, selectedAction],
+      Object.entries(ACTION_LABELS).sort((a, b) =>
+        a[1].localeCompare(b[1], "pt-BR"),
+      ),
+    [],
   );
 
-  if (loading) {
-    return (
-      <div className="admin-tab">
-        <p className="admin-tab__restricted">Carregando auditoria...</p>
-      </div>
-    );
-  }
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const firstItem = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const lastItem = Math.min(page * PAGE_SIZE, total);
 
   return (
     <div className="admin-tab">
-      {error && <p className="admin-tab__restricted">{error}</p>}
-
       <div className="admin-tab__filters">
         <label className="admin-tab__filter-item">
           <span>Jogo</span>
           <select
             className="admin-tab__select"
             value={selectedGameId}
-            onChange={(event) => setSelectedGameId(event.target.value)}
+            onChange={(event) => {
+              setSelectedGameId(event.target.value);
+              setPage(1);
+            }}
           >
             <option value="all">Todos</option>
             {gameOptions.map((game) => (
@@ -131,42 +190,86 @@ function AdminAudit() {
         </label>
 
         <label className="admin-tab__filter-item">
-          <span>Acao</span>
+          <span>Ação</span>
           <select
             className="admin-tab__select"
             value={selectedAction}
-            onChange={(event) => setSelectedAction(event.target.value)}
+            onChange={(event) => {
+              setSelectedAction(event.target.value);
+              setPage(1);
+            }}
           >
             <option value="all">Todas</option>
-            {actionOptions.map((action) => (
+            {actionOptions.map(([action, label]) => (
               <option key={action} value={action}>
-                {resolveActionLabel(action)}
+                {label}
               </option>
             ))}
           </select>
         </label>
       </div>
 
-      {filteredLogs.length === 0 && (
-        <p className="admin-tab__restricted">Nenhum log encontrado.</p>
+      {error && <p className="admin-tab__restricted">{error}</p>}
+
+      {loading ? (
+        <p className="admin-tab__restricted">Carregando auditoria...</p>
+      ) : (
+        <>
+          {logs.length === 0 && !error && (
+            <p className="admin-tab__restricted">Nenhum log encontrado.</p>
+          )}
+
+          <ul className="admin-tab__list">
+            {logs.map((log) => (
+              <li key={log.id} className="admin-tab__item">
+                <div className="admin-tab__info admin-tab__info--audit">
+                  <span className="admin-tab__name">
+                    {resolveActionLabel(log.action)}
+                  </span>
+                  <span className="admin-tab__type">
+                    {formatDateTime(log.created_at)}
+                  </span>
+                </div>
+
+                <div className="admin-tab__pending-meta">
+                  <span>Participante: {resolvePlayerName(log)}</span>
+                  <span>Jogo: {log.game_id || "Não informado"}</span>
+                  <span>Detalhes: {resolveDetails(log)}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          {total > 0 && (
+            <nav
+              className="admin-tab__pagination"
+              aria-label="Paginação da auditoria"
+            >
+              <button
+                type="button"
+                onClick={() => setPage((current) => current - 1)}
+                disabled={page === 1}
+              >
+                Anterior
+              </button>
+
+              <span>
+                {firstItem}–{lastItem} de {total}
+                {" · "}
+                Página {page} de {totalPages}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setPage((current) => current + 1)}
+                disabled={page >= totalPages}
+              >
+                Próxima
+              </button>
+            </nav>
+          )}
+        </>
       )}
-
-      <ul className="admin-tab__list">
-        {filteredLogs.map((log) => (
-          <li key={log.id} className="admin-tab__item">
-            <div className="admin-tab__info admin-tab__info--audit">
-              <span className="admin-tab__name">{resolveActionLabel(log.action)}</span>
-              <span className="admin-tab__type">{formatDateTime(log.created_at)}</span>
-            </div>
-
-            <div className="admin-tab__pending-meta">
-              <span>Participante: {resolvePlayerName(log)}</span>
-              <span>Jogo: {log.game_id || "Nao informado"}</span>
-              <span>Detalhes: {log.details || "-"}</span>
-            </div>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

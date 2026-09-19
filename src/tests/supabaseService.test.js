@@ -156,7 +156,7 @@ import {
   removeGuest,
   updatePlayerInjuryLeave,
   updatePlayerStatus,
-} from "../data/supabaseService";
+} from "../services/supabaseService.js";
 
 describe("supabaseService", () => {
   beforeEach(() => {
@@ -646,7 +646,7 @@ describe("supabaseService", () => {
 
     it("domingo no sabado coloca convidado na main quando ha vaga", async () => {
       vi.useFakeTimers();
-      vi.setSystemTime(new Date("2026-06-06T12:00:00"));
+      vi.setSystemTime(new Date("2026-06-13T12:00:00Z"));
 
       enqueueSundayJoinContext();
       enqueueResponse("game_registrations.insert.await", { error: null });
@@ -667,7 +667,7 @@ describe("supabaseService", () => {
 
     it("domingo no sabado coloca convidado em waitlist quando main esta cheia", async () => {
       vi.useFakeTimers();
-      vi.setSystemTime(new Date("2026-06-06T12:00:00"));
+      vi.setSystemTime(new Date("2026-06-13T12:00:00Z"));
 
       enqueueSundayJoinContext();
       enqueueResponse("game_registrations.select.await", {
@@ -675,7 +675,7 @@ describe("supabaseService", () => {
           id: `m${index + 1}`,
           game_id: "sunday-2026-06-14",
           slot: "main",
-          registered_at: "2026-06-01T20:00:00.000Z",
+          registered_at: `2026-06-12T20:${String(index).padStart(2, "0")}:00.000Z`,
         })),
         error: null,
       });

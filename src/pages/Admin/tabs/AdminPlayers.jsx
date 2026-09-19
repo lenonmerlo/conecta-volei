@@ -3,13 +3,6 @@
 import { useMemo, useState } from "react";
 import { useAuth } from "../../../app/AuthContext";
 import Button from "../../../components/Button/Button";
-import {
-  addWarning,
-  removeWarning,
-  resetWarnings,
-  updatePlayerInjuryLeave,
-  updatePlayerStatus,
-} from "../../../data/supabaseService";
 import { isSuperAdmin } from "../../../domain/admins";
 import {
   PLAYER_POSITIONS,
@@ -17,6 +10,13 @@ import {
   PLAYER_TYPE,
   SPECIAL_BADGE_FIELDS,
 } from "../../../domain/constants";
+import {
+  addWarning,
+  removeWarning,
+  resetWarnings,
+  updatePlayerInjuryLeave,
+  updatePlayerStatus,
+} from "../../../services/supabaseService.js";
 import "./AdminTabs.css";
 
 function statusLabel(status) {

@@ -2,19 +2,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  PLAYER_POSITIONS,
+  PLAYER_POSITION_LABELS,
+  SKILL_LEVELS,
+  SPECIAL_BADGE_FIELDS,
+} from "../../../domain/constants";
+import {
   getGameRegistrations,
   getGames,
   updateGuestLevel,
   updatePlayerLevel,
   updatePlayerPosition,
   updatePlayerSpecialBadges,
-} from "../../../data/supabaseService";
-import {
-  PLAYER_POSITIONS,
-  PLAYER_POSITION_LABELS,
-  SKILL_LEVELS,
-  SPECIAL_BADGE_FIELDS,
-} from "../../../domain/constants";
+} from "../../../services/supabaseService.js";
 import "./AdminTabs.css";
 
 const POSITION_OPTIONS = PLAYER_POSITIONS;
