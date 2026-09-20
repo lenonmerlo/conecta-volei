@@ -365,7 +365,7 @@ describe("supabaseService", () => {
       });
     }
 
-    it("convidado em guests com vaga na main migra para main", async () => {
+    it("convidado entra na espera sem perder o horario original", async () => {
       enqueueAutoMigrateSundayBase([
         {
           id: "m1",
@@ -380,6 +380,7 @@ describe("supabaseService", () => {
           registered_at: "2026-06-13T09:00:00.000Z",
         },
       ]);
+
       enqueueResponse("game_registrations.update.eq", { error: null });
 
       const migrated = await autoMigrateGuests("sunday-2026-06-14", {
@@ -387,9 +388,11 @@ describe("supabaseService", () => {
       });
 
       expect(migrated).toBe(true);
-      expect(hoisted.callLog.update[0]?.table).toBe("game_registrations");
-      expect(hoisted.callLog.update[0]?.payload?.slot).toBe("main");
-      expect(hoisted.callLog.update[0]?.payload).not.toHaveProperty(
+      expect(hoisted.callLog.update[0]).toEqual({
+        table: "game_registrations",
+        payload: { slot: "waitlist" },
+      });
+      expect(hoisted.callLog.update[0].payload).not.toHaveProperty(
         "registered_at",
       );
     });

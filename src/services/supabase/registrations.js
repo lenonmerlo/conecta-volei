@@ -52,11 +52,14 @@ async function getRegistrationRowsByGameIds(
   }
 
   const rows = results.flatMap((result) => result.data || []);
-  const dedupedRows = dedupeById(rows).sort((a, b) =>
-    String(a?.registered_at || "").localeCompare(
+  const dedupedRows = dedupeById(rows).sort((a, b) => {
+    const dateCompare = String(a?.registered_at || "").localeCompare(
       String(b?.registered_at || ""),
-    ),
-  );
+    );
+
+    if (dateCompare !== 0) return dateCompare;
+    return String(a?.id || "").localeCompare(String(b?.id || ""));
+  });
 
   return { data: dedupedRows, error: null };
 }
@@ -67,6 +70,7 @@ export async function autoMigrateGuests(
 ) {
   const canonicalGameId = await resolveGameId(gameId);
   const baseGame = preloadedGame || (await getGameById(canonicalGameId));
+
   if (!baseGame) return false;
   if (!isGuestMigrationWindowOpen(baseGame, now)) return false;
 
@@ -107,50 +111,27 @@ export async function autoMigrateGuests(
     (registration) => registration.slot === "guests",
   );
 
-  if (!guestRegistrations.length) return false;
+  // Primeiro reúne os convidados à espera, sem alterar registered_at.
+  for (const registration of guestRegistrations) {
+    const { error: updateError } = await supabase
+      .from("game_registrations")
+      .update({ slot: "waitlist" })
+      .eq("id", registration.id);
 
-  let mainCount = currentCycleRegistrations.filter(
-    (registration) => registration.slot === "main",
-  ).length;
-
-  const updates = guestRegistrations.map((registration) => {
-    const targetSlot = mainCount < MAX_MAIN_LIST ? "main" : "waitlist";
-    if (targetSlot === "main") mainCount += 1;
-
-    return { id: registration.id, slot: targetSlot };
-  });
-
-  const results = await Promise.all(
-    updates.map((updatePayload) =>
-      supabase
-        .from("game_registrations")
-        .update({ slot: updatePayload.slot })
-        .eq("id", updatePayload.id),
-    ),
-  );
-
-  const failedUpdates = results
-    .map((result, index) => ({ result, update: updates[index] }))
-    .filter((item) => item.result?.error);
-
-  const updateError = failedUpdates[0]?.result?.error || null;
-  if (updateError) {
-    failedUpdates.forEach((item) => {
-      console.error("[Supabase] Falha ao migrar convidado automaticamente:", {
-        registrationId: item.update?.id,
-        targetSlot: item.update?.slot,
-        error: item.result?.error,
+    if (updateError) {
+      console.error("[Supabase] Falha ao migrar convidado:", {
+        registrationId: registration.id,
+        error: updateError,
       });
-    });
-
-    console.error(
-      "[Supabase] Falha ao atualizar convidados na migracao automatica:",
-      updateError,
-    );
-    return false;
+      return false;
+    }
   }
 
-  return true;
+  // Depois preenche as vagas na ordem da fila. Mesmo sem convidados
+  // para migrar, isto promove um penalizado elegível após sábado, 0h.
+  const promoted = await fillMainListFromWaitlist(canonicalGameId);
+
+  return guestRegistrations.length > 0 || promoted;
 }
 
 export async function getGameRegistrations(
@@ -201,6 +182,7 @@ export async function getRegistrationCountsByGame() {
     getCurrentGameIdForDay("wednesday"),
     getCurrentGameIdForDay("sunday"),
   ]);
+
   const currentFixedByDay = new Map(
     [
       ["wednesday", currentWednesdayId],
@@ -211,6 +193,7 @@ export async function getRegistrationCountsByGame() {
   const { data: allGames } = await supabase
     .from("games")
     .select("id, day, date");
+
   const canonicalByDayDate = new Map();
   const gameIdToCanonical = new Map();
 
@@ -294,9 +277,8 @@ async function getJoinListState(game, fallbackGameId) {
     countGameId = (await getCurrentGameIdForDay(day)) || fallbackGameId;
   }
 
-  const registrations = await getGameRegistrations(countGameId, {
-    autoMigrate: false,
-  });
+  // A leitura também reconcilia a fila se a janela de sábado já abriu.
+  const registrations = await getGameRegistrations(countGameId);
 
   const mainCount = registrations.filter(
     (registration) => registration.slot === "main",
@@ -419,6 +401,7 @@ export async function leaveGame(gameId, playerId = null, guestId = null) {
 
   const selectError =
     selectResults.find((result) => result.error)?.error || null;
+
   if (selectError) {
     console.error("[leaveGame] failed to load active registrations", {
       gameId,
@@ -462,7 +445,7 @@ export async function leaveGame(gameId, playerId = null, guestId = null) {
     return false;
   }
 
-  if ((leftRegistrations || []).length > 0) {
+  if (leftRegistrations.length > 0) {
     const removedGuestId =
       guestId ||
       leftRegistrations.find((registration) => registration?.guest_id)
@@ -490,29 +473,49 @@ export async function leaveGame(gameId, playerId = null, guestId = null) {
     }
   }
 
-  await fillMainListFromWaitlist(gameId);
+  // Reúne convidados à espera antes de escolher quem ocupa a vaga.
   await autoMigrateGuests(resolvedGameId, { game: gameData || null });
+  await fillMainListFromWaitlist(gameId);
 
   return true;
 }
 
 async function fillMainListFromWaitlist(gameId) {
-  const registrations = await getGameRegistrations(gameId);
-  const mainListCount = (registrations || []).filter(
+  const registrations = await getGameRegistrations(gameId, {
+    autoMigrate: false,
+  });
+
+  const mainListCount = registrations.filter(
     (registration) => registration.slot === "main",
   ).length;
 
   let spotsAvailable = MAX_MAIN_LIST - mainListCount;
+  let promotedAny = false;
+
   while (spotsAvailable > 0) {
     const promoted = await promoteFromWaitlist(gameId);
     if (!promoted) break;
+
+    promotedAny = true;
     spotsAvailable -= 1;
   }
+
+  return promotedAny;
 }
 
 export async function promoteFromWaitlist(gameId) {
-  const registrations = await getGameRegistrations(gameId);
-  const waitlist = (registrations || []).filter(
+  const registrations = await getGameRegistrations(gameId, {
+    autoMigrate: false,
+  });
+
+  if (
+    registrations.filter((registration) => registration.slot === "main")
+      .length >= MAX_MAIN_LIST
+  ) {
+    return false;
+  }
+
+  const waitlist = registrations.filter(
     (registration) => registration.slot === "waitlist",
   );
 
@@ -526,7 +529,7 @@ export async function promoteFromWaitlist(gameId) {
     registration.player?.type === "member" &&
     registration.player?.status === "penalized";
 
-  // Para o jogo de domingo, penalizados só podem subir a partir de sábado, 0h.
+  // Para domingo, penalizados só podem subir a partir de sábado, 0h.
   const canPromotePenalized =
     game?.day === "sunday" && isGuestMigrationWindowOpen(game);
 
@@ -597,6 +600,7 @@ export async function migrateGuestsToWaitlist(gameId) {
 
   const canonicalGameId = await resolveGameId(gameId);
   await fillMainListFromWaitlist(canonicalGameId);
+
   return true;
 }
 
@@ -668,8 +672,8 @@ export async function getGuestsByInviterFromTable(gameId, invitedById) {
   const gamesByIdList = await Promise.all(
     equivalentGameIds.map((id) => getGameById(id)),
   );
-  const gamesById = new Map();
 
+  const gamesById = new Map();
   equivalentGameIds.forEach((id, index) => {
     const game = gamesByIdList[index];
     if (game) gamesById.set(String(id), game);
@@ -718,6 +722,7 @@ export async function removeGuest(registrationId) {
   if (error || !data?.length) return false;
 
   const removedRegistration = data[0];
+
   await logAction(
     removedRegistration.game_id,
     null,
@@ -727,6 +732,7 @@ export async function removeGuest(registrationId) {
   );
 
   if (removedRegistration.slot === "main" && removedRegistration.game_id) {
+    await autoMigrateGuests(removedRegistration.game_id);
     await fillMainListFromWaitlist(removedRegistration.game_id);
   }
 

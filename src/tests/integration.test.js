@@ -300,6 +300,7 @@ vi.mock("../lib/supabase", () => ({
 }));
 
 import {
+  autoMigrateGuests,
   getGames,
   getRegistrationCountsByGame,
   joinGame,
@@ -385,6 +386,7 @@ describe("integration flows", () => {
       status: "active",
       type: "member",
     });
+
     hoisted.db.guests.push({
       id: "g1",
       name: "Convidado 1",
@@ -427,6 +429,7 @@ describe("integration flows", () => {
       status: "active",
       type: "member",
     });
+
     hoisted.db.guests.push({
       id: "g2",
       name: "Convidado 2",
@@ -477,6 +480,7 @@ describe("integration flows", () => {
       { id: "p-leave", status: "active", type: "member" },
       { id: "p-wait", status: "active", type: "member" },
     );
+
     hoisted.db.guests.push({
       id: "g3",
       name: "Convidado 3",
@@ -610,6 +614,87 @@ describe("integration flows", () => {
       (row) => row.player_id === "p-injury",
     );
     expect(inserted?.slot).toBe("main");
+
+    vi.useRealTimers();
+  });
+
+  it("cenario 7: sabado preenche a vaga pela ordem original entre convidado e penalizado", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-26T03:00:00Z"));
+
+    const gameId = "sunday-2026-09-27";
+    const guestRegisteredAt = "2026-09-24T22:20:00Z";
+
+    hoisted.db.games.push({
+      id: gameId,
+      day: "sunday",
+      date: "2026-09-27",
+      time: "09:00",
+      status: "active",
+    });
+
+    hoisted.db.players.push({
+      id: "penalized-member",
+      name: "Membro penalizado",
+      type: "member",
+      status: "penalized",
+    });
+
+    hoisted.db.guests.push({
+      id: "guest-1",
+      name: "Convidado",
+    });
+
+    for (let index = 0; index < 20; index += 1) {
+      hoisted.db.game_registrations.push({
+        id: `main-${index}`,
+        game_id: gameId,
+        slot: "main",
+        registered_at: "2026-09-24T22:00:00Z",
+        left_at: null,
+      });
+    }
+
+    hoisted.db.game_registrations.push(
+      {
+        id: "penalized-registration",
+        game_id: gameId,
+        player_id: "penalized-member",
+        slot: "waitlist",
+        registered_at: "2026-09-24T22:30:00Z",
+        left_at: null,
+      },
+      {
+        id: "guest-registration",
+        game_id: gameId,
+        guest_id: "guest-1",
+        slot: "guests",
+        registered_at: guestRegisteredAt,
+        left_at: null,
+      },
+    );
+
+    const migrated = await autoMigrateGuests(gameId);
+
+    expect(migrated).toBe(true);
+    expect(
+      hoisted.db.game_registrations.find(
+        (row) => row.id === "guest-registration",
+      ),
+    ).toMatchObject({
+      slot: "main",
+      registered_at: guestRegisteredAt,
+    });
+    expect(
+      hoisted.db.game_registrations.find(
+        (row) => row.id === "penalized-registration",
+      )?.slot,
+    ).toBe("waitlist");
+
+    const activeMain = hoisted.db.game_registrations.filter(
+      (row) => row.game_id === gameId && row.slot === "main" && !row.left_at,
+    );
+    expect(activeMain).toHaveLength(21);
 
     vi.useRealTimers();
   });
