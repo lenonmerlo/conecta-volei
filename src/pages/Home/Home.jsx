@@ -4,14 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../app/AuthContext";
 import GameCard from "../../components/GameCard/GameCard";
+import { isVotingOpen } from "../../domain/gameRules";
+import { supabase } from "../../lib/supabase";
 import {
   getActiveAnnouncements,
   getGames,
   getPlayerStats,
   getRegistrationCountsByGame,
-} from "../../data/supabaseService";
-import { isVotingOpen } from "../../domain/gameRules";
-import { supabase } from "../../lib/supabase";
+} from "../../services/supabaseService.js";
 import "./Home.css";
 
 function normalizeLocation(value) {

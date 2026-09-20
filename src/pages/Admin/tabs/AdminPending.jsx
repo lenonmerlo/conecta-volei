@@ -5,7 +5,7 @@ import {
   deletePlayer,
   logAction,
   updatePlayerStatus,
-} from "../../../data/supabaseService";
+} from "../../../services/supabaseService.js";
 import "./AdminTabs.css";
 
 function formatDate(value) {

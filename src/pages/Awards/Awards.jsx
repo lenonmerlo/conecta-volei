@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { VOTE_CATEGORIES } from "../../domain/constants";
+import { isVotingOpen } from "../../domain/gameRules";
 import {
   getGames,
   getSundayGamesHistory,
   getVotingResults,
-} from "../../data/supabaseService";
-import { VOTE_CATEGORIES } from "../../domain/constants";
-import { isVotingOpen } from "../../domain/gameRules";
+} from "../../services/supabaseService.js";
 import "./Awards.css";
 
 function getTodayDateString() {

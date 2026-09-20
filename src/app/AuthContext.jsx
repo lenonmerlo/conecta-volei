@@ -3,7 +3,10 @@
 // Contexto de autenticacao - compartilha sessao em todo o app
 
 import { createContext, useContext, useState } from "react";
-import { getPlayerByWhatsapp, registerPlayer } from "../data/supabaseService";
+import {
+  getPlayerByWhatsapp,
+  registerPlayer,
+} from "../services/supabaseService.js";
 
 const SESSION_KEY = "conecta_volei_session";
 

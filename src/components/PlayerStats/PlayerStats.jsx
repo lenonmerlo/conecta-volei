@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { getPlayerStats } from "../../data/supabaseService";
 import { BADGES, BadgeIcon, getEarnedBadges } from "../../domain/badges";
+import { getPlayerStats } from "../../services/supabaseService.js";
 import "./PlayerStats.css";
 
 const EMPTY_STATS = {

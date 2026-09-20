@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../components/Button/Button";
+import { isListOpen } from "../../../domain/gameRules";
+import { drawTeams, swapPlayers } from "../../../domain/teamDraw";
 import {
   getGameRegistrations,
   getGames,
   saveGameTeams,
-} from "../../../data/supabaseService";
-import { isListOpen } from "../../../domain/gameRules";
-import { drawTeams, swapPlayers } from "../../../domain/teamDraw";
+} from "../../../services/supabaseService.js";
 import "./AdminDraw.css";
 import "./AdminTabs.css";
 

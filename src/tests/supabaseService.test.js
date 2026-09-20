@@ -156,7 +156,7 @@ import {
   removeGuest,
   updatePlayerInjuryLeave,
   updatePlayerStatus,
-} from "../data/supabaseService";
+} from "../services/supabaseService.js";
 
 describe("supabaseService", () => {
   beforeEach(() => {
@@ -365,7 +365,7 @@ describe("supabaseService", () => {
       });
     }
 
-    it("convidado em guests com vaga na main migra para main", async () => {
+    it("convidado entra na espera sem perder o horario original", async () => {
       enqueueAutoMigrateSundayBase([
         {
           id: "m1",
@@ -380,6 +380,7 @@ describe("supabaseService", () => {
           registered_at: "2026-06-13T09:00:00.000Z",
         },
       ]);
+
       enqueueResponse("game_registrations.update.eq", { error: null });
 
       const migrated = await autoMigrateGuests("sunday-2026-06-14", {
@@ -387,9 +388,11 @@ describe("supabaseService", () => {
       });
 
       expect(migrated).toBe(true);
-      expect(hoisted.callLog.update[0]?.table).toBe("game_registrations");
-      expect(hoisted.callLog.update[0]?.payload?.slot).toBe("main");
-      expect(hoisted.callLog.update[0]?.payload).not.toHaveProperty(
+      expect(hoisted.callLog.update[0]).toEqual({
+        table: "game_registrations",
+        payload: { slot: "waitlist" },
+      });
+      expect(hoisted.callLog.update[0].payload).not.toHaveProperty(
         "registered_at",
       );
     });
@@ -646,7 +649,7 @@ describe("supabaseService", () => {
 
     it("domingo no sabado coloca convidado na main quando ha vaga", async () => {
       vi.useFakeTimers();
-      vi.setSystemTime(new Date("2026-06-06T12:00:00"));
+      vi.setSystemTime(new Date("2026-06-13T12:00:00Z"));
 
       enqueueSundayJoinContext();
       enqueueResponse("game_registrations.insert.await", { error: null });
@@ -667,7 +670,7 @@ describe("supabaseService", () => {
 
     it("domingo no sabado coloca convidado em waitlist quando main esta cheia", async () => {
       vi.useFakeTimers();
-      vi.setSystemTime(new Date("2026-06-06T12:00:00"));
+      vi.setSystemTime(new Date("2026-06-13T12:00:00Z"));
 
       enqueueSundayJoinContext();
       enqueueResponse("game_registrations.select.await", {
@@ -675,7 +678,7 @@ describe("supabaseService", () => {
           id: `m${index + 1}`,
           game_id: "sunday-2026-06-14",
           slot: "main",
-          registered_at: "2026-06-01T20:00:00.000Z",
+          registered_at: `2026-06-12T20:${String(index).padStart(2, "0")}:00.000Z`,
         })),
         error: null,
       });

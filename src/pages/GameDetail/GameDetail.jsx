@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import JoinList from "../../components/JoinList/JoinList";
+import { PLAYER_STATUS, PLAYER_TYPE } from "../../domain/constants";
+import { supabase } from "../../lib/supabase";
 import {
   getGameById,
   getGameRegistrations,
   getGameTeams,
-} from "../../data/supabaseService";
-import { PLAYER_STATUS, PLAYER_TYPE } from "../../domain/constants";
-import { supabase } from "../../lib/supabase";
+} from "../../services/supabaseService.js";
 import "./GameDetail.css";
 
 function getDayLabel(dateStr) {

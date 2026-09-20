@@ -1,16 +1,14 @@
-// Aba de presencas do painel admin
-
 import { useEffect, useMemo, useState } from "react";
 import Button from "../../../components/Button/Button";
+import { GAME_DAYS } from "../../../domain/constants";
 import {
   getGamePresences,
   getGameRegistrations,
   getGames,
+  markAbsenceAndWarn,
   migrateGuestsToWaitlist,
-  penalizePlayer,
   upsertPresence,
-} from "../../../data/supabaseService";
-import { GAME_DAYS } from "../../../domain/constants";
+} from "../../../services/supabaseService.js";
 
 function normalizeGame(game) {
   return {
@@ -148,29 +146,39 @@ function AdminPresence() {
   async function togglePresence(playerId) {
     const nextPresent = !(presences[playerId] ?? true);
 
-    const saved = await upsertPresence(selectedGame, playerId, nextPresent);
+    if (!nextPresent) {
+      const result = await markAbsenceAndWarn(selectedGame, playerId);
+
+      if (!result.success) {
+        setError("Não foi possível registrar a falta.");
+        return;
+      }
+
+      setPresences((prev) => ({
+        ...prev,
+        [playerId]: false,
+      }));
+      setError("");
+      setNotice(
+        result.warningAdded
+          ? "Falta registrada: uma advertência adicionada."
+          : "Falta registrada: a advertência deste jogo já havia sido contabilizada.",
+      );
+      return;
+    }
+
+    const saved = await upsertPresence(selectedGame, playerId, true);
+
     if (!saved) {
-      setError("Nao foi possivel salvar a presenca.");
+      setError("Não foi possível salvar a presença.");
       return;
     }
 
     setPresences((prev) => ({
       ...prev,
-      [playerId]: nextPresent,
+      [playerId]: true,
     }));
     setError("");
-
-    if (!nextPresent) {
-      const penalized = await penalizePlayer(playerId);
-      if (!penalized) {
-        setError("Presenca salva, mas nao foi possivel penalizar o jogador.");
-        return;
-      }
-
-      setNotice("Jogador penalizado.");
-      return;
-    }
-
     setNotice("");
   }
 
@@ -233,6 +241,7 @@ function AdminPresence() {
       <ul className="admin-tab__list">
         {participants.map((p) => {
           const present = presences[p.id] ?? true;
+
           return (
             <li key={p.id} className="admin-tab__item">
               <div className="admin-tab__info">
