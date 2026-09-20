@@ -89,3 +89,8 @@ export {
   getMyVotes,
   getVotingResults,
 } from "./supabase/votes.js";
+
+export {
+  getPlayerSession,
+  acceptRulesVersion,
+} from "./supabase/rulesAcceptance.js";

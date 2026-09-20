@@ -6,6 +6,7 @@ import BottomNav from "../components/BottomNav/BottomNav";
 import { isAdmin } from "../domain/admins";
 import "./App.css";
 import { AuthProvider, useAuth } from "./AuthContext";
+
 const Admin = lazy(() => import("../pages/Admin/Admin"));
 const AthleteProfile = lazy(
   () => import("../pages/AthleteProfile/AthleteProfile"),
@@ -26,7 +27,36 @@ function RoutesFallback() {
 }
 
 function AppShell() {
-  const { user } = useAuth();
+  const {
+    user,
+    checkingSession,
+    sessionError,
+    needsRulesAcceptance,
+    retrySessionCheck,
+    logout,
+  } = useAuth();
+
+  if (checkingSession) {
+    return <RoutesFallback />;
+  }
+
+  if (sessionError) {
+    return (
+      <div className="app">
+        <main className="app__main">
+          <p className="app__loading">
+            Não foi possível conferir sua sessão. Verifique a conexão.
+          </p>
+          <button type="button" onClick={retrySessionCheck}>
+            Tentar novamente
+          </button>
+          <button type="button" onClick={logout}>
+            Sair
+          </button>
+        </main>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -40,6 +70,21 @@ function AppShell() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
+      </div>
+    );
+  }
+
+  if (needsRulesAcceptance) {
+    return (
+      <div className="app">
+        <main className="app__main">
+          <Suspense fallback={<RoutesFallback />}>
+            <Routes>
+              <Route path="/rules" element={<Rules />} />
+              <Route path="*" element={<Navigate to="/rules" replace />} />
+            </Routes>
+          </Suspense>
+        </main>
       </div>
     );
   }
@@ -70,6 +115,7 @@ function AppShell() {
           </button>
         </div>
       </header>
+
       <main className="app__main">
         <Suspense fallback={<RoutesFallback />}>
           <Routes>
@@ -90,6 +136,7 @@ function AppShell() {
           </Routes>
         </Suspense>
       </main>
+
       <BottomNav />
     </div>
   );

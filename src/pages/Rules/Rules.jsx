@@ -1,25 +1,89 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../app/AuthContext";
 import Button from "../../components/Button/Button";
 import "./Rules.css";
 import { RULE_SECTIONS } from "./rulesContent";
 
+const READING_WORDS_PER_MINUTE = 200;
+const MINIMUM_READING_SECONDS = 360;
+
+const ruleWordCount = RULE_SECTIONS.flatMap((section) => section.items)
+  .join(" ")
+  .trim()
+  .split(/\s+/).length;
+
+const requiredReadingSeconds = Math.max(
+  MINIMUM_READING_SECONDS,
+  Math.ceil((ruleWordCount / READING_WORDS_PER_MINUTE) * 60),
+);
+
+function formatTime(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
 function Rules() {
   const navigate = useNavigate();
-  const { user, pendingRegister, commitRegister } = useAuth();
+  const {
+    user,
+    needsRulesAcceptance,
+    pendingRegister,
+    commitRegister,
+    acceptCurrentRules,
+  } = useAuth();
+
+  const [secondsRead, setSecondsRead] = useState(0);
+  const [agreed, setAgreed] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleAcceptAndFinish() {
-    const result = await commitRegister();
+  const mustAccept = Boolean(
+    (user && needsRulesAcceptance) || (!user && pendingRegister),
+  );
 
-    if (!result.success) {
-      setError(result.error);
+  useEffect(() => {
+    if (!mustAccept) return undefined;
+
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+
+      setSecondsRead((current) =>
+        Math.min(requiredReadingSeconds, current + 1),
+      );
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [mustAccept]);
+
+  const remainingSeconds = Math.max(0, requiredReadingSeconds - secondsRead);
+
+  async function handleAccept() {
+    if (!agreed || saving) return;
+
+    if (remainingSeconds > 0) {
+      setError(
+        "Nem uma máquina conseguiria ler tudo tão rápido! 😄 Volte ao regulamento e leia as regras de verdade antes de confirmar.",
+      );
       return;
     }
 
+    setSaving(true);
     setError("");
-    navigate("/?registered=1", { replace: true });
+
+    const result = user ? await acceptCurrentRules() : await commitRegister();
+
+    setSaving(false);
+
+    if (!result.success) {
+      setError(result.error || "Não foi possível salvar o aceite.");
+      return;
+    }
+
+    navigate(user ? "/" : "/?registered=1", { replace: true });
   }
 
   return (
@@ -27,6 +91,16 @@ function Rules() {
       <div className="rules__hero">
         <h2 className="rules__title">Regulamento Oficial</h2>
         <p className="rules__subtitle">Grupo de Vôlei — Conecta Vôlei</p>
+
+        {mustAccept && (
+          <p className="rules__reading">
+            Tempo mínimo de leitura: {formatTime(requiredReadingSeconds)}
+            <br />
+            {remainingSeconds > 0
+              ? `Tempo restante: ${formatTime(remainingSeconds)}`
+              : "Tempo mínimo concluído. Leia até o fim e confirme o aceite."}
+          </p>
+        )}
       </div>
 
       <div className="rules__sections">
@@ -67,33 +141,51 @@ function Rules() {
 
       <p className="rules__footer">CONECTA VÔLEI</p>
 
-      {!user && (
+      {mustAccept && (
         <div className="rules__actions">
-          {pendingRegister ? (
-            <>
-              <p className="rules__pending">
-                Cadastro pendente para {pendingRegister.name}. Ao aceitar as
-                regras, seu cadastro será concluído.
-              </p>
+          <p className="rules__pending">
+            {user
+              ? "As regras foram atualizadas. Leia o regulamento com atenção para continuar usando o aplicativo."
+              : `Cadastro pendente para ${pendingRegister.name}. Leia o regulamento para concluir o cadastro.`}
+          </p>
 
-              {error && <p className="rules__error">{error}</p>}
+          <label className="rules__accept-label">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(event) => setAgreed(event.target.checked)}
+              disabled={saving}
+            />
+            <span>Li o regulamento completo e concordo com as regras.</span>
+          </label>
 
-              <div className="rules__buttons">
-                <Button onClick={handleAcceptAndFinish}>
-                  Aceito as regras e concluir cadastro
-                </Button>
-                <Button variant="secondary" onClick={() => navigate("/")}>
-                  Voltar ao cadastro
-                </Button>
-              </div>
-            </>
-          ) : (
-            <div className="rules__buttons">
+          {error && <p className="rules__error">{error}</p>}
+
+          <div className="rules__buttons">
+            <Button onClick={handleAccept} disabled={!agreed || saving}>
+              {saving
+                ? "Salvando..."
+                : user
+                  ? "Aceitar e continuar"
+                  : "Aceitar e concluir cadastro"}
+            </Button>
+
+            {!user && (
               <Button variant="secondary" onClick={() => navigate("/")}>
-                Voltar
+                Voltar ao cadastro
               </Button>
-            </div>
-          )}
+            )}
+          </div>
+        </div>
+      )}
+
+      {!user && !pendingRegister && (
+        <div className="rules__actions">
+          <div className="rules__buttons">
+            <Button variant="secondary" onClick={() => navigate("/")}>
+              Voltar
+            </Button>
+          </div>
         </div>
       )}
     </div>
