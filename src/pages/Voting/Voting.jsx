@@ -20,14 +20,17 @@ function getCandidateName(registration) {
     const { name, nickname } = registration.player;
     return nickname ? `${name} (${nickname})` : name;
   }
+
   return registration.guest?.name || registration.guest_name || "Convidado";
 }
 
 function getCandidateId(registration) {
   if (registration.player_id) return registration.player_id;
+
   if (registration.guest_id) {
     return `guest-${registration.guest?.id || registration.guest_id}`;
   }
+
   return null;
 }
 
@@ -37,12 +40,28 @@ function buildCandidates(registrations, currentUserId) {
     .map((registration) => ({
       id: getCandidateId(registration),
       name: getCandidateName(registration),
+      gender:
+        registration.player?.gender ??
+        registration.guest?.gender ??
+        null,
     }))
     .filter((candidate) => candidate.id && candidate.id !== currentUserId);
 }
 
-function getWinnerName(winner) {
-  return winner?.name || winner?.nome || "Desconhecido";
+function getWinnerText(result) {
+  if (!result) return "Sem votos ainda.";
+
+  const winners = result.winners?.length ? result.winners : [result];
+  const names = winners.map((winner) => winner.name).join(", ");
+  const voteCount = `${result.count} ${
+    result.count === 1 ? "voto" : "votos"
+  }`;
+
+  if (winners.length > 1) {
+    return `🏆 Empate: ${names} (${voteCount} cada)`;
+  }
+
+  return `🏆 ${names} (${voteCount})`;
 }
 
 function Voting() {
@@ -72,9 +91,11 @@ function Voting() {
     const mainList = (registrations || []).filter(
       (registration) => (registration.slot || "main") === "main",
     );
+
     const playedMain = mainList.some(
       (registration) => registration.player_id === user.id,
     );
+
     const votingOpen = isVotingOpen(gameData);
     const allowedToVote = votingOpen && playedMain;
 
@@ -85,11 +106,13 @@ function Voting() {
     if (allowedToVote) {
       const votes = await getMyVotes(gameId, user.id);
       const votesByCategory = {};
+
       votes.forEach((vote) => {
         votesByCategory[vote.category] =
           vote.voted_player_id ||
           (vote.voted_guest_id ? `guest-${vote.voted_guest_id}` : null);
       });
+
       setMyVotes(votesByCategory);
       setSelectedVotes({});
     } else {
@@ -122,8 +145,9 @@ function Voting() {
     if (myVotes[category]) return;
 
     const candidateId = selectedVotes[category];
+
     if (!candidateId) {
-      setError("Selecione um jogador antes de confirmar o voto.");
+      setError("Selecione uma pessoa antes de confirmar o voto.");
       return;
     }
 
@@ -134,7 +158,7 @@ function Voting() {
     setSubmittingCategory(null);
 
     if (!result.success) {
-      setError("Não foi possível registrar o voto.");
+      setError(result.error || "Não foi possível registrar o voto.");
       return;
     }
 
@@ -184,69 +208,80 @@ function Voting() {
       {error && <p className="voting__error">{error}</p>}
 
       <div className="voting__categories">
-        {VOTE_CATEGORIES.map(({ key, label, icon }) => (
-          <div key={key} className="voting__category">
-            <h3 className="voting__category-title">
-              <span className="voting__category-icon" aria-hidden="true">
-                {icon}
-              </span>
-              {label}
-            </h3>
+        {VOTE_CATEGORIES.map(({ key, label, icon, candidateGender }) => {
+          const categoryCandidates = candidateGender
+            ? candidates.filter(
+                (candidate) => candidate.gender === candidateGender,
+              )
+            : candidates;
 
-            {canVote ? (
-              <div className="voting__candidates">
-                {candidates.length === 0 && (
-                  <p className="voting__empty">Nenhum candidato disponível.</p>
-                )}
-                {candidates.map((candidate) => (
-                  <button
-                    key={candidate.id}
-                    type="button"
-                    className={`voting__candidate ${
-                      myVotes[key] === candidate.id ||
-                      selectedVotes[key] === candidate.id
-                        ? "voting__candidate--selected"
-                        : ""
-                    }`}
-                    disabled={
-                      submittingCategory === key || Boolean(myVotes[key])
-                    }
-                    onClick={() => handleSelectVote(key, candidate.id)}
-                  >
-                    {candidate.name}
-                  </button>
-                ))}
-              </div>
-            ) : null}
+          return (
+            <div key={key} className="voting__category">
+              <h3 className="voting__category-title">
+                <span className="voting__category-icon" aria-hidden="true">
+                  {icon}
+                </span>
+                {label}
+              </h3>
 
-            {canVote ? (
-              <div className="voting__category-actions">
-                {myVotes[key] ? (
-                  <span className="voting__confirmed">Voto confirmado</span>
-                ) : (
-                  <button
-                    type="button"
-                    className="voting__confirm-btn"
-                    disabled={submittingCategory === key || !selectedVotes[key]}
-                    onClick={() => handleVote(key)}
-                  >
-                    {submittingCategory === key
-                      ? "Confirmando..."
-                      : "Confirmar voto"}
-                  </button>
-                )}
-              </div>
-            ) : (
-              <p className="voting__winner">
-                {results[key]
-                  ? `🏆 ${getWinnerName(results[key])} (${results[key].count} ${
-                      results[key].count === 1 ? "voto" : "votos"
-                    })`
-                  : "Sem votos ainda."}
-              </p>
-            )}
-          </div>
-        ))}
+              {canVote && (
+                <div className="voting__candidates">
+                  {categoryCandidates.length === 0 && (
+                    <p className="voting__empty">
+                      {candidateGender
+                        ? "Nenhuma candidata disponível."
+                        : "Nenhum candidato disponível."}
+                    </p>
+                  )}
+
+                  {categoryCandidates.map((candidate) => (
+                    <button
+                      key={candidate.id}
+                      type="button"
+                      className={`voting__candidate ${
+                        myVotes[key] === candidate.id ||
+                        selectedVotes[key] === candidate.id
+                          ? "voting__candidate--selected"
+                          : ""
+                      }`}
+                      disabled={
+                        submittingCategory === key || Boolean(myVotes[key])
+                      }
+                      onClick={() => handleSelectVote(key, candidate.id)}
+                    >
+                      {candidate.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {canVote ? (
+                <div className="voting__category-actions">
+                  {myVotes[key] ? (
+                    <span className="voting__confirmed">Voto confirmado</span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="voting__confirm-btn"
+                      disabled={
+                        submittingCategory === key || !selectedVotes[key]
+                      }
+                      onClick={() => handleVote(key)}
+                    >
+                      {submittingCategory === key
+                        ? "Confirmando..."
+                        : "Confirmar voto"}
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <p className="voting__winner">
+                  {getWinnerText(results[key])}
+                </p>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <Button variant="secondary" onClick={() => navigate(-1)}>
