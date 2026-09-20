@@ -60,6 +60,12 @@ export const SPECIAL_BADGE_FIELDS = [
 
 export const VOTE_CATEGORIES = [
   { key: "mvp", label: "MVP", icon: "🏆" },
+  {
+    key: "mvp_female",
+    label: "MVP Feminina",
+    icon: "🏆",
+    candidateGender: "F",
+  },
   { key: "best_attack", label: "Melhor Ataque", icon: "⚡" },
   { key: "best_block", label: "Melhor Bloqueio", icon: "🛡️" },
   { key: "best_serve", label: "Melhor Saque", icon: "🎯" },

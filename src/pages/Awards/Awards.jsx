@@ -19,8 +19,18 @@ function getTodayDateString() {
   return `${year}-${month}-${day}`;
 }
 
-function getWinnerName(winner) {
-  return winner?.name || winner?.nome || "Desconhecido";
+function getWinnerNames(result) {
+  if (!result) return null;
+
+  const winners = result.winners?.length ? result.winners : [result];
+
+  return winners
+    .map((winner) => winner.name || winner.nome || "Desconhecido")
+    .join(", ");
+}
+
+function isTie(result) {
+  return (result?.winners?.length || 0) > 1;
 }
 
 function buildAwardsWhatsappText(game, results) {
@@ -31,9 +41,14 @@ function buildAwardsWhatsappText(game, results) {
   ];
 
   VOTE_CATEGORIES.forEach(({ key, label, icon }) => {
-    const winner = results[key];
+    const result = results[key];
+
     lines.push(
-      `${icon} *${label}*: ${winner ? getWinnerName(winner) : "Sem votos"}`,
+      `${icon} *${label}*: ${
+        result
+          ? `${isTie(result) ? "Empate: " : ""}${getWinnerNames(result)}`
+          : "Sem votos"
+      }`,
     );
   });
 
@@ -52,15 +67,19 @@ function Awards() {
 
     async function loadHistory() {
       setLoading(true);
+
       const [games, sundayGames] = await Promise.all([
         getGames(),
         getSundayGamesHistory(),
       ]);
+
       const today = getTodayDateString();
+
       const pastGames = (sundayGames || []).filter(
         (game) =>
           game.date < today || (game.date === today && !isVotingOpen(game)),
       );
+
       const sundayCurrentGame =
         (games || []).find((game) => game.day === "sunday") || null;
 
@@ -76,6 +95,7 @@ function Awards() {
       );
 
       if (!active) return;
+
       setCurrentGame(sundayCurrentGame);
       setEntries(withVotes);
       setLoading(false);
@@ -105,6 +125,7 @@ function Awards() {
 
     try {
       await navigator.clipboard.writeText(text);
+
       setCopyNotice({
         gameId: game.id,
         type: "success",
@@ -131,18 +152,20 @@ function Awards() {
     <div className="awards">
       <div className="awards__header">
         <h2 className="awards__title">Prêmios</h2>
-        <p className="awards__subtitle">Histórico do melhor do jogo</p>
+        <p className="awards__subtitle">Histórico dos melhores do jogo</p>
       </div>
 
       {currentGame && (
         <div className="awards__status">
           <div className="awards__status-kicker">Status da rodada</div>
+
           <div className="awards__status-info">
             <span className="awards__status-date">{currentGame.date}</span>
             <span className="awards__status-location">
               {currentGame.location}
             </span>
           </div>
+
           <span
             className={`awards__status-pill ${
               isVotingOpen(currentGame)
@@ -152,6 +175,7 @@ function Awards() {
           >
             {isVotingOpen(currentGame) ? "Votação aberta" : "Votação fechada"}
           </span>
+
           {isVotingOpen(currentGame) && (
             <button
               type="button"
@@ -182,6 +206,7 @@ function Awards() {
                 <span className="awards__game-date">{game.date}</span>
                 <span className="awards__game-location">{game.location}</span>
               </div>
+
               <button
                 type="button"
                 className="awards__copy-btn"
@@ -190,6 +215,7 @@ function Awards() {
                 Copiar para WhatsApp
               </button>
             </div>
+
             {copyNotice?.gameId === game.id && (
               <p
                 className={`awards__copy-notice awards__copy-notice--${copyNotice.type}`}
@@ -197,20 +223,31 @@ function Awards() {
                 {copyNotice.message}
               </p>
             )}
+
             <ul className="awards__winners">
-              {VOTE_CATEGORIES.map(({ key, label, icon }) => (
-                <li key={key} className="awards__winner">
-                  <span className="awards__winner-category">
-                    <span className="awards__winner-icon" aria-hidden="true">
-                      {icon}
+              {VOTE_CATEGORIES.map(({ key, label, icon }) => {
+                const result = results[key];
+
+                return (
+                  <li key={key} className="awards__winner">
+                    <span className="awards__winner-category">
+                      <span
+                        className="awards__winner-icon"
+                        aria-hidden="true"
+                      >
+                        {icon}
+                      </span>
+                      {label}
                     </span>
-                    {label}
-                  </span>
-                  <span className="awards__winner-name">
-                    {results[key] ? `🏆 ${getWinnerName(results[key])}` : "—"}
-                  </span>
-                </li>
-              ))}
+
+                    <span className="awards__winner-name">
+                      {result
+                        ? `🏆 ${isTie(result) ? "Empate: " : ""}${getWinnerNames(result)}`
+                        : "—"}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         ))}
