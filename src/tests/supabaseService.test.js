@@ -224,6 +224,7 @@ describe("supabaseService", () => {
           type: "member",
           status: "pending",
           accepted_rules: true,
+          rules_accepted_version: "2026-09-20",
         },
       });
     });

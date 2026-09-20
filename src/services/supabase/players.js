@@ -1,6 +1,7 @@
 import { supabase } from "../../lib/supabase";
 import { isSuperAdmin } from "../../domain/admins";
 import { logAction } from "./audit.js";
+import { CURRENT_RULES_VERSION } from "../../domain/rulesVersion";
 
 export async function registerPlayer(player) {
   const existingPlayer = await getPlayerByWhatsapp(player.whatsapp);
@@ -18,6 +19,7 @@ export async function registerPlayer(player) {
       type: "member",
       status: "pending",
       accepted_rules: true,
+      rules_accepted_version: CURRENT_RULES_VERSION,
     })
     .select()
     .single();

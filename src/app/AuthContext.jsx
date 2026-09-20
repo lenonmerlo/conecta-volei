@@ -2,14 +2,16 @@
 
 // Contexto de autenticacao - compartilha sessao em todo o app
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+import { CURRENT_RULES_VERSION } from "../domain/rulesVersion";
 import {
+  acceptRulesVersion,
   getPlayerByWhatsapp,
+  getPlayerSession,
   registerPlayer,
 } from "../services/supabaseService.js";
 
 const SESSION_KEY = "conecta_volei_session";
-
 const AuthContext = createContext({});
 
 function normalizePlayer(player) {
@@ -27,6 +29,8 @@ function normalizePlayer(player) {
       typeof player.accepted_rules === "boolean"
         ? player.accepted_rules
         : player.acceptedRules,
+    rulesAcceptedVersion:
+      player.rules_accepted_version ?? player.rulesAcceptedVersion ?? null,
     avatarUrl: player.avatar_url ?? player.avatarUrl ?? null,
     skillLevel: player.skill_level ?? player.skillLevel ?? null,
     createdAt: player.created_at ?? player.createdAt ?? null,
@@ -57,15 +61,67 @@ function getSession() {
   if (!data) return null;
 
   try {
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    return parsed?.id ? normalizePlayer(parsed) : null;
   } catch {
     return null;
   }
 }
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => getSession());
+  const [user, setUser] = useState(getSession);
+  const [checkingSession, setCheckingSession] = useState(
+    () => Boolean(getSession()?.id),
+  );
+  const [sessionError, setSessionError] = useState(false);
+  const [sessionCheckAttempt, setSessionCheckAttempt] = useState(0);
   const [pendingRegister, setPendingRegister] = useState(null);
+
+  useEffect(() => {
+    const savedUser = getSession();
+    if (!savedUser?.id) return undefined;
+
+    let active = true;
+
+    async function validateSession() {
+      const { player, error } = await getPlayerSession(savedUser.id);
+      if (!active) return;
+
+      if (error) {
+        setSessionError(true);
+        setCheckingSession(false);
+        return;
+      }
+
+      if (
+        !player ||
+        player.status === "pending" ||
+        player.status === "blocked"
+      ) {
+        localStorage.removeItem(SESSION_KEY);
+        setUser(null);
+      } else {
+        const normalized = normalizePlayer(player);
+        localStorage.setItem(SESSION_KEY, JSON.stringify(normalized));
+        setUser(normalized);
+      }
+
+      setSessionError(false);
+      setCheckingSession(false);
+    }
+
+    validateSession();
+
+    return () => {
+      active = false;
+    };
+  }, [sessionCheckAttempt]);
+
+  function retrySessionCheck() {
+    setSessionError(false);
+    setCheckingSession(true);
+    setSessionCheckAttempt((attempt) => attempt + 1);
+  }
 
   async function login(whatsapp) {
     const member = await getPlayerByWhatsapp(whatsapp);
@@ -93,33 +149,37 @@ export function AuthProvider({ children }) {
       };
     }
 
-    const acceptedRules =
-      typeof member.accepted_rules === "boolean"
-        ? member.accepted_rules
-        : member.acceptedRules;
-
-    if (!acceptedRules) {
-      return {
-        success: false,
-        error: "Voce precisa aceitar as regras para acessar.",
-      };
-    }
-
+    // Quem ainda não aceitou esta versão entra apenas na página de regras.
     const normalizedMember = normalizePlayer(member);
     localStorage.setItem(SESSION_KEY, JSON.stringify(normalizedMember));
     setUser(normalizedMember);
+
     return { success: true, member: normalizedMember };
   }
 
   function logout() {
     localStorage.removeItem(SESSION_KEY);
     setUser(null);
+    setSessionError(false);
+    setCheckingSession(false);
   }
 
   function updateUser(nextUser) {
-    const normalized = normalizePlayer(nextUser);
+    const normalized = normalizePlayer({ ...user, ...nextUser });
     localStorage.setItem(SESSION_KEY, JSON.stringify(normalized));
     setUser(normalized);
+  }
+
+  async function acceptCurrentRules() {
+    if (!user?.id) {
+      return { success: false, error: "Sessão não encontrada." };
+    }
+
+    const result = await acceptRulesVersion(user.id);
+    if (!result.success) return result;
+
+    updateUser(result.player);
+    return { success: true };
   }
 
   function savePendingRegister(formData) {
@@ -139,6 +199,7 @@ export function AuthProvider({ children }) {
     };
 
     const result = await registerPlayer(player);
+
     if (!result.success) {
       const errorText = (result.error || "").toLowerCase();
       const isDuplicateWhatsapp =
@@ -159,19 +220,28 @@ export function AuthProvider({ children }) {
       return result;
     }
 
-    if (result.success) {
-      setPendingRegister(null);
-    }
+    setPendingRegister(null);
     return result;
   }
+
+  const needsRulesAcceptance = Boolean(
+    user &&
+      (!user.acceptedRules ||
+        user.rulesAcceptedVersion !== CURRENT_RULES_VERSION),
+  );
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        checkingSession,
+        sessionError,
+        needsRulesAcceptance,
+        retrySessionCheck,
         login,
         logout,
         updateUser,
+        acceptCurrentRules,
         pendingRegister,
         savePendingRegister,
         commitRegister,
