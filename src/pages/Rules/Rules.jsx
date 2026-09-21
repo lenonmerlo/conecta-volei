@@ -17,11 +17,15 @@ const requiredReadingSeconds = Math.max(
   MINIMUM_READING_SECONDS,
   Math.ceil((ruleWordCount / READING_WORDS_PER_MINUTE) * 60),
 );
-
 function formatTime(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+
+  if (seconds === 0) {
+    return `${minutes} min`;
+  }
+
+  return `${minutes} min ${seconds} s`;
 }
 
 function Rules() {
