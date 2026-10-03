@@ -25,15 +25,11 @@ function normalizeLocation(value) {
 function getFixedMapUrlByLocation(location) {
   const normalized = normalizeLocation(location);
 
-  if (normalized.includes("jardim camburi")) {
-    return "https://maps.app.goo.gl/CrL7HdThrLErg3TQ7";
-  }
-
   if (
-    normalized.includes("ilha de santa maria") ||
-    normalized.includes("ilha de sta maria")
+    normalized.includes("juscelino kubitschek") ||
+    normalized.includes("emef jk")
   ) {
-    return "https://maps.app.goo.gl/rQgsrSFC3WmMBci7A";
+    return "https://www.google.com/maps/search/?api=1&query=EMEF%20Juscelino%20Kubitschek%20de%20Oliveira%2C%20Av.%20Jer%C3%B4nimo%20Vervloet%2C%20880%20-%20Maria%20Ortiz%2C%20Vit%C3%B3ria%20-%20ES%2C%2029070-350";
   }
 
   return null;
