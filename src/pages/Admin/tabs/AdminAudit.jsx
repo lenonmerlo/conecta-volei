@@ -17,6 +17,7 @@ const ACTION_LABELS = {
   warning_added: "Recebeu advertência",
   approved: "Cadastro aprovado",
   rejected: "Cadastro recusado",
+  status_changed: "Status alterado",
 };
 
 function formatDateTime(value) {

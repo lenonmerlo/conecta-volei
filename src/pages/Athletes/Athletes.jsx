@@ -12,19 +12,31 @@ import { getPublicPlayers } from "../../services/supabaseService.js";
 import "./Athletes.css";
 
 function statusBadge(status) {
-  if (status === PLAYER_STATUS.PENALIZED) {
-    return (
-      <span className="athlete__badge athlete__badge--penalized">
-        Penalizado
-      </span>
-    );
-  }
-  if (status === PLAYER_STATUS.BLOCKED) {
-    return (
-      <span className="athlete__badge athlete__badge--blocked">Suspenso</span>
-    );
-  }
-  return null;
+  const badges = {
+    [PLAYER_STATUS.PENALIZED]: {
+      label: "Penalizado",
+      className: "athlete__badge--penalized",
+    },
+    [PLAYER_STATUS.SUSPENDED]: {
+      label: "Suspenso",
+      className: "athlete__badge--suspended",
+    },
+    [PLAYER_STATUS.INACTIVE]: {
+      label: "Inativo",
+      className: "athlete__badge--inactive",
+    },
+    [PLAYER_STATUS.BLOCKED]: {
+      label: "Bloqueado",
+      className: "athlete__badge--blocked",
+    },
+  };
+
+  const badge = badges[status];
+  if (!badge) return null;
+
+  return (
+    <span className={`athlete__badge ${badge.className}`}>{badge.label}</span>
+  );
 }
 
 function positionBadges(player) {

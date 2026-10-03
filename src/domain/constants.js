@@ -33,6 +33,7 @@ export const PLAYER_STATUS = {
   pending: "pending",
   INACTIVE: "inactive",
   PENALIZED: "penalized",
+  SUSPENDED: "suspended",
   BLOCKED: "blocked",
 };
 

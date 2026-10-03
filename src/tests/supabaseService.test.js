@@ -537,6 +537,17 @@ describe("supabaseService", () => {
       });
     }
 
+    function enqueueActiveInviter(playerId = "p1") {
+      enqueueResponse("players.select.maybeSingle", {
+        data: {
+          id: playerId,
+          status: "active",
+          type: "member",
+        },
+        error: null,
+      });
+    }
+
     it("insere registro com slot correto e retorna true em sucesso", async () => {
       enqueueResponse("players.select.maybeSingle", {
         data: { id: "p1", status: "active" },
@@ -563,11 +574,22 @@ describe("supabaseService", () => {
     });
 
     it("retorna false em erro", async () => {
+      enqueueResponse("players.select.maybeSingle", {
+        data: { id: "p1", status: "active" },
+        error: null,
+      });
+
       enqueueResponse("game_registrations.insert.await", {
         error: { message: "fail" },
       });
 
-      const success = await joinGame("g1", null, "guests", "Convidado", "p1");
+      const success = await joinGame(
+        "g1",
+        null,
+        "guests",
+        "Convidado",
+        "p1",
+      );
 
       expect(success).toBe(false);
     });
@@ -597,13 +619,40 @@ describe("supabaseService", () => {
       });
     });
 
-    it("nao insere quando jogador esta bloqueado", async () => {
+    it.each(["blocked", "inactive", "suspended"])(
+      "nao insere quando o jogador está com status %s",
+      async (status) => {
+        enqueueResponse("players.select.maybeSingle", {
+          data: { id: "p1", status },
+          error: null,
+        });
+
+        const success = await joinGame(
+          "g1",
+          "p1",
+          "main",
+          null,
+          null,
+        );
+
+        expect(success).toBe(false);
+        expect(hoisted.callLog.insert).toHaveLength(0);
+      },
+    );
+
+    it("não permite que suspenso inscreva um convidado", async () => {
       enqueueResponse("players.select.maybeSingle", {
-        data: { id: "p1", status: "blocked" },
+        data: { id: "p1", status: "suspended" },
         error: null,
       });
 
-      const success = await joinGame("g1", "p1", "main", null, null);
+      const success = await joinGame(
+        "g1",
+        null,
+        "guests",
+        "Convidado",
+        "p1",
+      );
 
       expect(success).toBe(false);
       expect(hoisted.callLog.insert).toHaveLength(0);
@@ -632,6 +681,7 @@ describe("supabaseService", () => {
       vi.setSystemTime(new Date("2026-06-05T12:00:00"));
 
       enqueueSundayJoinContext();
+      enqueueActiveInviter();
       enqueueResponse("game_registrations.insert.await", { error: null });
 
       const success = await joinGame(
@@ -653,6 +703,7 @@ describe("supabaseService", () => {
       vi.setSystemTime(new Date("2026-06-13T12:00:00Z"));
 
       enqueueSundayJoinContext();
+      enqueueActiveInviter();
       enqueueResponse("game_registrations.insert.await", { error: null });
 
       const success = await joinGame(
@@ -674,6 +725,7 @@ describe("supabaseService", () => {
       vi.setSystemTime(new Date("2026-06-13T12:00:00Z"));
 
       enqueueSundayJoinContext();
+      enqueueActiveInviter();
       enqueueResponse("game_registrations.select.await", {
         data: new Array(21).fill(null).map((_, index) => ({
           id: `m${index + 1}`,
@@ -701,6 +753,7 @@ describe("supabaseService", () => {
 
     it("quarta e extras nao usam slot guests", async () => {
       enqueueWednesdayJoinContext();
+      enqueueActiveInviter();
       enqueueResponse("game_registrations.insert.await", { error: null });
 
       const success = await joinGame(
@@ -718,6 +771,7 @@ describe("supabaseService", () => {
 
     it("quarta envia convidado para waitlist somente quando main esta cheia", async () => {
       enqueueWednesdayJoinContext();
+      enqueueActiveInviter();
       enqueueResponse("game_registrations.select.await", {
         data: new Array(21).fill(null).map((_, index) => ({
           id: `m${index + 1}`,
@@ -958,16 +1012,25 @@ describe("supabaseService", () => {
 
   describe("updatePlayerStatus", () => {
     it("atualiza status do jogador e retorna success true", async () => {
+      enqueueResponse("players.select.maybeSingle", {
+        data: { id: "p1", status: "active" },
+        error: null,
+      });
+
       enqueueResponse("players.update.eq", {
         error: null,
       });
 
-      const success = await updatePlayerStatus("p1", "inactive");
+      const result = await updatePlayerStatus("p1", "inactive");
 
-      expect(success).toEqual({ success: true });
+      expect(result).toEqual({ success: true });
       expect(hoisted.callLog.update[0]).toEqual({
         table: "players",
-        payload: { status: "inactive" },
+        payload: {
+          status: "inactive",
+          priority_penalty_week: null,
+          suspension_week: null,
+        },
       });
     });
 
@@ -1004,7 +1067,11 @@ describe("supabaseService", () => {
       expect(result).toEqual({ success: true });
       expect(hoisted.callLog.update[0]).toEqual({
         table: "players",
-        payload: { status: "active" },
+        payload: {
+          status: "active",
+          priority_penalty_week: null,
+          suspension_week: null,
+        },
       });
     });
   });
