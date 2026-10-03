@@ -125,7 +125,7 @@ describe("ciclo de advertências", () => {
     state.player = {
       id: "p1",
       warnings: 3,
-      status: "blocked",
+      status: "suspended",
       priority_penalty_week: "2026-09-14",
       suspension_week: "2026-09-21",
     };

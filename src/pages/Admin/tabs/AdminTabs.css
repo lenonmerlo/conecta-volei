@@ -101,6 +101,24 @@
   border: 1px solid rgba(241, 95, 95, 0.45);
 }
 
+.admin-tab__status--suspended {
+  background-color: rgba(158, 67, 67, 0.28);
+  color: #ffd0d0;
+  border: 1px solid rgba(235, 115, 115, 0.42);
+}
+
+.admin-tab__status-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 10rem;
+}
+
+.admin-tab__status-control > span {
+  font-size: 0.72rem;
+  color: var(--cv-primary-soft);
+}
+
 .admin-tab__status--blocked {
   background-color: rgba(130, 94, 255, 0.2);
   color: #d6c7ff;

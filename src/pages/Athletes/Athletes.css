@@ -236,10 +236,22 @@
   color: #ffdca9;
 }
 
-.athlete__badge--blocked {
+.athlete__badge--suspended {
   background: rgba(158, 67, 67, 0.28);
   border-color: rgba(235, 115, 115, 0.42);
   color: #ffd0d0;
+}
+
+.athlete__badge--inactive {
+  background: rgba(76, 111, 145, 0.24);
+  border-color: rgba(126, 166, 204, 0.4);
+  color: #c7ddf2;
+}
+
+.athlete__badge--blocked {
+  background: rgba(130, 94, 255, 0.2);
+  border-color: rgba(160, 131, 255, 0.45);
+  color: #d6c7ff;
 }
 
 @media (min-width: 700px) {

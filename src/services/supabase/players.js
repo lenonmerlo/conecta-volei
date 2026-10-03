@@ -98,40 +98,79 @@ export async function deletePlayer(playerId) {
   return !error && (data?.length || 0) > 0;
 }
 
-export async function updatePlayerStatus(playerId, status, actorUser = null) {
-  if (status === "active") {
-    const { data: targetPlayer, error: readError } = await supabase
-      .from("players")
-      .select("id, status")
-      .eq("id", playerId)
-      .maybeSingle();
+const MANAGED_PLAYER_STATUSES = new Set([
+  "active",
+  "inactive",
+  "penalized",
+  "suspended",
+  "blocked",
+]);
 
-    if (readError || !targetPlayer) {
-      return {
-        success: false,
-        error: "Nao foi possivel verificar o status atual do jogador.",
-      };
-    }
+const STATUS_LABELS = {
+  active: "Ativo",
+  inactive: "Inativo",
+  penalized: "Penalizado",
+  suspended: "Suspenso",
+  blocked: "Bloqueado",
+};
 
-    const isUnblocking = targetPlayer.status === "blocked";
-    if (isUnblocking && !isSuperAdmin(actorUser)) {
-      return {
-        success: false,
-        error: "Apenas super admins podem desbloquear jogadores.",
-      };
-    }
+export async function updatePlayerStatus(
+  playerId,
+  status,
+  actorUser = null,
+) {
+  if (!MANAGED_PLAYER_STATUSES.has(status)) {
+    return {
+      success: false,
+      error: "Status de jogador inválido.",
+    };
+  }
+
+  const { data: targetPlayer, error: readError } = await supabase
+    .from("players")
+    .select("id, status")
+    .eq("id", playerId)
+    .maybeSingle();
+
+  if (readError || !targetPlayer) {
+    return {
+      success: false,
+      error: "Não foi possível verificar o status atual do jogador.",
+    };
+  }
+
+  const isUnblocking =
+    status === "active" && targetPlayer.status === "blocked";
+
+  if (isUnblocking && !isSuperAdmin(actorUser)) {
+    return {
+      success: false,
+      error: "Apenas super admins podem desbloquear jogadores.",
+    };
   }
 
   const { error } = await supabase
     .from("players")
-    .update({ status })
+    .update({
+      status,
+      priority_penalty_week: null,
+      suspension_week: null,
+    })
     .eq("id", playerId);
 
-  if (!error && status === "penalized") {
-    await logAction(null, playerId, "penalized", "Penalizado via Admin");
+  if (error) {
+    return { success: false, error: error.message };
   }
 
-  if (error) return { success: false, error: error.message };
+  await logAction(
+    null,
+    playerId,
+    "status_changed",
+    `${STATUS_LABELS[targetPlayer.status] || targetPlayer.status} → ${
+      STATUS_LABELS[status] || status
+    }`,
+  );
+
   return { success: true };
 }
 
@@ -230,7 +269,7 @@ export async function removeWarning(playerId) {
 
   if (
     hadScheduledPenalty &&
-    (player.status === "penalized" || player.status === "blocked")
+    (player.status === "penalized" || player.status === "suspended")
   ) {
     payload.status = "active";
   }
@@ -251,14 +290,25 @@ export async function removeWarning(playerId) {
 }
 
 export async function resetWarnings(playerId) {
+  const player = await getPlayerById(playerId);
+  if (!player) return null;
+
+  const payload = {
+    warnings: 0,
+    priority_penalty_week: null,
+    suspension_week: null,
+  };
+
+  if (
+    player.status === "penalized" ||
+    player.status === "suspended"
+  ) {
+    payload.status = "active";
+  }
+
   const { data, error } = await supabase
     .from("players")
-    .update({
-      warnings: 0,
-      status: "active",
-      priority_penalty_week: null,
-      suspension_week: null,
-    })
+    .update(payload)
     .eq("id", playerId)
     .select("*")
     .maybeSingle();

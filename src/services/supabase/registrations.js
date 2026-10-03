@@ -10,11 +10,7 @@ import {
   resolveEquivalentGameIds,
   resolveGameId,
 } from "./games.js";
-import {
-  addWarning,
-  getPlayerById,
-  isSaturdayAfter21h,
-} from "./players.js";
+import { addWarning, getPlayerById, isSaturdayAfter21h } from "./players.js";
 import {
   isGuestMigrationWindowOpen,
   isRegistrationInCurrentCycle,
@@ -292,6 +288,16 @@ async function getJoinListState(game, fallbackGameId) {
   };
 }
 
+const REGISTRATION_BLOCKED_STATUSES = new Set([
+  "inactive",
+  "blocked",
+  "suspended",
+]);
+
+function cannotRegister(status) {
+  return REGISTRATION_BLOCKED_STATUSES.has(status);
+}
+
 export async function joinGame(
   gameId,
   playerId,
@@ -310,11 +316,19 @@ export async function joinGame(
     const playerStatus = player?.status;
     playerType = player?.type === "guest" ? "guest" : "member";
 
-    if (playerStatus === "blocked") return false;
+    if (cannotRegister(playerStatus)) return false;
     if (playerStatus === "penalized") isPenalized = true;
 
     const alreadyRegistered = await isPlayerRegistered(targetGameId, playerId);
     if (alreadyRegistered) return false;
+  }
+
+  if (invitedBy && invitedBy !== playerId) {
+    const inviter = await getPlayerById(invitedBy);
+
+    if (!inviter || cannotRegister(inviter.status)) {
+      return false;
+    }
   }
 
   const { hasMainSpot, hasWaitlist } = await getJoinListState(
@@ -534,8 +548,7 @@ export async function promoteFromWaitlist(gameId) {
     game?.day === "sunday" && isGuestMigrationWindowOpen(game);
 
   const eligibleWaitlist = waitlist.filter(
-    (registration) =>
-      !isPenalizedMember(registration) || canPromotePenalized,
+    (registration) => !isPenalizedMember(registration) || canPromotePenalized,
   );
 
   if (eligibleWaitlist.length === 0) return false;

@@ -37,25 +37,6 @@ function normalizePlayer(player) {
   };
 }
 
-function isBlockedByWarnings(player) {
-  return Math.max(0, Number(player?.warnings) || 0) >= 3;
-}
-
-function isBlockedByInactivity(player) {
-  const reasonText = [
-    player?.block_reason,
-    player?.blocked_reason,
-    player?.status_reason,
-    player?.suspension_reason,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  if (reasonText.includes("inativ")) return true;
-  return !isBlockedByWarnings(player);
-}
-
 function getSession() {
   const data = localStorage.getItem(SESSION_KEY);
   if (!data) return null;
@@ -70,8 +51,8 @@ function getSession() {
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(getSession);
-  const [checkingSession, setCheckingSession] = useState(
-    () => Boolean(getSession()?.id),
+  const [checkingSession, setCheckingSession] = useState(() =>
+    Boolean(getSession()?.id),
   );
   const [sessionError, setSessionError] = useState(false);
   const [sessionCheckAttempt, setSessionCheckAttempt] = useState(0);
@@ -96,6 +77,7 @@ export function AuthProvider({ children }) {
       if (
         !player ||
         player.status === "pending" ||
+        player.status === "inactive" ||
         player.status === "blocked"
       ) {
         localStorage.removeItem(SESSION_KEY);
@@ -140,12 +122,19 @@ export function AuthProvider({ children }) {
       };
     }
 
+    if (member.status === "inactive") {
+      return {
+        success: false,
+        error:
+          "Seu cadastro está inativo. Entre em contato com um administrador para reativá-lo.",
+      };
+    }
+
     if (member.status === "blocked") {
       return {
         success: false,
-        error: isBlockedByInactivity(member)
-          ? "Seu acesso foi suspenso por inatividade. Entre em contato com um administrador para reativação."
-          : "Você está suspenso. Entre em contato com um administrador.",
+        error:
+          "Seu acesso está bloqueado. Entre em contato com um administrador.",
       };
     }
 
@@ -226,8 +215,8 @@ export function AuthProvider({ children }) {
 
   const needsRulesAcceptance = Boolean(
     user &&
-      (!user.acceptedRules ||
-        user.rulesAcceptedVersion !== CURRENT_RULES_VERSION),
+    (!user.acceptedRules ||
+      user.rulesAcceptedVersion !== CURRENT_RULES_VERSION),
   );
 
   return (

@@ -131,8 +131,32 @@ describe("JoinList", () => {
     fireEvent.click(screen.getByRole("button", { name: "Entrar na lista" }));
 
     expect(
-      await screen.findByText("Você está bloqueado e não pode entrar na lista"),
+      await screen.findByText(
+        "Seu acesso está bloqueado e não pode realizar inscrições.",
+      ),
     ).toBeInTheDocument();
+    expect(mockJoinGame).not.toHaveBeenCalled();
+  });
+
+  it("bloqueia inscrição de usuário suspenso", async () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: "p1", status: "suspended" },
+    });
+    mockGetGameRegistrations.mockResolvedValue([]);
+
+    render(<JoinList game={makeGame()} onUpdate={vi.fn()} />);
+
+    await screen.findByRole("button", { name: "Entrar na lista" });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Entrar na lista" }),
+    );
+
+    expect(
+      await screen.findByText(
+        "Você está suspenso e não pode realizar inscrições nesta rodada.",
+      ),
+    ).toBeInTheDocument();
+
     expect(mockJoinGame).not.toHaveBeenCalled();
   });
 });

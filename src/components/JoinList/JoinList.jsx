@@ -51,6 +51,17 @@ function sanitizeMyGuests(guests) {
   );
 }
 
+function getRegistrationRestriction(status) {
+  const messages = {
+    inactive: "Seu cadastro está inativo e não pode realizar inscrições.",
+    blocked: "Seu acesso está bloqueado e não pode realizar inscrições.",
+    suspended:
+      "Você está suspenso e não pode realizar inscrições nesta rodada.",
+  };
+
+  return messages[status] || null;
+}
+
 function JoinList({ game, onUpdate }) {
   const { user } = useAuth();
   const isSundayGame = game?.day === "sunday";
@@ -197,9 +208,11 @@ function JoinList({ game, onUpdate }) {
     const loggedUser = players.find((player) => player.id === user.id);
     const userStatus = loggedUser?.status || user?.status;
 
-    if (userStatus === "blocked") {
+    const restrictionMessage = getRegistrationRestriction(userStatus);
+
+    if (restrictionMessage) {
       setNotice("");
-      setError("Você está bloqueado e não pode entrar na lista");
+      setError(restrictionMessage);
       return;
     }
 
@@ -268,6 +281,14 @@ function JoinList({ game, onUpdate }) {
   }
 
   async function handleAddMember() {
+    const restrictionMessage = getRegistrationRestriction(user?.status);
+
+    if (restrictionMessage) {
+      setNotice("");
+      setError(restrictionMessage);
+      return;
+    }
+
     if (!canAddRegisteredMember) {
       setError("Voce ja adicionou 1 membro cadastrado nesta lista.");
       setAddMode(null);
@@ -307,6 +328,13 @@ function JoinList({ game, onUpdate }) {
   }
 
   async function handleAddGuest() {
+    const restrictionMessage = getRegistrationRestriction(user?.status);
+
+    if (restrictionMessage) {
+      setNotice("");
+      setError(restrictionMessage);
+      return;
+    }
     if (!guestName.trim()) {
       setError("Informe o nome do convidado.");
       return;

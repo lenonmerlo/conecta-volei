@@ -24,12 +24,19 @@ function statusLabel(status) {
     active: "Ativo",
     inactive: "Inativo",
     penalized: "Penalizado",
+    suspended: "Suspenso",
     blocked: "Bloqueado",
   };
   return map[status] || status;
 }
 
-const STATUS_FILTER_OPTIONS = ["active", "inactive", "penalized", "blocked"];
+const STATUS_FILTER_OPTIONS = [
+  "active",
+  "inactive",
+  "penalized",
+  "suspended",
+  "blocked",
+];
 
 function buildWarningsReport(players) {
   const withWarnings = players
@@ -170,15 +177,16 @@ function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
     await onRefreshPlayers({ silent: true });
   }
 
-  async function handleUnblockPlayer(playerId) {
-    const result = await updatePlayerStatus(playerId, "active", user);
+  async function handlePlayerStatus(playerId, status) {
+    const result = await updatePlayerStatus(playerId, status, user);
 
     if (!result.success) {
-      setError(result.error || "Nao foi possivel desbloquear o jogador.");
+      setError(result.error || "Não foi possível atualizar o status.");
       return;
     }
 
     setError("");
+    setNotice(`Status alterado para ${statusLabel(status)}.`);
     await onRefreshPlayers({ silent: true });
   }
 
@@ -232,12 +240,14 @@ function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
       <div className="admin-tab__filters">
         <label className="admin-tab__filter-item">
           <span>Status</span>
+
           <select
             className="admin-tab__select"
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
           >
             <option value="all">Todos</option>
+
             {STATUS_FILTER_OPTIONS.map((status) => (
               <option key={status} value={status}>
                 {statusLabel(status)}
@@ -247,13 +257,15 @@ function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
         </label>
 
         <label className="admin-tab__filter-item">
-          <span>Posicao</span>
+          <span>Posição</span>
+
           <select
             className="admin-tab__select"
             value={positionFilter}
             onChange={(event) => setPositionFilter(event.target.value)}
           >
             <option value="all">Todas</option>
+
             {PLAYER_POSITIONS.map((position) => (
               <option key={position} value={position}>
                 {PLAYER_POSITION_LABELS[position] || position}
@@ -274,16 +286,18 @@ function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
             checked={onlyWithWarnings}
             onChange={(event) => setOnlyWithWarnings(event.target.checked)}
           />
-          Somente com advertencias
+          Somente com advertências
         </label>
+
         <Button
           size="sm"
           variant="secondary"
           className="admin-tab__btn"
           onClick={handleExportWarnings}
         >
-          Exportar advertencias
+          Exportar advertências
         </Button>
+
         {SPECIAL_BADGE_FIELDS.map((badge) => (
           <label
             key={badge.key}
@@ -306,84 +320,116 @@ function AdminPlayers({ players, loadingPlayers, onRefreshPlayers }) {
       )}
 
       <ul className="admin-tab__list">
-        {filteredPlayers.map((p) => (
+        {filteredPlayers.map((player) => (
           <li
-            key={p.id}
-            className={`admin-tab__item ${p.on_injury_leave ? "admin-tab__item--injury" : ""}`}
+            key={player.id}
+            className={`admin-tab__item ${
+              player.on_injury_leave ? "admin-tab__item--injury" : ""
+            }`}
           >
             <div className="admin-tab__info">
               <span className="admin-tab__name">
-                {p.name}
-                {p.nickname ? ` (${p.nickname})` : ""}
+                {player.name}
+                {player.nickname ? ` (${player.nickname})` : ""}
               </span>
+
               <span
-                className={`admin-tab__status admin-tab__status--${p.status}`}
+                className={`admin-tab__status admin-tab__status--${player.status}`}
               >
-                {statusLabel(p.status)}
+                {statusLabel(player.status)}
               </span>
+
               <span className="admin-tab__type">
-                {p.type === PLAYER_TYPE.MEMBER ? "Membro" : "Convidado"}
+                {player.type === PLAYER_TYPE.MEMBER ? "Membro" : "Convidado"}
               </span>
+
               <span className="admin-tab__warning-count">
-                Advertencias: {Math.max(0, Number(p.warnings) || 0)}
+                Advertências: {Math.max(0, Number(player.warnings) || 0)}
               </span>
-              {p.on_injury_leave && (
+
+              {player.on_injury_leave && (
                 <span className="admin-tab__injury-tag">
-                  Afastado por lesao
+                  Afastado por lesão
                 </span>
               )}
             </div>
+
             <div className="admin-tab__injury-row">
               <label
                 className="admin-tab__check-label"
-                htmlFor={`injury-leave-${p.id}`}
+                htmlFor={`injury-leave-${player.id}`}
               >
                 <input
-                  id={`injury-leave-${p.id}`}
+                  id={`injury-leave-${player.id}`}
                   type="checkbox"
-                  checked={Boolean(p.on_injury_leave)}
+                  checked={Boolean(player.on_injury_leave)}
                   onChange={(event) =>
-                    handleToggleInjuryLeave(p.id, event.target.checked)
+                    handleToggleInjuryLeave(player.id, event.target.checked)
                   }
                 />
-                Afastado por lesao
+                Afastado por lesão
               </label>
             </div>
+
             <div className="admin-tab__actions">
               <Button
                 size="sm"
                 variant="warning"
                 className="admin-tab__btn"
-                onClick={() => applyWarningAction(p.id, "add")}
+                onClick={() => applyWarningAction(player.id, "add")}
               >
-                +Advertencia
+                +Advertência
               </Button>
+
               <Button
                 size="sm"
                 variant="success"
                 className="admin-tab__btn"
-                onClick={() => applyWarningAction(p.id, "remove")}
+                onClick={() => applyWarningAction(player.id, "remove")}
               >
-                -Advertencia
+                -Advertência
               </Button>
+
               <Button
                 size="sm"
                 variant="danger"
                 className="admin-tab__btn"
-                onClick={() => applyWarningAction(p.id, "reset")}
+                onClick={() => applyWarningAction(player.id, "reset")}
               >
                 Zerar
               </Button>
-              {userCanUnblock && p.status === "blocked" && (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="admin-tab__btn"
-                  onClick={() => handleUnblockPlayer(p.id)}
+
+              <label className="admin-tab__status-control">
+                <span>Alterar status</span>
+
+                <select
+                  className="admin-tab__select"
+                  value={player.status}
+                  onChange={(event) =>
+                    handlePlayerStatus(player.id, event.target.value)
+                  }
                 >
-                  Desbloquear
-                </Button>
-              )}
+                  {player.status === "pending" && (
+                    <option value="pending" disabled>
+                      Pendente
+                    </option>
+                  )}
+
+                  {STATUS_FILTER_OPTIONS.map((status) => (
+                    <option
+                      key={status}
+                      value={status}
+                      disabled={
+                        status === "active" &&
+                        player.status === "blocked" &&
+                        !userCanUnblock
+                      }
+                    >
+                      {statusLabel(status)}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
           </li>
         ))}
