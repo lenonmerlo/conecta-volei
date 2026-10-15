@@ -1,23 +1,13 @@
-// Página pública de histórico de premiações (melhor do jogo)
-
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { VOTE_CATEGORIES } from "../../domain/constants";
-import { isVotingOpen } from "../../domain/gameRules";
+import { STAT_AWARD_CATEGORIES } from "../../domain/matchStatistics";
 import {
   getGames,
+  getMatchStatisticsResults,
   getSundayGamesHistory,
   getVotingResults,
 } from "../../services/supabaseService.js";
 import "./Awards.css";
-
-function getTodayDateString() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 function getWinnerNames(result) {
   if (!result) return null;
@@ -33,22 +23,89 @@ function isTie(result) {
   return (result?.winners?.length || 0) > 1;
 }
 
-function buildAwardsWhatsappText(game, results) {
+function formatNumber(value) {
+  return Number(value || 0).toLocaleString("pt-BR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+}
+
+function getStatisticDetail(categoryKey, result) {
+  if (!result) return "";
+
+  const value = Number(result.value || 0);
+  const formattedValue = formatNumber(value);
+
+  if (categoryKey === "mvp_male" || categoryKey === "mvp_female") {
+    return `nota ${formattedValue}`;
+  }
+
+  if (categoryKey === "top_scorer") {
+    return `${formattedValue} ${value === 1 ? "ponto" : "pontos"}`;
+  }
+
+  if (categoryKey === "best_attack") {
+    return `${formattedValue} ${value === 1 ? "ataque" : "ataques"}`;
+  }
+
+  if (categoryKey === "best_serve") {
+    return `${formattedValue} ${value === 1 ? "ace" : "aces"}`;
+  }
+
+  if (categoryKey === "best_block") {
+    return `${formattedValue} ${value === 1 ? "bloqueio" : "bloqueios"}`;
+  }
+
+  if (categoryKey === "best_defense") {
+    return `${formattedValue} ${value === 1 ? "defesa" : "defesas"}`;
+  }
+
+  if (categoryKey === "best_setting") {
+    return `${formattedValue} ${value === 1 ? "assistência" : "assistências"}`;
+  }
+
+  return "";
+}
+
+function buildWinnerText(categoryKey, result, source) {
+  if (!result) return "—";
+
+  const tieLabel = isTie(result) ? "Empate: " : "";
+  const names = getWinnerNames(result);
+
+  if (source !== "statistics") {
+    return `🏆 ${tieLabel}${names}`;
+  }
+
+  const detail = getStatisticDetail(categoryKey, result);
+
+  return `🏆 ${tieLabel}${names}${detail ? ` — ${detail}` : ""}`;
+}
+
+function buildAwardsWhatsappText(entry) {
+  const { game, results, categories, source } = entry;
+
   const lines = [
-    "🏐 *Melhores do Jogo*",
+    "🏐 *Destaques da Partida*",
     `${game.date} - ${game.location}`,
     "",
   ];
 
-  VOTE_CATEGORIES.forEach(({ key, label, icon }) => {
+  categories.forEach(({ key, label, icon }) => {
     const result = results[key];
 
+    if (!result) {
+      lines.push(`${icon} *${label}*: Sem registro`);
+      return;
+    }
+
+    const tieLabel = isTie(result) ? "Empate: " : "";
+    const names = getWinnerNames(result);
+    const detail =
+      source === "statistics" ? getStatisticDetail(key, result) : "";
+
     lines.push(
-      `${icon} *${label}*: ${
-        result
-          ? `${isTie(result) ? "Empate: " : ""}${getWinnerNames(result)}`
-          : "Sem votos"
-      }`,
+      `${icon} *${label}*: ${tieLabel}${names}${detail ? ` (${detail})` : ""}`,
     );
   });
 
@@ -56,10 +113,10 @@ function buildAwardsWhatsappText(game, results) {
 }
 
 function Awards() {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [entries, setEntries] = useState([]);
   const [currentGame, setCurrentGame] = useState(null);
+  const [currentResultReady, setCurrentResultReady] = useState(false);
   const [copyNotice, setCopyNotice] = useState(null);
 
   useEffect(() => {
@@ -68,37 +125,76 @@ function Awards() {
     async function loadHistory() {
       setLoading(true);
 
-      const [games, sundayGames] = await Promise.all([
-        getGames(),
-        getSundayGamesHistory(),
-      ]);
+      try {
+        const [games, sundayGames] = await Promise.all([
+          getGames(),
+          getSundayGamesHistory(),
+        ]);
 
-      const today = getTodayDateString();
+        const availableGames = (sundayGames || []).filter(
+          (game) => game.status !== "cancelled",
+        );
 
-      const pastGames = (sundayGames || []).filter(
-        (game) =>
-          game.date < today || (game.date === today && !isVotingOpen(game)),
-      );
+        const withResults = await Promise.all(
+          availableGames.map(async (game) => {
+            try {
+              const statisticData = await getMatchStatisticsResults(game.id);
 
-      const sundayCurrentGame =
-        (games || []).find((game) => game.day === "sunday") || null;
+              if (statisticData.hasStatistics && statisticData.published) {
+                return {
+                  game,
+                  source: "statistics",
+                  categories: STAT_AWARD_CATEGORIES,
+                  results: statisticData.results,
+                };
+              }
+            } catch (statisticsError) {
+              console.error("[Awards] Falha ao carregar estatísticas:", {
+                gameId: game.id,
+                error: statisticsError,
+              });
+            }
 
-      const withResults = await Promise.all(
-        pastGames.map(async (game) => ({
-          game,
-          results: await getVotingResults(game.id),
-        })),
-      );
+            const votingResults = await getVotingResults(game.id);
 
-      const withVotes = withResults.filter(({ results }) =>
-        Object.values(results).some(Boolean),
-      );
+            return {
+              game,
+              source: "votes",
+              categories: VOTE_CATEGORIES,
+              results: votingResults,
+            };
+          }),
+        );
 
-      if (!active) return;
+        const withAwards = withResults.filter(({ results }) =>
+          Object.values(results || {}).some(Boolean),
+        );
 
-      setCurrentGame(sundayCurrentGame);
-      setEntries(withVotes);
-      setLoading(false);
+        const sundayCurrentGame =
+          (games || []).find((game) => game.day === "sunday") || null;
+
+        const currentEntry = sundayCurrentGame
+          ? withAwards.find(({ game }) => game.id === sundayCurrentGame.id)
+          : null;
+
+        if (!active) return;
+
+        setCurrentGame(sundayCurrentGame);
+        setCurrentResultReady(Boolean(currentEntry));
+        setEntries(withAwards);
+      } catch (loadError) {
+        console.error("[Awards] Falha ao carregar premiações:", loadError);
+
+        if (active) {
+          setCurrentGame(null);
+          setCurrentResultReady(false);
+          setEntries([]);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
     }
 
     loadHistory();
@@ -120,20 +216,20 @@ function Awards() {
     };
   }, [copyNotice]);
 
-  async function handleCopyWinners(game, results) {
-    const text = buildAwardsWhatsappText(game, results);
+  async function handleCopyWinners(entry) {
+    const text = buildAwardsWhatsappText(entry);
 
     try {
       await navigator.clipboard.writeText(text);
 
       setCopyNotice({
-        gameId: game.id,
+        gameId: entry.game.id,
         type: "success",
         message: "Resultado copiado. Agora é só colar no WhatsApp.",
       });
     } catch {
       setCopyNotice({
-        gameId: game.id,
+        gameId: entry.game.id,
         type: "error",
         message: "Não foi possível copiar. Tente novamente.",
       });
@@ -152,7 +248,9 @@ function Awards() {
     <div className="awards">
       <div className="awards__header">
         <h2 className="awards__title">Prêmios</h2>
-        <p className="awards__subtitle">Histórico dos melhores do jogo</p>
+        <p className="awards__subtitle">
+          Histórico dos destaques de cada partida
+        </p>
       </div>
 
       {currentGame && (
@@ -161,6 +259,7 @@ function Awards() {
 
           <div className="awards__status-info">
             <span className="awards__status-date">{currentGame.date}</span>
+
             <span className="awards__status-location">
               {currentGame.location}
             </span>
@@ -168,89 +267,94 @@ function Awards() {
 
           <span
             className={`awards__status-pill ${
-              isVotingOpen(currentGame)
-                ? "awards__status-pill--open"
-                : "awards__status-pill--closed"
+              currentResultReady
+                ? "awards__status-pill--closed"
+                : "awards__status-pill--open"
             }`}
           >
-            {isVotingOpen(currentGame) ? "Votação aberta" : "Votação fechada"}
+            {currentResultReady
+              ? "Resultado publicado"
+              : "Estatísticas pendentes"}
           </span>
-
-          {isVotingOpen(currentGame) && (
-            <button
-              type="button"
-              className="awards__status-vote-btn"
-              onClick={() => navigate(`/voting/${currentGame.id}`)}
-            >
-              Votar agora
-            </button>
-          )}
         </div>
       )}
 
       {entries.length === 0 && (
         <div className="awards__empty">
-          <p className="awards__empty-title">Nenhuma votação encerrada ainda</p>
+          <p className="awards__empty-title">
+            Nenhum resultado publicado ainda
+          </p>
+
           <p className="awards__empty-text">
-            Os vencedores vão aparecer aqui assim que a janela de votação
-            terminar.
+            Os destaques aparecerão aqui depois que os administradores
+            registrarem as estatísticas.
           </p>
         </div>
       )}
 
       <div className="awards__list">
-        {entries.map(({ game, results }) => (
-          <div key={game.id} className="awards__game">
-            <div className="awards__game-header">
-              <div className="awards__game-info">
-                <span className="awards__game-date">{game.date}</span>
-                <span className="awards__game-location">{game.location}</span>
+        {entries.map((entry) => {
+          const { game, results, categories, source } = entry;
+
+          return (
+            <div key={game.id} className="awards__game">
+              <div className="awards__game-header">
+                <div className="awards__game-info">
+                  <span className="awards__game-date">{game.date}</span>
+
+                  <span className="awards__game-location">{game.location}</span>
+
+                  <span className="awards__game-source">
+                    {source === "statistics"
+                      ? "Resultado por estatísticas"
+                      : "Resultado da votação"}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  className="awards__copy-btn"
+                  onClick={() => handleCopyWinners(entry)}
+                >
+                  Copiar para WhatsApp
+                </button>
               </div>
 
-              <button
-                type="button"
-                className="awards__copy-btn"
-                onClick={() => handleCopyWinners(game, results)}
-              >
-                Copiar para WhatsApp
-              </button>
-            </div>
+              {copyNotice?.gameId === game.id && (
+                <p
+                  className={`awards__copy-notice awards__copy-notice--${copyNotice.type}`}
+                >
+                  {copyNotice.message}
+                </p>
+              )}
 
-            {copyNotice?.gameId === game.id && (
-              <p
-                className={`awards__copy-notice awards__copy-notice--${copyNotice.type}`}
-              >
-                {copyNotice.message}
-              </p>
-            )}
+              <ul className="awards__winners">
+                {categories.map(({ key, label, icon }) => {
+                  const result = results[key];
 
-            <ul className="awards__winners">
-              {VOTE_CATEGORIES.map(({ key, label, icon }) => {
-                const result = results[key];
+                  return (
+                    <li key={key} className="awards__winner">
+                      <span className="awards__winner-category">
+                        <span
+                          className="awards__winner-icon"
+                          aria-hidden="true"
+                        >
+                          {icon}
+                        </span>
 
-                return (
-                  <li key={key} className="awards__winner">
-                    <span className="awards__winner-category">
-                      <span
-                        className="awards__winner-icon"
-                        aria-hidden="true"
-                      >
-                        {icon}
+                        {label}
                       </span>
-                      {label}
-                    </span>
 
-                    <span className="awards__winner-name">
-                      {result
-                        ? `🏆 ${isTie(result) ? "Empate: " : ""}${getWinnerNames(result)}`
-                        : "—"}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
+                      <span className="awards__winner-name">
+                        {buildWinnerText(key, result, source)}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

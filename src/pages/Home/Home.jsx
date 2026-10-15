@@ -1,10 +1,8 @@
 // Página inicial — exibe os jogos da semana
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../app/AuthContext";
 import GameCard from "../../components/GameCard/GameCard";
-import { isVotingOpen } from "../../domain/gameRules";
 import { supabase } from "../../lib/supabase";
 import {
   getActiveAnnouncements,
@@ -132,7 +130,6 @@ function isGameVisible(game) {
 
 function Home() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [games, setGames] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -278,15 +275,6 @@ function Home() {
                 game={game}
                 registeredCount={game.registeredCount || 0}
               />
-              {isVotingOpen(game) && (
-                <button
-                  type="button"
-                  className="home__vote-btn"
-                  onClick={() => navigate(`/voting/${game.id}`)}
-                >
-                  Votar no melhor do jogo
-                </button>
-              )}
             </div>
           ))}
       </div>

@@ -14,6 +14,7 @@ import AdminLevels from "./tabs/AdminLevels";
 import AdminPending from "./tabs/AdminPending";
 import AdminPlayers from "./tabs/AdminPlayers";
 import AdminPresence from "./tabs/AdminPresence";
+import AdminStatistics from "./tabs/AdminStatistics";
 
 function Admin() {
   const { user } = useAuth();
@@ -49,6 +50,7 @@ function Admin() {
     { key: "games", label: "Jogos" },
     { key: "announcements", label: "Avisos" },
     { key: "presence", label: "Presenças" },
+    { key: "statistics", label: "Estatísticas" },
     { key: "audit", label: "Auditoria" },
     ...(userIsSuperAdmin ? [{ key: "levels", label: "Níveis" }] : []),
     { key: "draw", label: "Sorteio" },
@@ -57,12 +59,12 @@ function Admin() {
   const [activeTab, setActiveTab] = useState("pending");
 
   function handleRefresh() {
-  refreshPlayers();
+    refreshPlayers();
 
-  if (activeTab === "audit") {
-    setAuditRefreshKey((current) => current + 1);
+    if (activeTab === "audit") {
+      setAuditRefreshKey((current) => current + 1);
+    }
   }
-}
 
   return (
     <div className="admin">
@@ -109,9 +111,8 @@ function Admin() {
         {activeTab === "games" && <AdminGames />}
         {activeTab === "announcements" && <AdminAnnouncements />}
         {activeTab === "presence" && <AdminPresence />}
-        {activeTab === "audit" && (
-          <AdminAudit refreshKey={auditRefreshKey} />
-        )}
+        {activeTab === "statistics" && <AdminStatistics />}
+        {activeTab === "audit" && <AdminAudit refreshKey={auditRefreshKey} />}
         {activeTab === "levels" && userIsSuperAdmin && (
           <AdminLevels
             players={players}
