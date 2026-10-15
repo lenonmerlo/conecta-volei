@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useAuth } from "../../app/AuthContext";
 import Button from "../../components/Button/Button";
+import NotificationSettings from "../../components/NotificationSettings/NotificationSettings";
 import PlayerStats from "../../components/PlayerStats/PlayerStats";
 import { isAdmin, isSuperAdmin } from "../../domain/admins";
 import {
@@ -203,6 +204,8 @@ function LoggedIn({ user, onLogout, onUpdateUser }) {
           </div>
         </div>
       )}
+
+      <NotificationSettings playerId={user.id} />
 
       <div className="profile__stats">
         <PlayerStats playerId={user.id} />
