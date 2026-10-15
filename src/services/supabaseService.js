@@ -94,3 +94,12 @@ export {
   getPlayerSession,
   acceptRulesVersion,
 } from "./supabase/rulesAcceptance.js";
+
+export {
+  getMatchParticipants,
+  getMatchStatistics,
+  saveMatchStatistics,
+  publishMatchStatistics,
+  unpublishMatchStatistics,
+  getMatchStatisticsResults,
+} from "./supabase/matchStatistics.js";

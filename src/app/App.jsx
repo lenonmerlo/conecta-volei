@@ -20,7 +20,6 @@ const Login = lazy(() => import("../pages/Login/Login"));
 const Profile = lazy(() => import("../pages/Profile/Profile"));
 const Rules = lazy(() => import("../pages/Rules/Rules"));
 const Teams = lazy(() => import("../pages/Teams/Teams"));
-const Voting = lazy(() => import("../pages/Voting/Voting"));
 
 function RoutesFallback() {
   return <div className="app__loading">Carregando pagina...</div>;
@@ -126,7 +125,7 @@ function AppShell() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/game/:id" element={<GameDetail />} />
             <Route path="/teams" element={<Teams />} />
-            <Route path="/voting/:gameId" element={<Voting />} />
+            <Route path="/voting/:gameId" element={<Navigate to="/awards" replace />} />
             <Route path="/awards" element={<Awards />} />
             <Route path="/icon-lab" element={<IconLab />} />
             <Route

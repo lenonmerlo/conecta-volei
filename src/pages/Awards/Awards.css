@@ -332,3 +332,11 @@
     width: 100%;
   }
 }
+
+.awards__game-source {
+  color: var(--cv-primary-soft);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
