@@ -8,6 +8,9 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "icons/*.png"],
+      workbox: {
+        importScripts: ["push-handler.js"],
+      },
       manifest: {
         name: "Conecta Vôlei",
         short_name: "Conecta",
