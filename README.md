@@ -42,7 +42,6 @@ flowchart TD
 
 ## Regras principais de lista
 
-- jogo de **quarta-feira**: lista abre na **segunda às 19h**
 - jogo de **domingo**: lista abre na **quinta às 19h**
 - o sistema respeita regras diferentes para membros e convidados
 - quando alguém sai da lista principal, a espera pode ser promovida automaticamente
