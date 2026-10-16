@@ -1,111 +1,176 @@
 # Conecta Vôlei
 
-Aplicação web mobile-first para organizar os jogos do grupo Conecta Vôlei: inscrição em listas, gestão de presença, sorteio de times e perfil de atletas.
-
-## Badges de tecnologia
-
+![Conecta Vôlei](https://img.shields.io/badge/Conecta%20V%C3%B4lei-PWA%20mobile--first-0a1420?style=for-the-badge)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=061923)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-ES202x-F7DF1E?logo=javascript&logoColor=222)
-![React Router](https://img.shields.io/badge/React_Router-7-CA4245?logo=reactrouter&logoColor=white)
-![Supabase](https://img.shields.io/badge/Supabase-2-3ECF8E?logo=supabase&logoColor=083)
-![PWA](https://img.shields.io/badge/PWA-vite--plugin--pwa-5A0FC8)
-![Lucide](https://img.shields.io/badge/Lucide_Icons-UI-111?logo=lucide&logoColor=white)
-![ESLint](https://img.shields.io/badge/ESLint-10-4B32C3?logo=eslint&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-Backend-3ECF8E?logo=supabase&logoColor=083)
+![Firebase](https://img.shields.io/badge/Firebase-Push%20notifications-FFCA28?logo=firebase&logoColor=111)
+![PWA](https://img.shields.io/badge/PWA-Offline%20%2B%20Install-5A0FC8)
 
-## Visão geral
+Aplicação web **mobile-first** para gestão de um grupo de vôlei de quadra. O projeto organiza listas de jogo, presença, sorteio equilibrado de times, perfil de atletas, penalidades, conquistas e uma experiência de uso pensada para o celular, com funcionamento como PWA.
 
-O projeto foi construído para atender o fluxo real de um grupo de vôlei recreativo, com foco em uso no celular e regras específicas de lista.
-
-Principais objetivos:
-
-- facilitar entrada e gestão de atletas
-- controlar listas de jogos (principal, espera e convidados)
-- organizar presença e histórico
-- permitir sorteio equilibrado de times
-- oferecer painel administrativo
-
-## Funcionalidades atuais
+## O que o app faz
 
 - login e cadastro por WhatsApp
-- aceite de regras para concluir cadastro
-- jogos oficiais e jogos extras
-- inscrições com regras diferentes por dia do jogo
-- promoção automática da lista de espera
-- perfil do atleta com estatísticas e badges
-- painel administrativo para operação de jogos
-- navegação mobile com barra inferior
+- aceite de regras para liberar o uso do sistema
+- listas de jogo com fila principal, espera e convidados
+- promoção automática da lista de espera quando abre vaga
+- controle de presenças e histórico por jogo
+- sorteio equilibrado de times com critérios de nível, posição, capitão e distribuição por perfil
+- perfil público do atleta com estatísticas e badges
+- painel administrativo para operação do grupo
+- notificações push para avisos importantes
+- navegação otimizada para telas pequenas
 
-## Regras de lista (resumo)
+## Fluxo geral
 
-- quarta-feira: lista abre na segunda às 19h
-- domingo: lista abre na quinta às 19h
-- regra de convidados varia conforme o dia do jogo
-- ao sair da lista principal, o sistema promove da espera quando houver vaga
+```mermaid
+flowchart TD
+  A[Usuário abre o app] --> B{Já está logado?}
+  B -- Não --> C[Login / cadastro via WhatsApp]
+  C --> D[Aceite das regras]
+  B -- Sim --> E[Home]
+  D --> E
+  E --> F[Lista do jogo]
+  E --> G[Presença]
+  E --> H[Sorteio de times]
+  E --> I[Perfil do atleta]
+  E --> J[Painel admin]
+  J --> K[Operação do jogo]
+  K --> L[Notificações e atualizações]
+```
 
-## Stack e bibliotecas
+## Regras principais de lista
 
-- React 19
-- Vite 8
-- React Router DOM 7
-- Supabase JS 2
-- Lucide React
-- vite-plugin-pwa
-- ESLint 10
+- jogo de **quarta-feira**: lista abre na **segunda às 19h**
+- jogo de **domingo**: lista abre na **quinta às 19h**
+- o sistema respeita regras diferentes para membros e convidados
+- quando alguém sai da lista principal, a espera pode ser promovida automaticamente
+- há suporte para abertura forçada de lista em jogo específico
 
-## Estrutura de pastas
+## Stack
+
+- **Frontend:** React 19 + Vite 8
+- **Roteamento:** React Router DOM 7
+- **Backend / dados:** Supabase JS 2
+- **Push notifications:** Firebase + Supabase Edge Functions
+- **PWA:** `vite-plugin-pwa`
+- **Ícones:** Lucide React
+- **Testes:** Vitest + Testing Library
+
+## Arquitetura em alto nível
+
+```mermaid
+flowchart LR
+  U[Usuário] --> UI[React App]
+  UI --> R[Rotas / páginas]
+  R --> D[Regras de domínio]
+  D --> S[Supabase JS]
+  D --> F[Firebase Messaging]
+  S --> DB[(Supabase/Postgres)]
+  F --> P[Push notifications]
+  P --> U
+```
+
+### Camadas relevantes
+
+- `src/app/` — shell da aplicação, provider de autenticação e rotas principais
+- `src/pages/` — telas de login, home, regras, atletas, perfil, jogos, times e admin
+- `src/domain/` — regras de negócio: listas, sorteio, rankings, badges, permissões e constantes
+- `src/lib/` — clientes e integrações com Supabase e Firebase
+- `src/components/` — blocos reutilizáveis de interface
+- `supabase/` — migrations, config e edge functions
+
+## Organização do repositório
 
 ```text
 src/
-	app/                # Shell da aplicação, rotas e contexto de autenticação
-	components/         # Componentes reutilizáveis (UI e blocos de tela)
-	data/               # Camada de acesso ao Supabase
-	domain/             # Regras de negócio e constantes
-	pages/              # Páginas da aplicação
-	lib/                # Cliente e integrações base
+  app/          shell da aplicação, AuthContext e roteamento
+  components/   UI reutilizável e blocos de tela
+  domain/       regras de negócio, constantes e cálculos
+  lib/          integrações com Supabase e Firebase
+  pages/        páginas da aplicação
+  tests/        setup de testes
+public/         assets estáticos, favicon, push handler e ícones PWA
+supabase/       migrations, funções edge e configuração local
 ```
 
-## Rotas principais
+## Funcionalidades de domínio que vale destacar
 
-- `/` login (quando deslogado) ou home (quando logado)
-- `/rules` regras e aceite
-- `/athletes` lista de atletas
-- `/athlete/:id` perfil público de atleta
-- `/profile` perfil do usuário
-- `/game/:id` detalhes de jogo
-- `/teams` visualização de times
-- `/admin` painel administrativo (somente admins)
+- `src/domain/gameRules.js` — abre e fecha listas por dia e horário do jogo
+- `src/domain/teamDraw.js` — sorteio e pontuação de equilíbrio de times
+- `src/domain/badges.js` — sistema visual de conquistas
+- `src/domain/matchStatistics.js` — consolidação de estatísticas e premiações
+- `src/domain/admins.js` — controle atual de administradores por WhatsApp
+- `src/domain/rulesVersion.js` — versão corrente das regras do grupo
 
 ## Banco e integrações
 
-O projeto usa Supabase como backend, incluindo tabelas e storage.
+O app usa Supabase como backend principal.
 
-Entidades usadas no app:
+### Principais estruturas já presentes
 
 - `players`
 - `games`
 - `game_registrations`
 - `game_presences`
 - `game_teams`
-- bucket `avatars` no Supabase Storage
+- `push_subscriptions`
+- bucket `avatars`
 
-## Variáveis de ambiente
+### Push notifications
+
+A implementação de push está distribuída entre:
+
+- `public/push-handler.js` — service worker para exibir e abrir notificações
+- `supabase/functions/send-push-notification/index.ts` — envio das notificações
+- `supabase/migrations/20261015212016_push_notifications.sql` — estrutura de banco, funções e permissões
+
+```mermaid
+sequenceDiagram
+  participant App as App React
+  participant DB as Supabase/Postgres
+  participant Fn as Edge Function
+  participant FCM as Firebase
+  participant SW as Service Worker
+  participant User as Usuário
+
+  App->>DB: salva/atualiza push_subscription
+  App->>Fn: solicita envio interno
+  Fn->>FCM: autentica e envia mensagem
+  FCM->>SW: push event
+  SW->>User: mostra notificação
+  User->>SW: clique
+  SW->>App: abre a URL de destino
+```
+
+## Ambiente local
+
+### Pré-requisitos
+
+- Node.js 20+
+- npm 10+
+
+### Variáveis de ambiente
 
 Crie um arquivo `.env` na raiz do projeto:
 
 ```env
 VITE_SUPABASE_URL=https://SEU-PROJETO.supabase.co
 VITE_SUPABASE_ANON_KEY=SUA_ANON_KEY
+
+VITE_FIREBASE_API_KEY=SUA_FIREBASE_API_KEY
+VITE_FIREBASE_AUTH_DOMAIN=SEU-PROJETO.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=SEU_PROJETO
+VITE_FIREBASE_STORAGE_BUCKET=SEU_PROJETO.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=SEU_MESSAGING_SENDER_ID
+VITE_FIREBASE_APP_ID=SEU_APP_ID
+VITE_FIREBASE_VAPID_KEY=SUA_VAPID_KEY
 ```
 
-Sem essas variáveis, fluxos dependentes do banco não funcionarão corretamente.
+Sem essas variáveis, os fluxos com banco e push não funcionam corretamente.
 
-## Requisitos
-
-- Node.js 20+
-- npm 10+
-
-## Como rodar localmente
+### Como rodar
 
 ```bash
 npm install
@@ -114,37 +179,51 @@ npm run dev
 
 Aplicação local: `http://localhost:5173`
 
-## Scripts disponíveis
+### Scripts
 
-- `npm run dev` inicia ambiente de desenvolvimento
-- `npm run build` gera build de produção
-- `npm run preview` serve a build localmente
-- `npm run lint` executa análise estática com ESLint
+```bash
+npm run dev       # ambiente de desenvolvimento
+npm run build     # build de produção
+npm run preview   # preview da build
+npm run lint      # análise estática
+npm run test      # suíte de testes
+npm run test:watch
+```
 
 ## PWA
 
-O projeto está configurado com `vite-plugin-pwa`, com manifesto, ícones e registro automático de atualizações.
+O projeto já vem configurado como PWA:
 
-## Perfis administrativos
-
-Admins e super admins são controlados atualmente por lista de WhatsApp em `src/domain/admins.js`.
+- manifesto no `vite.config.js`
+- atualização automática do service worker
+- ícones e assets dedicados
+- experiência instalada no celular como aplicativo
 
 ## Deploy
 
-Pode ser publicado em plataformas como Vercel ou Netlify.
+O caminho mais natural é publicar em Vercel ou Netlify.
 
-Checklist mínimo de deploy:
+Checklist antes de subir:
 
-- configurar variáveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`
-- validar build com `npm run build`
-- validar lint com `npm run lint`
+- conferir `.env`
+- rodar `npm run lint`
+- rodar `npm run build`
+- validar variáveis do Supabase e do Firebase no ambiente de produção
 
-## Roadmap sugerido
+## Observações de implementação
 
-- mover controle de admins para tabela no banco
-- ampliar cobertura de testes
-- observabilidade de erros em produção
+- a aplicação usa `lazy()` e `Suspense` para carregar páginas sob demanda
+- a base visual usa um design system próprio em `src/index.css`
+- admins hoje são definidos por lista local, mas o README e o código já apontam para uma futura migração para banco
+- o projeto já prepara terreno para badges, premiações e estatísticas por jogo
+
+## Roadmap natural
+
+- mover admins para tabela dedicada no banco
+- ampliar cobertura de testes por domínio
+- adicionar observabilidade de erros
+- enriquecer a documentação das telas e do fluxo do admin
 
 ---
 
-Projeto do grupo Conecta Vôlei.
+Feito para o grupo **Conecta Vôlei**.
