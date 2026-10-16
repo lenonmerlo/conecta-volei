@@ -8,6 +8,7 @@ import {
 } from "../../../domain/matchStatistics";
 import { createMatchStatisticsMockParticipants } from "../../../mocks/matchStatisticsMock";
 import {
+  getGameTeams,
   getMatchParticipants,
   getMatchStatisticsResults,
   getSundayGamesHistory,
@@ -46,6 +47,55 @@ function genderLabel(gender) {
   if (gender === "F") return "Feminino";
   if (gender === "M") return "Masculino";
   return "Gênero não informado";
+}
+
+function teamPlayerKey(player) {
+  const id = String(player?.id || "");
+
+  if (!id) return null;
+
+  if (player?.type === "guest" || id.startsWith("guest-")) {
+    return id.startsWith("guest-") ? id : `guest-${id}`;
+  }
+
+  return `player-${id}`;
+}
+
+function shortTeamName(teamName) {
+  return String(teamName || "").replace(/^Time\s+/i, "");
+}
+
+function buildMatchupOptions(teams) {
+  const options = [];
+
+  for (let firstIndex = 0; firstIndex < teams.length; firstIndex += 1) {
+    for (
+      let secondIndex = firstIndex + 1;
+      secondIndex < teams.length;
+      secondIndex += 1
+    ) {
+      const firstTeam = teams[firstIndex];
+      const secondTeam = teams[secondIndex];
+
+      options.push({
+        key: `${firstTeam.id}-${secondTeam.id}`,
+        label: `${shortTeamName(firstTeam.team_name)} × ${shortTeamName(
+          secondTeam.team_name,
+        )}`,
+        teams: [firstTeam, secondTeam],
+      });
+    }
+  }
+
+  return options;
+}
+
+function sortParticipantsByName(participants) {
+  return [...participants].sort((first, second) =>
+    first.name.localeCompare(second.name, "pt-BR", {
+      sensitivity: "base",
+    }),
+  );
 }
 
 function createEmptyStatistics(participant) {
@@ -183,6 +233,8 @@ function AdminStatistics() {
   const [games, setGames] = useState([]);
   const [selectedGameId, setSelectedGameId] = useState("");
   const [participants, setParticipants] = useState([]);
+  const [teams, setTeams] = useState([]);
+  const [selectedMatchup, setSelectedMatchup] = useState("");
   const [loadingGames, setLoadingGames] = useState(true);
   const [loadingStatistics, setLoadingStatistics] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -229,6 +281,8 @@ function AdminStatistics() {
     async function loadStatistics() {
       if (!selectedGameId) {
         setParticipants([]);
+        setTeams([]);
+        setSelectedMatchup("");
         setPublished(false);
         return;
       }
@@ -240,9 +294,10 @@ function AdminStatistics() {
       setDirty(false);
 
       try {
-        const [registrationRows, statisticData] = await Promise.all([
+        const [registrationRows, statisticData, teamRows] = await Promise.all([
           getMatchParticipants(selectedGameId),
           getMatchStatisticsResults(selectedGameId),
+          getGameTeams(selectedGameId),
         ]);
 
         if (!active) return;
@@ -253,6 +308,12 @@ function AdminStatistics() {
             statisticData.statistics,
           ),
         );
+
+        const loadedTeams = teamRows || [];
+        const matchupOptions = buildMatchupOptions(loadedTeams);
+
+        setTeams(loadedTeams);
+        setSelectedMatchup(matchupOptions[0]?.key || "");
 
         setPublished(statisticData.published);
       } catch {
@@ -281,6 +342,34 @@ function AdminStatistics() {
     () => games.find((game) => game.id === selectedGameId) || null,
     [games, selectedGameId],
   );
+
+  const matchupOptions = useMemo(() => buildMatchupOptions(teams), [teams]);
+
+  const visibleParticipants = useMemo(() => {
+    const sortedParticipants = sortParticipantsByName(participants);
+
+    if (!selectedMatchup) {
+      return sortedParticipants;
+    }
+
+    const matchup = matchupOptions.find(
+      (option) => option.key === selectedMatchup,
+    );
+
+    if (!matchup) {
+      return sortedParticipants;
+    }
+
+    const participantKeys = new Set(
+      matchup.teams.flatMap((team) =>
+        (team.players || []).map(teamPlayerKey).filter(Boolean),
+      ),
+    );
+
+    return sortedParticipants.filter((participant) =>
+      participantKeys.has(participant.key),
+    );
+  }, [matchupOptions, participants, selectedMatchup]);
 
   const previewResults = useMemo(
     () => calculateMatchAwards(buildPreviewRows(participants)),
@@ -599,6 +688,40 @@ function AdminStatistics() {
       {!loadingStatistics && participants.length > 0 && (
         <>
           <section className="admin-statistics__quick">
+            {matchupOptions.length > 0 && (
+              <div className="admin-statistics__matchup">
+                <div className="admin-statistics__matchup-header">
+                  <div>
+                    <strong>Times em quadra</strong>
+                    <span>Selecione o confronto atual</span>
+                  </div>
+
+                  <span>{visibleParticipants.length} jogadores</span>
+                </div>
+
+                <div className="admin-statistics__matchup-options">
+                  {matchupOptions.map((option) => (
+                    <button
+                      key={option.key}
+                      type="button"
+                      className={
+                        selectedMatchup === option.key
+                          ? "admin-statistics__matchup-option admin-statistics__matchup-option--active"
+                          : "admin-statistics__matchup-option"
+                      }
+                      onClick={() => {
+                        setSelectedMatchup(option.key);
+                        setLastQuickChange(null);
+                      }}
+                      disabled={saving || publishing}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="admin-statistics__quick-toolbar">
               <span>Selecione o fundamento</span>
 
@@ -632,29 +755,58 @@ function AdminStatistics() {
             </p>
 
             <div className="admin-statistics__quick-players">
-              {participants.map((participant) => (
-                <button
+              {visibleParticipants.map((participant) => (
+                <article
                   key={participant.key}
-                  type="button"
                   className="admin-statistics__quick-player"
-                  onClick={() => addQuickStatistic(participant)}
-                  disabled={saving || publishing}
                 >
-                  <span className="admin-statistics__quick-name">
+                  <span
+                    className="admin-statistics__quick-name"
+                    title={participant.name}
+                  >
                     {participant.name}
                   </span>
 
-                  <span className="admin-statistics__quick-value">
-                    {participant.values[quickField]}
-                  </span>
+                  <div className="admin-statistics__quick-counter">
+                    <button
+                      type="button"
+                      className="admin-statistics__quick-control"
+                      aria-label={`Diminuir ${
+                        MATCH_STAT_FIELDS.find(
+                          (field) => field.key === quickField,
+                        )?.label
+                      } de ${participant.name}`}
+                      onClick={() =>
+                        adjustStatistic(participant.key, quickField, -1)
+                      }
+                      disabled={
+                        saving ||
+                        publishing ||
+                        participant.values[quickField] <= 0
+                      }
+                    >
+                      −
+                    </button>
 
-                  <span
-                    className="admin-statistics__quick-plus"
-                    aria-hidden="true"
-                  >
-                    +
-                  </span>
-                </button>
+                    <span className="admin-statistics__quick-value">
+                      {participant.values[quickField]}
+                    </span>
+
+                    <button
+                      type="button"
+                      className="admin-statistics__quick-control admin-statistics__quick-plus"
+                      aria-label={`Adicionar ${
+                        MATCH_STAT_FIELDS.find(
+                          (field) => field.key === quickField,
+                        )?.label
+                      } para ${participant.name}`}
+                      onClick={() => addQuickStatistic(participant)}
+                      disabled={saving || publishing}
+                    >
+                      +
+                    </button>
+                  </div>
+                </article>
               ))}
             </div>
 
