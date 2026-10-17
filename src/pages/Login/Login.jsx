@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../app/AuthContext";
-import escudoConecta from "../../assets/conecta-logo.png";
+import escudoConecta from "../../assets/conecta-logo.webp";
 import Button from "../../components/Button/Button";
 import "./Login.css";
 
