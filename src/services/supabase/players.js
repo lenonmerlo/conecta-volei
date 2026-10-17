@@ -1,7 +1,7 @@
-import { supabase } from "../../lib/supabase";
 import { isSuperAdmin } from "../../domain/admins";
-import { logAction } from "./audit.js";
 import { CURRENT_RULES_VERSION } from "../../domain/rulesVersion";
+import { supabase } from "../../lib/supabase";
+import { logAction } from "./audit.js";
 
 export async function registerPlayer(player) {
   const existingPlayer = await getPlayerByWhatsapp(player.whatsapp);
@@ -69,7 +69,7 @@ export async function getPublicPlayers() {
   const { data, error } = await supabase
     .from("players")
     .select(
-      "id, name, nickname, gender, status, avatar_url, is_captain, is_setter, position, badge_monster_block, badge_super_spike, badge_guardian",
+      "id, name, nickname, gender, status, avatar_url, is_captain, is_setter, position, badge_monster_block, badge_super_spike, badge_guardian, badge_mvp, badge_maestro, badge_super_ace",
     )
     .order("name");
 
@@ -114,11 +114,7 @@ const STATUS_LABELS = {
   blocked: "Bloqueado",
 };
 
-export async function updatePlayerStatus(
-  playerId,
-  status,
-  actorUser = null,
-) {
+export async function updatePlayerStatus(playerId, status, actorUser = null) {
   if (!MANAGED_PLAYER_STATUSES.has(status)) {
     return {
       success: false,
@@ -139,8 +135,7 @@ export async function updatePlayerStatus(
     };
   }
 
-  const isUnblocking =
-    status === "active" && targetPlayer.status === "blocked";
+  const isUnblocking = status === "active" && targetPlayer.status === "blocked";
 
   if (isUnblocking && !isSuperAdmin(actorUser)) {
     return {
@@ -198,7 +193,7 @@ function nextMondayInSaoPaulo(now = new Date()) {
   );
 
   const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
-  const daysUntilMonday = ((8 - date.getUTCDay()) % 7) || 7;
+  const daysUntilMonday = (8 - date.getUTCDay()) % 7 || 7;
 
   date.setUTCDate(date.getUTCDate() + daysUntilMonday);
   return date.toISOString().slice(0, 10);
@@ -299,10 +294,7 @@ export async function resetWarnings(playerId) {
     suspension_week: null,
   };
 
-  if (
-    player.status === "penalized" ||
-    player.status === "suspended"
-  ) {
+  if (player.status === "penalized" || player.status === "suspended") {
     payload.status = "active";
   }
 
@@ -403,7 +395,7 @@ export async function getPlayerStats(playerId) {
     supabase
       .from("players")
       .select(
-        "is_captain, is_setter, badge_monster_block, badge_super_spike, badge_guardian",
+        "is_captain, is_setter, badge_monster_block, badge_super_spike, badge_guardian, badge_mvp, badge_maestro, badge_super_ace",
       )
       .eq("id", playerId)
       .maybeSingle(),
@@ -490,6 +482,9 @@ export async function getPlayerStats(playerId) {
     badgeMonsterBlock: player?.badge_monster_block ?? false,
     badgeSuperSpike: player?.badge_super_spike ?? false,
     badgeGuardian: player?.badge_guardian ?? false,
+    badgeMvp: player?.badge_mvp ?? false,
+    badgeMaestro: player?.badge_maestro ?? false,
+    badgeSuperAce: player?.badge_super_ace ?? false,
   };
 }
 

@@ -154,6 +154,7 @@ import {
   joinGame,
   leaveGame,
   promoteFromWaitlist,
+  publishMatchStatistics,
   registerPlayer,
   removeGuest,
   updatePlayerInjuryLeave,
@@ -1237,4 +1238,52 @@ describe("supabaseService", () => {
       });
     });
   });
+
+  describe("publishMatchStatistics", () => {
+    it("concede somente as badges conquistadas antes de publicar", async () => {
+      enqueueResponse("game_player_stats.select.await", {
+        data: [
+          {
+            id: "stat-1",
+            game_id: "game-1",
+            player_id: "player-1",
+            guest_id: null,
+            attack_points: 5,
+            aces: 0,
+            block_points: 0,
+            defenses: 0,
+            assists: 0,
+            player: {
+              id: "player-1",
+              name: "Atacante",
+              nickname: null,
+              gender: "M",
+            },
+            guest: null,
+          },
+        ],
+        error: null,
+      });
+      enqueueResponse("players.update.eq", { error: null });
+      enqueueResponse("games.update.eq", { error: null });
+
+      const result = await publishMatchStatistics("game-1", "admin-1");
+
+      expect(result).toEqual({ success: true });
+      expect(hoisted.callLog.update[0]).toEqual({
+        table: "players",
+        payload: {
+          badge_mvp: true,
+          badge_super_spike: true,
+        },
+      });
+      expect(hoisted.callLog.update[1]).toMatchObject({
+        table: "games",
+        payload: {
+          statistics_published_by: "admin-1",
+        },
+      });
+    });
+  });
+
 });

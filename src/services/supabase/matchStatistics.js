@@ -1,4 +1,7 @@
-import { calculateMatchAwards } from "../../domain/matchStatistics";
+import {
+  buildPermanentBadgeAwards,
+  calculateMatchAwards,
+} from "../../domain/matchStatistics";
 import { supabase } from "../../lib/supabase";
 
 const STAT_FIELDS = [
@@ -294,6 +297,30 @@ export async function publishMatchStatistics(gameId, publishedBy) {
     return {
       success: false,
       error: "Registre ao menos uma estatística antes de publicar.",
+    };
+  }
+
+  const badgeAwards = buildPermanentBadgeAwards(
+    calculateMatchAwards(statistics),
+  );
+
+  const badgeResults = await Promise.all(
+    badgeAwards.map(({ playerId, badges }) =>
+      supabase.from("players").update(badges).eq("id", playerId),
+    ),
+  );
+
+  const badgeError = badgeResults.find((result) => result.error)?.error;
+
+  if (badgeError) {
+    console.error("[game_player_stats] Falha ao conceder badges:", {
+      gameId,
+      error: badgeError,
+    });
+
+    return {
+      success: false,
+      error: "Não foi possível conceder as badges da rodada.",
     };
   }
 

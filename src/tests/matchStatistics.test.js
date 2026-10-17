@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildPermanentBadgeAwards,
   calculateMatchAwards,
 } from "../domain/matchStatistics.js";
 
@@ -234,4 +235,42 @@ describe("estatísticas e premiações", () => {
     expect(results.best_defense).toBeNull();
     expect(results.best_setting).toBeNull();
   });
+
+  it("transforma vencedores membros em badges permanentes", () => {
+    const results = calculateMatchAwards([
+      createPlayer("p1", "Completo", "M", {
+        attack_points: 5,
+        aces: 4,
+        block_points: 3,
+        defenses: 2,
+        assists: 1,
+      }),
+      createPlayer("p2", "Levantador", "M", {
+        assists: 8,
+      }),
+      createGuest("g1", "Convidado", "M", {
+        defenses: 10,
+      }),
+    ]);
+
+    const awards = buildPermanentBadgeAwards(results);
+
+    const byPlayer = Object.fromEntries(
+      awards.map(({ playerId, badges }) => [playerId, badges]),
+    );
+
+    expect(byPlayer.p1).toMatchObject({
+      badge_mvp: true,
+      badge_super_spike: true,
+      badge_super_ace: true,
+      badge_monster_block: true,
+    });
+
+    expect(byPlayer.p2).toMatchObject({
+      badge_maestro: true,
+    });
+
+    expect(Object.keys(byPlayer)).not.toContain("g1");
+  });
+
 });
