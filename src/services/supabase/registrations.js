@@ -19,6 +19,19 @@ import {
 
 const MAX_MAIN_LIST = 21;
 
+function getSlotEnteredAt(registration) {
+  return registration?.slot_entered_at || registration?.registered_at || "";
+}
+
+function compareByCurrentSlotOrder(a, b) {
+  const dateCompare = String(getSlotEnteredAt(a)).localeCompare(
+    String(getSlotEnteredAt(b)),
+  );
+
+  if (dateCompare !== 0) return dateCompare;
+  return String(a?.id || "").localeCompare(String(b?.id || ""));
+}
+
 async function getRegistrationRowsByGameIds(
   gameIds,
   columns,
@@ -48,14 +61,7 @@ async function getRegistrationRowsByGameIds(
   }
 
   const rows = results.flatMap((result) => result.data || []);
-  const dedupedRows = dedupeById(rows).sort((a, b) => {
-    const dateCompare = String(a?.registered_at || "").localeCompare(
-      String(b?.registered_at || ""),
-    );
-
-    if (dateCompare !== 0) return dateCompare;
-    return String(a?.id || "").localeCompare(String(b?.id || ""));
-  });
+  const dedupedRows = dedupeById(rows).sort(compareByCurrentSlotOrder);
 
   return { data: dedupedRows, error: null };
 }
@@ -83,7 +89,7 @@ export async function autoMigrateGuests(
 
   const { data: allRegistrations, error } = await getRegistrationRowsByGameIds(
     equivalentGameIds,
-    "id, game_id, slot, registered_at, player_id, guest_id, guest_name",
+    "id, game_id, slot, registered_at, slot_entered_at, player_id, guest_id, guest_name",
     { onlyActive: true },
   );
 
@@ -107,11 +113,17 @@ export async function autoMigrateGuests(
     (registration) => registration.slot === "guests",
   );
 
-  // Primeiro reúne os convidados à espera, sem alterar registered_at.
-  for (const registration of guestRegistrations) {
+  // Os convidados entram depois de quem já estava na lista de espera.
+  // O registered_at original permanece preservado como histórico.
+  const migrationStartedAt = Date.now();
+
+  for (const [index, registration] of guestRegistrations.entries()) {
     const { error: updateError } = await supabase
       .from("game_registrations")
-      .update({ slot: "waitlist" })
+      .update({
+        slot: "waitlist",
+        slot_entered_at: new Date(migrationStartedAt + index).toISOString(),
+      })
       .eq("id", registration.id);
 
     if (updateError) {
@@ -163,12 +175,14 @@ export async function getGameRegistrations(
     return [];
   }
 
-  return (data || []).filter((registration) =>
-    isRegistrationInCurrentCycle(
-      registration,
-      gamesById.get(String(registration.game_id)) || requestedGame,
-    ),
-  );
+  return (data || [])
+    .filter((registration) =>
+      isRegistrationInCurrentCycle(
+        registration,
+        gamesById.get(String(registration.game_id)) || requestedGame,
+      ),
+    )
+    .sort(compareByCurrentSlotOrder);
 }
 
 export async function getRegistrationCountsByGame() {
@@ -553,22 +567,14 @@ export async function promoteFromWaitlist(gameId) {
 
   if (eligibleWaitlist.length === 0) return false;
 
-  const hasNonPenalizedMember = eligibleWaitlist.some(
-    (registration) =>
-      registration.player_id &&
-      registration.player?.type === "member" &&
-      registration.player?.status !== "penalized",
-  );
-
-  const candidate =
-    eligibleWaitlist.find(
-      (registration) =>
-        !hasNonPenalizedMember || !isPenalizedMember(registration),
-    ) || eligibleWaitlist[0];
+  const candidate = eligibleWaitlist[0];
 
   const { error: updateError } = await supabase
     .from("game_registrations")
-    .update({ slot: "main" })
+    .update({
+      slot: "main",
+      slot_entered_at: new Date().toISOString(),
+    })
     .eq("id", candidate.id);
 
   if (updateError) {
@@ -597,19 +603,32 @@ export async function promoteFromWaitlist(gameId) {
 
 export async function migrateGuestsToWaitlist(gameId) {
   const equivalentGameIds = await resolveEquivalentGameIds(gameId);
-  const results = await Promise.all(
-    equivalentGameIds.map((id) =>
-      supabase
-        .from("game_registrations")
-        .update({ slot: "waitlist" })
-        .eq("game_id", id)
-        .eq("slot", "guests")
-        .is("left_at", null),
-    ),
+
+  const { data, error } = await getRegistrationRowsByGameIds(
+    equivalentGameIds,
+    "id, game_id, slot, registered_at, slot_entered_at",
+    { onlyActive: true },
   );
 
-  const error = results.find((result) => result.error)?.error || null;
   if (error) return false;
+
+  const guestRegistrations = (data || []).filter(
+    (registration) => registration.slot === "guests",
+  );
+
+  const migrationStartedAt = Date.now();
+
+  for (const [index, registration] of guestRegistrations.entries()) {
+    const { error: updateError } = await supabase
+      .from("game_registrations")
+      .update({
+        slot: "waitlist",
+        slot_entered_at: new Date(migrationStartedAt + index).toISOString(),
+      })
+      .eq("id", registration.id);
+
+    if (updateError) return false;
+  }
 
   const canonicalGameId = await resolveGameId(gameId);
   await fillMainListFromWaitlist(canonicalGameId);

@@ -618,7 +618,7 @@ describe("integration flows", () => {
     vi.useRealTimers();
   });
 
-  it("cenario 7: sabado preenche a vaga pela ordem original entre convidado e penalizado", async () => {
+  it("cenario 7: membro que ja aguardava fica na frente do convidado migrado", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-26T03:00:00Z"));
 
@@ -682,14 +682,18 @@ describe("integration flows", () => {
         (row) => row.id === "guest-registration",
       ),
     ).toMatchObject({
-      slot: "main",
+      slot: "waitlist",
       registered_at: guestRegisteredAt,
+      slot_entered_at: expect.any(String),
     });
     expect(
       hoisted.db.game_registrations.find(
         (row) => row.id === "penalized-registration",
-      )?.slot,
-    ).toBe("waitlist");
+      ),
+    ).toMatchObject({
+      slot: "main",
+      slot_entered_at: expect.any(String),
+    });
 
     const activeMain = hoisted.db.game_registrations.filter(
       (row) => row.game_id === gameId && row.slot === "main" && !row.left_at,

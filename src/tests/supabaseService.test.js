@@ -391,7 +391,10 @@ describe("supabaseService", () => {
       expect(migrated).toBe(true);
       expect(hoisted.callLog.update[0]).toEqual({
         table: "game_registrations",
-        payload: { slot: "waitlist" },
+        payload: {
+          slot: "waitlist",
+          slot_entered_at: expect.any(String),
+        },
       });
       expect(hoisted.callLog.update[0].payload).not.toHaveProperty(
         "registered_at",
@@ -900,7 +903,10 @@ describe("supabaseService", () => {
       expect(promoted).toBe(true);
       expect(hoisted.callLog.update[0]).toEqual({
         table: "game_registrations",
-        payload: { slot: "main" },
+        payload: {
+          slot: "main",
+          slot_entered_at: expect.any(String),
+        },
       });
     });
 
@@ -937,7 +943,10 @@ describe("supabaseService", () => {
       expect(promoted).toBe(true);
       expect(hoisted.callLog.update[0]).toEqual({
         table: "game_registrations",
-        payload: { slot: "main" },
+        payload: {
+          slot: "main",
+          slot_entered_at: expect.any(String),
+        },
       });
     });
 
@@ -1005,7 +1014,10 @@ describe("supabaseService", () => {
       expect(success).toBe(true);
       expect(hoisted.callLog.update[0]).toEqual({
         table: "game_registrations",
-        payload: { slot: "main" },
+        payload: {
+          slot: "main",
+          slot_entered_at: expect.any(String),
+        },
       });
     });
   });
