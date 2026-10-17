@@ -133,32 +133,31 @@ function Home() {
   const [games, setGames] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [streak, setStreak] = useState(0);
   const [now, setNow] = useState(() => Date.now());
   const realtimeDebounceRef = useRef(null);
   const gamesDataRef = useRef([]);
 
-  const fetchGames = useCallback(async () => {
-    setLoading(true);
-    const gamesPromise = getGames();
-    const announcementsPromise = getActiveAnnouncements();
-    const playerStatsPromise = user?.id
-      ? getPlayerStats(user.id)
-      : Promise.resolve(null);
+const fetchGames = useCallback(async () => {
+  setLoading(true);
+  setLoadError("");
 
-    const data = await gamesPromise;
+  try {
+    const [data, activeAnnouncements, playerStats] = await Promise.all([
+      getGames({ throwOnError: true }),
+      getActiveAnnouncements(),
+      user?.id ? getPlayerStats(user.id) : Promise.resolve(null),
+    ]);
+
     gamesDataRef.current = data || [];
 
-    const [registrationCounts, activeAnnouncements, playerStats] =
-      await Promise.all([
-        getRegistrationCountsByGame(data),
-        announcementsPromise,
-        playerStatsPromise,
-      ]);
+    const registrationCounts = await getRegistrationCountsByGame(data);
 
     const normalizedGames = (data || [])
       .map(normalizeGame)
       .filter(isGameVisible);
+
     const gamesWithCounts = normalizedGames.map((game) => ({
       ...game,
       registeredCount: registrationCounts?.[game.id] || 0,
@@ -167,8 +166,15 @@ function Home() {
     setGames(gamesWithCounts);
     setAnnouncements(activeAnnouncements || []);
     setStreak(playerStats?.currentStreak || 0);
+  } catch (error) {
+    console.error("[Home] Falha ao carregar dados:", error);
+    setLoadError(
+      "Não foi possível carregar os jogos. Verifique sua conexão e tente novamente.",
+    );
+  } finally {
     setLoading(false);
-  }, [user]);
+  }
+}, [user]);
 
   const refreshRegistrationCounts = useCallback(async () => {
     const currentGames = gamesDataRef.current;
@@ -289,10 +295,27 @@ function Home() {
 
       <div className="home__list">
         {loading && <p className="home__state">Carregando jogos...</p>}
-        {!loading && games.length === 0 && (
+
+        {!loading && loadError && (
+          <div className="home__load-error" role="alert">
+            <p>{loadError}</p>
+
+            <button
+              type="button"
+              className="home__retry-button"
+              onClick={fetchGames}
+            >
+              Tentar novamente
+            </button>
+          </div>
+        )}
+
+        {!loading && !loadError && games.length === 0 && (
           <p className="home__state">Nenhum jogo disponível no momento.</p>
         )}
+
         {!loading &&
+          !loadError &&
           games.map((game) => (
             <div key={game.id} className="home__game-slot">
               <GameCard

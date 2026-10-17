@@ -1,12 +1,20 @@
 import { supabase } from "../../lib/supabase";
 
-export async function getGames() {
+export async function getGames({ throwOnError = false } = {}) {
   const { data, error } = await supabase
     .from("games")
     .select("*")
     .order("date");
 
-  if (error) return [];
+  if (error) {
+  console.error("[Supabase] Falha ao carregar jogos:", error);
+
+  if (throwOnError) {
+    throw error;
+  }
+
+  return [];
+}
 
   const games = data || [];
   const currentSundayId = pickCurrentGameIdForDay("sunday", games);
