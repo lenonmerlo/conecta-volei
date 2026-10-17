@@ -182,14 +182,11 @@ function calculateMvp(participants, gender) {
   };
 
   const scoredParticipants = eligibleParticipants.map((participant) => {
-    const score = Object.entries(maximums).reduce(
-      (total, [field, maximum]) => {
-        if (maximum <= 0) return total;
+    const score = Object.entries(maximums).reduce((total, [field, maximum]) => {
+      if (maximum <= 0) return total;
 
-        return total + (participant[field] / maximum) * MVP_FIELD_WEIGHT;
-      },
-      0,
-    );
+      return total + (participant[field] / maximum) * MVP_FIELD_WEIGHT;
+    }, 0);
 
     return {
       ...participant,
@@ -254,4 +251,36 @@ export function calculateMatchAwards(rows = []) {
       (participant) => participant.assists,
     ),
   };
+}
+
+const AWARD_BADGE_FIELDS = {
+  mvp_male: "badge_mvp",
+  mvp_female: "badge_mvp",
+  best_attack: "badge_super_spike",
+  best_serve: "badge_super_ace",
+  best_block: "badge_monster_block",
+  best_defense: "badge_guardian",
+  best_setting: "badge_maestro",
+};
+
+export function buildPermanentBadgeAwards(results = {}) {
+  const badgesByPlayer = new Map();
+
+  Object.entries(AWARD_BADGE_FIELDS).forEach(([category, badgeField]) => {
+    const winners = results[category]?.winners || [];
+
+    winners.forEach((winner) => {
+      if (!winner.playerId) return;
+
+      const badges = badgesByPlayer.get(winner.playerId) || {};
+
+      badges[badgeField] = true;
+      badgesByPlayer.set(winner.playerId, badges);
+    });
+  });
+
+  return Array.from(badgesByPlayer, ([playerId, badges]) => ({
+    playerId,
+    badges,
+  }));
 }

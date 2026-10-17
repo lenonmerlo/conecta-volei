@@ -51,6 +51,9 @@ export const SPECIAL_BADGE_FIELDS = [
   { key: "monsterBlock", field: "badge_monster_block", label: "Monster Block" },
   { key: "superSpike", field: "badge_super_spike", label: "Super Spike" },
   { key: "guardian", field: "badge_guardian", label: "Guardian" },
+  { key: "mvp", field: "badge_mvp", label: "MVP" },
+  { key: "maestro", field: "badge_maestro", label: "Maestro" },
+  { key: "superAce", field: "badge_super_ace", label: "Super Ace" },
 ];
 
 export const VOTE_CATEGORIES = [

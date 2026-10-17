@@ -156,6 +156,69 @@ function iconForBadge(id, size) {
       }),
       svgElement("circle", { cx: 32, cy: 32, r: 4, fill: "#DDF4FF" }),
     ]),
+    mvp: iconFrame(size, [
+      commonBg,
+      svgElement("path", {
+        d: "M20 17h24v8c0 9-5 15-12 18-7-3-12-9-12-18v-8z",
+        fill: "#E6B94F",
+        stroke: "#FFF0AD",
+        strokeWidth: 2,
+      }),
+      svgElement("path", {
+        d: "M25 49h14M32 43v6",
+        stroke: "#FFF0AD",
+        strokeWidth: 3,
+        strokeLinecap: "round",
+      }),
+      svgElement("path", {
+        d: "M20 21h-6c0 8 3 12 10 13M44 21h6c0 8-3 12-10 13",
+        stroke: "#E6B94F",
+        strokeWidth: 3,
+      }),
+    ]),
+
+    maestro: iconFrame(size, [
+      commonBg,
+      svgElement("circle", {
+        cx: 32,
+        cy: 21,
+        r: 8,
+        fill: "#8ED7FF",
+        stroke: "#E4F6FF",
+        strokeWidth: 2,
+      }),
+      svgElement("path", {
+        d: "M17 45l10-10 5 5 5-5 10 10M23 48l9-8 9 8",
+        stroke: "#E4F6FF",
+        strokeWidth: 3,
+        strokeLinecap: "round",
+        strokeLinejoin: "round",
+      }),
+    ]),
+
+    super_ace: iconFrame(size, [
+      commonBg,
+      svgElement("circle", {
+        cx: 32,
+        cy: 32,
+        r: 17,
+        stroke: "#FF6B8F",
+        strokeWidth: 4,
+      }),
+      svgElement("circle", {
+        cx: 32,
+        cy: 32,
+        r: 8,
+        fill: "#FFD2DE",
+      }),
+      svgElement("path", {
+        d: "M32 9v10M32 45v10M9 32h10M45 32h10",
+        stroke: "#FFB2C6",
+        strokeWidth: 3,
+        strokeLinecap: "round",
+      }),
+    ]),
+
     monster_block: iconFrame(size, [
       svgElement("defs", {}, [
         svgElement(
@@ -340,6 +403,13 @@ export const BADGES = [
     condition: (stats) => stats.isSetter,
   },
   {
+    id: "mvp",
+    icon: null,
+    label: "MVP",
+    description: "Destaque geral de uma rodada",
+    condition: (stats) => stats.badgeMvp,
+  },
+  {
     id: "monster_block",
     icon: null,
     label: "Monster Block",
@@ -359,6 +429,20 @@ export const BADGES = [
     label: "Guardian",
     description: "Defensor excepcional do grupo",
     condition: (stats) => stats.badgeGuardian,
+  },
+  {
+    id: "maestro",
+    icon: null,
+    label: "Maestro",
+    description: "Melhor levantador de uma rodada",
+    condition: (stats) => stats.badgeMaestro,
+  },
+  {
+    id: "super_ace",
+    icon: null,
+    label: "Super Ace",
+    description: "Melhor sacador de uma rodada",
+    condition: (stats) => stats.badgeSuperAce,
   },
 ];
 
