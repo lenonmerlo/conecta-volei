@@ -15,9 +15,9 @@ vi.mock("../domain/gameRules", () => ({
 
 function makeGame(overrides = {}) {
   return {
-    id: "wednesday-2026-06-03",
-    day: "wednesday",
-    date: "2026-06-03",
+    id: "sunday-2026-06-07",
+    day: "sunday",
+    date: "2026-06-07",
     time: "19:30",
     location: "Ginásio Conecta",
     status: "active",
@@ -35,7 +35,10 @@ describe("GameCard", () => {
 
   it("renderiza nome do dia correto para quarta, domingo e segunda", () => {
     const { rerender } = render(
-      <GameCard game={makeGame({ date: "2026-06-03" })} registeredCount={3} />,
+      <GameCard
+        game={makeGame({ date: "2026-06-03", day: "other" })}
+        registeredCount={3}
+      />,
     );
     expect(screen.getByText("Quarta-feira")).toBeInTheDocument();
 
@@ -68,7 +71,7 @@ describe("GameCard", () => {
     mockIsListOpen.mockReturnValue(true);
 
     render(
-      <GameCard game={makeGame({ day: "wednesday" })} registeredCount={5} />,
+      <GameCard game={makeGame()} registeredCount={5} />,
     );
 
     expect(screen.getByText("Lista aberta")).toBeInTheDocument();
@@ -78,7 +81,7 @@ describe("GameCard", () => {
     mockIsListOpen.mockReturnValue(false);
 
     render(
-      <GameCard game={makeGame({ day: "wednesday" })} registeredCount={5} />,
+      <GameCard game={makeGame()} registeredCount={5} />,
     );
 
     expect(screen.getByText("Lista fechada")).toBeInTheDocument();

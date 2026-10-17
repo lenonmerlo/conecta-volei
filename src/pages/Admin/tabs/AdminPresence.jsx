@@ -31,7 +31,7 @@ function participantFromRegistration(registration) {
 }
 
 function dayLabel(day) {
-  return day === GAME_DAYS.SUNDAY ? "Domingo" : "Quarta";
+  return day === GAME_DAYS.SUNDAY ? "Domingo" : "Extra";
 }
 
 function AdminPresence() {

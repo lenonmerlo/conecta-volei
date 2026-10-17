@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { GAME_DAYS } from "../domain/constants";
 import {
-  getNextGameDate,
   isGuestAllowedInMainList,
   isListOpen,
   isMemberPriorityWindow,
@@ -10,16 +9,6 @@ import {
 
 describe("gameRules", () => {
   describe("isListOpen", () => {
-    it("abre para quarta na segunda a noite", () => {
-      const monday20h = new Date(2026, 4, 25, 20, 0, 0);
-      expect(isListOpen(GAME_DAYS.WEDNESDAY, monday20h)).toBe(true);
-    });
-
-    it("nao abre para quarta na segunda antes das 19h", () => {
-      const monday18h = new Date(2026, 4, 25, 18, 0, 0);
-      expect(isListOpen(GAME_DAYS.WEDNESDAY, monday18h)).toBe(false);
-    });
-
     it("abre para domingo na quinta a noite", () => {
       const thursday20h = new Date(2026, 4, 28, 20, 0, 0);
       expect(isListOpen(GAME_DAYS.SUNDAY, thursday20h)).toBe(true);
@@ -90,28 +79,6 @@ describe("gameRules", () => {
     });
   });
 
-  describe("getNextGameDate", () => {
-    it("mantem a quarta atual quando hoje e quarta", () => {
-      const wednesday = new Date(2026, 5, 3, 10, 0, 0);
-      expect(getNextGameDate("wednesday", wednesday)).toBe("2026-06-03");
-    });
-
-    it("avanca para a proxima quarta apos virar para quinta", () => {
-      const thursday = new Date(2026, 5, 4, 0, 0, 1);
-      expect(getNextGameDate("wednesday", thursday)).toBe("2026-06-10");
-    });
-
-    it("mantem o domingo atual quando hoje e domingo", () => {
-      const sunday = new Date(2026, 5, 7, 10, 0, 0);
-      expect(getNextGameDate("sunday", sunday)).toBe("2026-06-07");
-    });
-
-    it("avanca para o proximo domingo apos virar para segunda", () => {
-      const monday = new Date(2026, 5, 8, 0, 0, 1);
-      expect(getNextGameDate("sunday", monday)).toBe("2026-06-14");
-    });
-  });
-
   describe("isVotingOpen", () => {
     const sundayGame = { day: "sunday", date: "2026-05-31" };
 
@@ -135,10 +102,10 @@ describe("gameRules", () => {
       expect(isVotingOpen(sundayGame, closeTime)).toBe(false);
     });
 
-    it("retorna false para jogo de quarta", () => {
-      const wednesdayGame = { day: "wednesday", date: "2026-06-03" };
+    it("retorna false para jogo extraordinario", () => {
+      const extraGame = { day: "other", date: "2026-06-03" };
       const now = new Date(2026, 5, 3, 13, 0, 0);
-      expect(isVotingOpen(wednesdayGame, now)).toBe(false);
+      expect(isVotingOpen(extraGame, now)).toBe(false);
     });
   });
 });

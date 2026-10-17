@@ -1,6 +1,6 @@
 export function getCycleOpenAt(game) {
   if (!game?.date || !game?.day) return null;
-  if (game.day !== "wednesday" && game.day !== "sunday") return null;
+  if (game.day !== "sunday") return null;
 
   const [year, month, day] = String(game.date)
     .split("T")[0]
@@ -10,9 +10,7 @@ export function getCycleOpenAt(game) {
   if (!year || !month || !day) return null;
 
   const gameDate = new Date(year, month - 1, day, 0, 0, 0, 0);
-  const offsetDays = game.day === "wednesday" ? 2 : 3;
-
-  gameDate.setDate(gameDate.getDate() - offsetDays);
+  gameDate.setDate(gameDate.getDate() - 3);
   gameDate.setHours(19, 0, 0, 0);
 
   return gameDate;
@@ -84,9 +82,6 @@ export function resolveJoinSlot({
   hasMainSpot,
   now = new Date(),
 }) {
-  if (game?.day === "wednesday" && isGuest) {
-    return hasMainSpot ? "main" : "waitlist";
-  }
 
   if (isPenalized) {
     return "waitlist";
