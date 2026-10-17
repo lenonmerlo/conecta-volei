@@ -205,6 +205,29 @@ describe("supabaseService", () => {
 
       vi.useRealTimers();
     });
+
+    it("propaga a falha somente quando solicitado", async () => {
+      const databaseError = { message: "Falha de conexao" };
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
+      enqueueResponse("games.select.await", {
+        data: null,
+        error: databaseError,
+      });
+      enqueueResponse("games.select.await", {
+        data: null,
+        error: databaseError,
+      });
+
+      await expect(getGames()).resolves.toEqual([]);
+      await expect(getGames({ throwOnError: true })).rejects.toBe(
+        databaseError,
+      );
+
+      consoleSpy.mockRestore();
+    });
   });
 
   describe("getGameContext", () => {
