@@ -1,115 +1,108 @@
-// Teste mockado da migracao de convidados para waitlist sem Supabase real.
-
 import { describe, expect, it } from "vitest";
 
-function migrateGuestsToWaitlistMock(registrations) {
+function migrateGuestsToWaitlistMock(registrations, migratedAt) {
+  let guestIndex = 0;
+
   return registrations.map((registration) => {
     if (registration.slot !== "guests") return registration;
+
+    const slotEnteredAt = new Date(
+      migratedAt.getTime() + guestIndex,
+    ).toISOString();
+    guestIndex += 1;
 
     return {
       ...registration,
       slot: "waitlist",
+      slot_entered_at: slotEnteredAt,
     };
   });
 }
 
-function sortByRegisteredAtAsc(registrations) {
-  return [...registrations].sort(
-    (a, b) => new Date(a.registered_at) - new Date(b.registered_at),
-  );
+function sortByCurrentSlotOrder(registrations) {
+  return [...registrations].sort((a, b) => {
+    const aOrder = a.slot_entered_at || a.registered_at;
+    const bOrder = b.slot_entered_at || b.registered_at;
+    const dateCompare = String(aOrder).localeCompare(String(bOrder));
+
+    if (dateCompare !== 0) return dateCompare;
+    return String(a.id).localeCompare(String(b.id));
+  });
 }
 
 describe("migrateGuestsToWaitlistMock", () => {
-  it("migracao preserva registered_at original dos convidados", () => {
-    const lastThursday = new Date("2026-05-21T00:00:00.000Z");
+  it("ordena membros antigos, convidados migrados e membro de sabado", () => {
+    const thursday = new Date("2026-05-21T22:00:00.000Z");
+    const saturdayMigration = new Date("2026-05-23T03:00:00.000Z");
 
-    // 3 membros ja na waitlist desde quinta passada.
-    const membersWaitlist = [
+    const existingMembers = [
       {
         id: "m1",
-        name: "Membro 1",
         type: "member",
         slot: "waitlist",
-        registered_at: new Date(
-          lastThursday.getTime() + 10 * 60 * 1000,
-        ).toISOString(),
+        registered_at: new Date(thursday.getTime() + 10_000).toISOString(),
+        slot_entered_at: new Date(thursday.getTime() + 10_000).toISOString(),
       },
       {
         id: "m2",
-        name: "Membro 2",
         type: "member",
         slot: "waitlist",
-        registered_at: new Date(
-          lastThursday.getTime() + 20 * 60 * 1000,
-        ).toISOString(),
-      },
-      {
-        id: "m3",
-        name: "Membro 3",
-        type: "member",
-        slot: "waitlist",
-        registered_at: new Date(
-          lastThursday.getTime() + 30 * 60 * 1000,
-        ).toISOString(),
+        registered_at: new Date(thursday.getTime() + 20_000).toISOString(),
+        slot_entered_at: new Date(thursday.getTime() + 20_000).toISOString(),
       },
     ];
 
-    // 2 convidados em guests, com horario antigo (antes dos membros).
     const guests = [
       {
         id: "g1",
-        name: "Convidado 1",
         type: "guest",
         slot: "guests",
-        registered_at: new Date(
-          lastThursday.getTime() + 2 * 60 * 1000,
-        ).toISOString(),
+        registered_at: new Date(thursday.getTime() + 1_000).toISOString(),
       },
       {
         id: "g2",
-        name: "Convidado 2",
         type: "guest",
         slot: "guests",
-        registered_at: new Date(
-          lastThursday.getTime() + 5 * 60 * 1000,
-        ).toISOString(),
+        registered_at: new Date(thursday.getTime() + 2_000).toISOString(),
       },
     ];
 
-    const initialRegistrations = [...membersWaitlist, ...guests];
-    const migrated = migrateGuestsToWaitlistMock(initialRegistrations);
-    const finalWaitlistOrder = sortByRegisteredAtAsc(
-      migrated.filter((registration) => registration.slot === "waitlist"),
+    const migrated = migrateGuestsToWaitlistMock(
+      [...existingMembers, ...guests],
+      saturdayMigration,
     );
 
-    const firstTwoAreGuests = finalWaitlistOrder
-      .slice(0, 2)
-      .every((registration) => registration.type === "guest");
-    const lastThreeAreMembers = finalWaitlistOrder
-      .slice(2)
-      .every((registration) => registration.type === "member");
+    const saturdayMember = {
+      id: "m3",
+      type: "member",
+      slot: "waitlist",
+      registered_at: new Date(
+        saturdayMigration.getTime() + 60_000,
+      ).toISOString(),
+      slot_entered_at: new Date(
+        saturdayMigration.getTime() + 60_000,
+      ).toISOString(),
+    };
 
-    expect(firstTwoAreGuests).toBe(true);
-    expect(lastThreeAreMembers).toBe(true);
+    const finalOrder = sortByCurrentSlotOrder([
+      ...migrated.filter((registration) => registration.slot === "waitlist"),
+      saturdayMember,
+    ]);
+
+    expect(finalOrder.map((registration) => registration.id)).toEqual([
+      "m1",
+      "m2",
+      "g1",
+      "g2",
+      "m3",
+    ]);
     expect(
-      migrated.find((registration) => registration.id === "g1")?.registered_at,
+      finalOrder.find((registration) => registration.id === "g1")
+        ?.registered_at,
     ).toBe(guests[0].registered_at);
     expect(
-      migrated.find((registration) => registration.id === "g2")?.registered_at,
+      finalOrder.find((registration) => registration.id === "g2")
+        ?.registered_at,
     ).toBe(guests[1].registered_at);
-
-    console.log("[migrateGuests.test] Ordem final da lista de espera:");
-    console.table(
-      finalWaitlistOrder.map((registration, index) => ({
-        posicao: index + 1,
-        id: registration.id,
-        nome: registration.name,
-        tipo: registration.type,
-        slot: registration.slot,
-        registered_at: registration.registered_at,
-      })),
-    );
-
-    console.log("[migrateGuests.test] Teste passou.");
   });
 });
