@@ -136,6 +136,7 @@ function Home() {
   const [streak, setStreak] = useState(0);
   const [now, setNow] = useState(() => Date.now());
   const realtimeDebounceRef = useRef(null);
+  const gamesDataRef = useRef([]);
 
   const fetchGames = useCallback(async () => {
     setLoading(true);
@@ -146,6 +147,7 @@ function Home() {
       : Promise.resolve(null);
 
     const data = await gamesPromise;
+    gamesDataRef.current = data || [];
 
     const [registrationCounts, activeAnnouncements, playerStats] =
       await Promise.all([
@@ -167,6 +169,21 @@ function Home() {
     setStreak(playerStats?.currentStreak || 0);
     setLoading(false);
   }, [user]);
+
+  const refreshRegistrationCounts = useCallback(async () => {
+    const currentGames = gamesDataRef.current;
+
+    if (currentGames.length === 0) return;
+
+    const registrationCounts = await getRegistrationCountsByGame(currentGames);
+
+    setGames((previousGames) =>
+      previousGames.map((game) => ({
+        ...game,
+        registeredCount: registrationCounts?.[game.id] || 0,
+      })),
+    );
+  }, []);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -203,7 +220,7 @@ function Home() {
       }
 
       realtimeDebounceRef.current = setTimeout(() => {
-        fetchGames();
+        refreshRegistrationCounts();
       }, 300);
     }
 
@@ -244,7 +261,7 @@ function Home() {
       }
       supabase.removeChannel(channel);
     };
-  }, [fetchGames]);
+  }, [refreshRegistrationCounts]);
 
   return (
     <div className="home">
