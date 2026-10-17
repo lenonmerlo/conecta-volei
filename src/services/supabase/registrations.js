@@ -207,18 +207,35 @@ export async function getGameRegistrations(
     .sort(compareByCurrentSlotOrder);
 }
 
-export async function getRegistrationCountsByGame() {
-  const games = await getGames();
+export async function getRegistrationCountsByGame(preloadedGames = null) {
+  const games = preloadedGames || (await getGames());
 
-  const currentSundayId = await getCurrentGameIdForDay("sunday");
+  const currentSundayId =
+    (games || []).find((game) => game.day === "sunday")?.id || null;
 
   const currentFixedByDay = new Map(
     [["sunday", currentSundayId]].filter(([, gameId]) => Boolean(gameId)),
   );
 
-  const { data: allGames } = await supabase
-    .from("games")
-    .select("id, day, date");
+  const [
+    { data: allGames, error: gamesError },
+    { data: registrations, error: registrationsError },
+  ] = await Promise.all([
+    supabase.from("games").select("id, day, date"),
+    supabase
+      .from("game_registrations")
+      .select("game_id, slot, registered_at")
+      .eq("slot", "main")
+      .is("left_at", null),
+  ]);
+
+  if (gamesError || registrationsError) {
+    console.error("[Supabase] Falha ao carregar contagem de inscritos:", {
+      gamesError,
+      registrationsError,
+    });
+    return {};
+  }
 
   const canonicalByDayDate = new Map();
   const gameIdToCanonical = new Map();
@@ -270,18 +287,7 @@ export async function getRegistrationCountsByGame() {
     (games || []).map((game) => [String(game.id), game]),
   );
 
-  const { data, error } = await supabase
-    .from("game_registrations")
-    .select("game_id, slot, registered_at")
-    .eq("slot", "main")
-    .is("left_at", null);
-
-  if (error) {
-    console.error("[Supabase] Falha ao carregar contagem de inscritos:", error);
-    return {};
-  }
-
-  return (data || []).reduce((acc, row) => {
+  return (registrations || []).reduce((acc, row) => {
     const rawGameId = row.game_id;
     const gameId = gameIdToCanonical.get(String(rawGameId)) || rawGameId;
     if (!gameId) return acc;
