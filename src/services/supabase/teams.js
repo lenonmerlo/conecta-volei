@@ -28,20 +28,26 @@ export async function saveGameTeams(gameId, teams) {
   return !error;
 }
 
-export async function getGameTeams(gameId) {
-  const equivalentGameIds = await resolveEquivalentGameIds(gameId);
+export async function getGameTeams(gameId, { context = null } = {}) {
+  const equivalentGameIds =
+    context?.equivalentGameIds || (await resolveEquivalentGameIds(gameId));
 
-  const [game, gamesByIdList] = await Promise.all([
-    getGameById(gameId),
-    Promise.all(equivalentGameIds.map((id) => getGameById(id))),
-  ]);
+  const game = context?.game || (await getGameById(gameId));
 
-  const gamesById = new Map();
+  const gamesById = context?.gamesById ? new Map(context.gamesById) : new Map();
 
-  equivalentGameIds.forEach((id, index) => {
-    const item = gamesByIdList[index];
-    if (item) gamesById.set(String(id), item);
-  });
+  if (!context?.gamesById) {
+    const gamesByIdList = await Promise.all(
+      equivalentGameIds.map((id) => getGameById(id)),
+    );
+
+    equivalentGameIds.forEach((id, index) => {
+      const equivalentGame = gamesByIdList[index];
+      if (equivalentGame) {
+        gamesById.set(String(id), equivalentGame);
+      }
+    });
+  }
 
   const cycleOpenAt = getCycleOpenAt(game);
 

@@ -68,24 +68,34 @@ async function getRegistrationRowsByGameIds(
 
 export async function autoMigrateGuests(
   gameId,
-  { now = new Date(), game: preloadedGame = null } = {},
+  { now = new Date(), game: preloadedGame = null, context = null } = {},
 ) {
-  const canonicalGameId = await resolveGameId(gameId);
-  const baseGame = preloadedGame || (await getGameById(canonicalGameId));
+  const canonicalGameId =
+    context?.canonicalGameId || (await resolveGameId(gameId));
+  const baseGame =
+    preloadedGame || context?.game || (await getGameById(canonicalGameId));
 
   if (!baseGame) return false;
   if (!isGuestMigrationWindowOpen(baseGame, now)) return false;
 
-  const equivalentGameIds = await resolveEquivalentGameIds(canonicalGameId);
-  const gamesByIdList = await Promise.all(
-    equivalentGameIds.map((id) => getGameById(id)),
-  );
+  const equivalentGameIds =
+    context?.equivalentGameIds ||
+    (await resolveEquivalentGameIds(canonicalGameId));
 
-  const gamesById = new Map();
-  equivalentGameIds.forEach((id, index) => {
-    const game = gamesByIdList[index];
-    if (game) gamesById.set(String(id), game);
-  });
+  const gamesById = context?.gamesById ? new Map(context.gamesById) : new Map();
+
+  if (!context?.gamesById) {
+    const gamesByIdList = await Promise.all(
+      equivalentGameIds.map((id) => getGameById(id)),
+    );
+
+    equivalentGameIds.forEach((id, index) => {
+      const equivalentGame = gamesByIdList[index];
+      if (equivalentGame) {
+        gamesById.set(String(id), equivalentGame);
+      }
+    });
+  }
 
   const { data: allRegistrations, error } = await getRegistrationRowsByGameIds(
     equivalentGameIds,
@@ -144,25 +154,37 @@ export async function autoMigrateGuests(
 
 export async function getGameRegistrations(
   gameId,
-  { autoMigrate = true } = {},
+  { autoMigrate = true, context = null } = {},
 ) {
-  const canonicalGameId = await resolveGameId(gameId);
-  const requestedGame = await getGameById(canonicalGameId);
+  const canonicalGameId =
+    context?.canonicalGameId || (await resolveGameId(gameId));
+  const requestedGame = context?.game || (await getGameById(canonicalGameId));
 
   if (autoMigrate && requestedGame?.day === "sunday") {
-    await autoMigrateGuests(canonicalGameId, { game: requestedGame });
+    await autoMigrateGuests(canonicalGameId, {
+      game: requestedGame,
+      context,
+    });
   }
 
-  const equivalentGameIds = await resolveEquivalentGameIds(canonicalGameId);
-  const gamesByIdList = await Promise.all(
-    equivalentGameIds.map((id) => getGameById(id)),
-  );
+  const equivalentGameIds =
+    context?.equivalentGameIds ||
+    (await resolveEquivalentGameIds(canonicalGameId));
 
-  const gamesById = new Map();
-  equivalentGameIds.forEach((id, index) => {
-    const game = gamesByIdList[index];
-    if (game) gamesById.set(String(id), game);
-  });
+  const gamesById = context?.gamesById ? new Map(context.gamesById) : new Map();
+
+  if (!context?.gamesById) {
+    const gamesByIdList = await Promise.all(
+      equivalentGameIds.map((id) => getGameById(id)),
+    );
+
+    equivalentGameIds.forEach((id, index) => {
+      const equivalentGame = gamesByIdList[index];
+      if (equivalentGame) {
+        gamesById.set(String(id), equivalentGame);
+      }
+    });
+  }
 
   const { data, error } = await getRegistrationRowsByGameIds(
     equivalentGameIds,

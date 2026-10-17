@@ -147,6 +147,7 @@ vi.mock("../lib/supabase", () => ({
 import {
   autoMigrateGuests,
   getCurrentGameIdForDay,
+  getGameContext,
   getGames,
   getPlayerByWhatsapp,
   isPlayerRegistered,
@@ -201,6 +202,78 @@ describe("supabaseService", () => {
         "sunday-2026-10-18",
         "other-2026-10-20",
       ]);
+
+      vi.useRealTimers();
+    });
+  });
+
+  describe("getGameContext", () => {
+    it("reutiliza o jogo canonico e carrega apenas o equivalente ausente", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-10-17T12:00:00Z"));
+
+      enqueueResponse("games.select.maybeSingle", {
+        data: {
+          id: "sunday-2026-10-18",
+          day: "sunday",
+          date: "2026-10-18",
+        },
+        error: null,
+      });
+      enqueueResponse("games.select.await", {
+        data: [
+          {
+            id: "sunday-2026-10-18",
+            day: "sunday",
+            date: "2026-10-18",
+            time: "09:00",
+            status: "active",
+          },
+        ],
+        error: null,
+      });
+      enqueueResponse("games.select.single", {
+        data: {
+          id: "sunday-2026-10-18",
+          day: "sunday",
+          date: "2026-10-18",
+          time: "09:00",
+          status: "active",
+        },
+        error: null,
+      });
+      enqueueResponse("games.select.await", {
+        data: [
+          { id: "sunday-2026-10-18" },
+          { id: "legacy-sunday" },
+        ],
+        error: null,
+      });
+      enqueueResponse("games.select.single", {
+        data: {
+          id: "legacy-sunday",
+          day: "sunday",
+          date: "2026-10-18",
+          time: "09:00",
+          status: "active",
+        },
+        error: null,
+      });
+
+      const context = await getGameContext("sunday-2026-10-18");
+
+      expect(hoisted.fromMock).toHaveBeenCalledTimes(5);
+      expect(context.canonicalGameId).toBe("sunday-2026-10-18");
+      expect(context.equivalentGameIds).toEqual([
+        "sunday-2026-10-18",
+        "legacy-sunday",
+      ]);
+      expect(context.gamesById.get("sunday-2026-10-18")?.id).toBe(
+        "sunday-2026-10-18",
+      );
+      expect(context.gamesById.get("legacy-sunday")?.id).toBe(
+        "legacy-sunday",
+      );
 
       vi.useRealTimers();
     });

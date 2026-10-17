@@ -1,105 +1,94 @@
 // Serviço de integração com o Supabase.
 // As implementações ficam em src/services/supabase/.
 
-export {
-  logAction,
-  getAuditLogs,
-} from "./supabase/audit.js";
+export { getAuditLogs, logAction } from "./supabase/audit.js";
 
 export {
-  registerPlayer,
-  getPlayerByWhatsapp,
-  getPlayerById,
-  getAllPlayers,
-  getPublicPlayers,
-  getPendingPlayers,
-  deletePlayer,
-  updatePlayerStatus,
-  updatePlayerInjuryLeave,
-  isSaturdayAfter21h,
   addWarning,
+  deletePlayer,
+  getAllPlayers,
+  getPendingPlayers,
+  getPlayerById,
+  getPlayerByWhatsapp,
+  getPlayerStats,
+  getPublicPlayers,
+  isSaturdayAfter21h,
+  penalizePlayer,
+  registerPlayer,
   removeWarning,
   resetWarnings,
+  updatePlayerInjuryLeave,
   updatePlayerLevel,
   updatePlayerPosition,
-  updatePlayerSpecialBadges,
   updatePlayerProfile,
-  getPlayerStats,
-  penalizePlayer,
+  updatePlayerSpecialBadges,
+  updatePlayerStatus,
 } from "./supabase/players.js";
 
-export {
-  registerGuest,
-  updateGuestLevel,
-} from "./supabase/guests.js";
+export { registerGuest, updateGuestLevel } from "./supabase/guests.js";
 
 export {
-  getGames,
-  getAuditGameOptions,
-  createGame,
-  updateGame,
   cancelGame,
-  getGameById,
+  createGame,
+  getAuditGameOptions,
   getCurrentGameIdForDay,
-  resolveGameId,
+  getGameById,
+  getGameContext,
+  getGames,
   getSundayGamesHistory,
+  resolveGameId,
+  updateGame,
 } from "./supabase/games.js";
 
 export {
   autoMigrateGuests,
   getGameRegistrations,
-  getRegistrationCountsByGame,
-  joinGame,
-  leaveGame,
-  promoteFromWaitlist,
-  migrateGuestsToWaitlist,
-  isPlayerRegistered,
   getGuestsByInviter,
   getGuestsByInviterFromTable,
+  getRegistrationCountsByGame,
+  isPlayerRegistered,
+  joinGame,
+  leaveGame,
+  migrateGuestsToWaitlist,
+  promoteFromWaitlist,
   removeGuest,
 } from "./supabase/registrations.js";
 
-export {
-  uploadAvatar,
-  updatePlayerAvatar,
-} from "./supabase/avatars.js";
+export { updatePlayerAvatar, uploadAvatar } from "./supabase/avatars.js";
 
-export {
-  saveGameTeams,
-  getGameTeams,
-} from "./supabase/teams.js";
+export { getGameTeams, saveGameTeams } from "./supabase/teams.js";
 
 export {
   getGamePresences,
-  upsertPresence,
   markAbsenceAndWarn,
+  upsertPresence,
 } from "./supabase/presences.js";
 
 export {
+  createAnnouncement,
+  deleteAnnouncement,
   getActiveAnnouncements,
   getAllAnnouncements,
-  createAnnouncement,
   updateAnnouncement,
-  deleteAnnouncement,
 } from "./supabase/announcements.js";
 
 export {
-  submitVote,
-  getVotesByGame,
   getMyVotes,
+  getVotesByGame,
   getVotingResults,
+  submitVote,
 } from "./supabase/votes.js";
 
 export {
-  getPlayerSession,
   acceptRulesVersion,
+  getPlayerSession,
 } from "./supabase/rulesAcceptance.js";
 
 export {
   getMatchParticipants,
   getMatchStatistics,
-  saveMatchStatistics,
-  publishMatchStatistics,
-  unpublishMatchStatistics,
   getMatchStatisticsResults,
+  publishMatchStatistics,
+  saveMatchStatistics,
+  unpublishMatchStatistics,
 } from "./supabase/matchStatistics.js";
