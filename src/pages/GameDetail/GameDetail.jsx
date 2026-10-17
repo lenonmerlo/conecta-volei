@@ -1,12 +1,12 @@
 // Página de detalhe do jogo — lista de inscritos, espera e regras de entrada
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import JoinList from "../../components/JoinList/JoinList";
 import { PLAYER_STATUS, PLAYER_TYPE } from "../../domain/constants";
 import { supabase } from "../../lib/supabase";
 import {
-  getGameById,
+  getGameContext,
   getGameRegistrations,
   getGameTeams,
 } from "../../services/supabaseService.js";
@@ -255,18 +255,17 @@ function GameDetail() {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copyNotice, setCopyNotice] = useState(null);
+  const realtimeDebounceRef = useRef(null);
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
+    const context = await getGameContext(id);
 
-    const [supabaseGame, supabaseRegistrations, supabaseTeams] =
-      await Promise.all([
-        getGameById(id),
-        getGameRegistrations(id),
-        getGameTeams(id),
-      ]);
+    const [supabaseRegistrations, supabaseTeams] = await Promise.all([
+      getGameRegistrations(id, { context }),
+      getGameTeams(id, { context }),
+    ]);
 
-    setGame(normalizeGame(supabaseGame));
+    setGame(normalizeGame(context.game));
     setRegistrations(supabaseRegistrations || []);
     setTeams(supabaseTeams || []);
     setLoading(false);
@@ -274,6 +273,7 @@ function GameDetail() {
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
+      setLoading(true);
       fetchData();
     }, 0);
 
@@ -293,11 +293,23 @@ function GameDetail() {
           table: "game_registrations",
           filter: `game_id=eq.${id}`,
         },
-        () => fetchData(),
+        () => {
+          if (realtimeDebounceRef.current) {
+            clearTimeout(realtimeDebounceRef.current);
+          }
+
+          realtimeDebounceRef.current = setTimeout(() => {
+            fetchData();
+          }, 300);
+        },
       )
       .subscribe();
 
     return () => {
+      if (realtimeDebounceRef.current) {
+        clearTimeout(realtimeDebounceRef.current);
+      }
+
       supabase.removeChannel(channel);
     };
   }, [id, fetchData]);

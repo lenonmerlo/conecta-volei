@@ -246,18 +246,30 @@ export async function resolveGameId(gameId) {
   return requestedId;
 }
 
-export async function resolveEquivalentGameIds(gameId) {
+export async function resolveEquivalentGameIds(
+  gameId,
+  {
+    resolvedId: providedResolvedId = null,
+    resolvedGame: providedGame = null,
+  } = {},
+) {
   const requestedId = String(gameId || "");
   if (!requestedId) return [];
 
-  const resolvedId = await resolveGameId(requestedId);
+  const resolvedId = providedResolvedId || (await resolveGameId(requestedId));
   const ids = new Set([resolvedId].filter(Boolean));
 
-  const { data: resolvedGame } = await supabase
-    .from("games")
-    .select("day, date")
-    .eq("id", resolvedId)
-    .maybeSingle();
+  let resolvedGame = providedGame;
+
+  if (!resolvedGame) {
+    const { data } = await supabase
+      .from("games")
+      .select("day, date")
+      .eq("id", resolvedId)
+      .maybeSingle();
+
+    resolvedGame = data;
+  }
 
   if (!resolvedGame || !isFixedDay(resolvedGame.day)) {
     ids.add(requestedId);
@@ -281,6 +293,48 @@ export async function resolveEquivalentGameIds(gameId) {
   });
 
   return Array.from(ids);
+}
+
+export async function getGameContext(gameId) {
+  const canonicalGameId = await resolveGameId(gameId);
+  const game = await getGameById(canonicalGameId);
+
+  if (!game) {
+    return {
+      canonicalGameId,
+      game: null,
+      equivalentGameIds: [canonicalGameId].filter(Boolean),
+      gamesById: new Map(),
+    };
+  }
+
+  const equivalentGameIds = await resolveEquivalentGameIds(canonicalGameId, {
+    resolvedId: canonicalGameId,
+    resolvedGame: game,
+  });
+
+  const gamesById = new Map([[String(canonicalGameId), game]]);
+  const missingGameIds = equivalentGameIds.filter(
+    (id) => String(id) !== String(canonicalGameId),
+  );
+
+  const missingGames = await Promise.all(
+    missingGameIds.map((id) => getGameById(id)),
+  );
+
+  missingGameIds.forEach((id, index) => {
+    const equivalentGame = missingGames[index];
+    if (equivalentGame) {
+      gamesById.set(String(id), equivalentGame);
+    }
+  });
+
+  return {
+    canonicalGameId,
+    game,
+    equivalentGameIds,
+    gamesById,
+  };
 }
 
 export async function getSundayGamesHistory() {
