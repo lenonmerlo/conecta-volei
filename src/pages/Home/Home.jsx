@@ -139,12 +139,19 @@ function Home() {
 
   const fetchGames = useCallback(async () => {
     setLoading(true);
-    const [data, registrationCounts, activeAnnouncements, playerStats] =
+    const gamesPromise = getGames();
+    const announcementsPromise = getActiveAnnouncements();
+    const playerStatsPromise = user?.id
+      ? getPlayerStats(user.id)
+      : Promise.resolve(null);
+
+    const data = await gamesPromise;
+
+    const [registrationCounts, activeAnnouncements, playerStats] =
       await Promise.all([
-        getGames(),
-        getRegistrationCountsByGame(),
-        getActiveAnnouncements(),
-        user?.id ? getPlayerStats(user.id) : Promise.resolve(null),
+        getRegistrationCountsByGame(data),
+        announcementsPromise,
+        playerStatsPromise,
       ]);
 
     const normalizedGames = (data || [])
