@@ -334,8 +334,8 @@ describe("integration flows", () => {
         status: "active",
       },
       {
-        id: "wednesday-2026-06-17",
-        day: "wednesday",
+        id: "other-2026-06-17",
+        day: "other",
         date: "2026-06-17",
         time: "19:30",
         status: "active",
@@ -587,13 +587,13 @@ describe("integration flows", () => {
     vi.useRealTimers();
   });
 
-  it("cenario 6: lesao nao bloqueia entrada de jogador ativo", async () => {
+  it("cenario 6: lesao nao bloqueia entrada em jogo extraordinario", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-06-16T15:00:00Z"));
 
     hoisted.db.games.push({
-      id: "wednesday-2026-06-17",
-      day: "wednesday",
+      id: "other-2026-06-17",
+      day: "other",
       date: "2026-06-17",
       time: "19:30",
       status: "active",
@@ -606,7 +606,7 @@ describe("integration flows", () => {
       on_injury_leave: true,
     });
 
-    const success = await joinGame("wednesday-2026-06-17", "p-injury", "main");
+    const success = await joinGame("other-2026-06-17", "p-injury", "main");
 
     expect(success).toBe(true);
 

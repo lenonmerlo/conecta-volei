@@ -147,6 +147,7 @@ vi.mock("../lib/supabase", () => ({
 import {
   autoMigrateGuests,
   getCurrentGameIdForDay,
+  getGames,
   getPlayerByWhatsapp,
   isPlayerRegistered,
   joinGame,
@@ -166,6 +167,43 @@ describe("supabaseService", () => {
     hoisted.callLog.delete = [];
     hoisted.fromMock.mockReset();
     hoisted.fromMock.mockImplementation((table) => new QueryBuilder(table));
+  });
+
+  describe("getGames", () => {
+    it("resolve o domingo atual usando uma unica consulta", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-10-17T12:00:00Z"));
+
+      enqueueResponse("games.select.await", {
+        data: [
+          {
+            id: "sunday-2026-10-18",
+            day: "sunday",
+            date: "2026-10-18",
+            time: "09:00",
+            status: "active",
+          },
+          {
+            id: "other-2026-10-20",
+            day: "other",
+            date: "2026-10-20",
+            time: "20:00",
+            status: "active",
+          },
+        ],
+        error: null,
+      });
+
+      const games = await getGames();
+
+      expect(hoisted.fromMock).toHaveBeenCalledTimes(1);
+      expect(games.map((game) => game.id)).toEqual([
+        "sunday-2026-10-18",
+        "other-2026-10-20",
+      ]);
+
+      vi.useRealTimers();
+    });
   });
 
   describe("getPlayerByWhatsapp", () => {
@@ -497,11 +535,11 @@ describe("supabaseService", () => {
       });
     }
 
-    function enqueueWednesdayJoinContext(gameId = "wednesday-2026-06-10") {
+    function enqueueExtraGameJoinContext(gameId = "other-2026-06-10") {
       enqueueResponse("games.select.maybeSingle", {
         data: {
           id: gameId,
-          day: "wednesday",
+          day: "other",
           date: "2026-06-10",
         },
         error: null,
@@ -510,7 +548,7 @@ describe("supabaseService", () => {
         data: [
           {
             id: gameId,
-            day: "wednesday",
+            day: "other",
             date: "2026-06-10",
             time: "19:30",
             status: "active",
@@ -521,7 +559,7 @@ describe("supabaseService", () => {
       enqueueResponse("games.select.single", {
         data: {
           id: gameId,
-          day: "wednesday",
+          day: "other",
           date: "2026-06-10",
         },
         error: null,
@@ -530,7 +568,7 @@ describe("supabaseService", () => {
         data: [
           {
             id: gameId,
-            day: "wednesday",
+            day: "other",
             date: "2026-06-10",
             time: "19:30",
             status: "active",
@@ -754,13 +792,13 @@ describe("supabaseService", () => {
       vi.useRealTimers();
     });
 
-    it("quarta e extras nao usam slot guests", async () => {
-      enqueueWednesdayJoinContext();
+    it("jogo extraordinario nao usa slot guests", async () => {
+      enqueueExtraGameJoinContext();
       enqueueActiveInviter();
       enqueueResponse("game_registrations.insert.await", { error: null });
 
       const success = await joinGame(
-        "wednesday-2026-06-10",
+        "other-2026-06-10",
         null,
         "guests",
         "Convidado",
@@ -772,13 +810,13 @@ describe("supabaseService", () => {
       expect(hoisted.callLog.insert[0]?.payload?.slot).toBe("main");
     });
 
-    it("quarta envia convidado para waitlist somente quando main esta cheia", async () => {
-      enqueueWednesdayJoinContext();
+    it("jogo extraordinario envia convidado para waitlist quando a main esta cheia", async () => {
+      enqueueExtraGameJoinContext();
       enqueueActiveInviter();
       enqueueResponse("game_registrations.select.await", {
         data: new Array(21).fill(null).map((_, index) => ({
           id: `m${index + 1}`,
-          game_id: "wednesday-2026-06-10",
+          game_id: "other-2026-06-10",
           slot: "main",
           registered_at: "2026-06-08T20:00:00.000Z",
         })),
@@ -787,7 +825,7 @@ describe("supabaseService", () => {
       enqueueResponse("game_registrations.insert.await", { error: null });
 
       const success = await joinGame(
-        "wednesday-2026-06-10",
+        "other-2026-06-10",
         null,
         "guests",
         "Convidado",
@@ -799,8 +837,8 @@ describe("supabaseService", () => {
       expect(hoisted.callLog.insert[0]?.payload?.slot).toBe("waitlist");
     });
 
-    it("quarta nao manda convidado para waitlist com vaga mesmo se status vier penalized", async () => {
-      enqueueWednesdayJoinContext();
+    it("jogo extraordinario envia convidado penalizado para a espera", async () => {
+      enqueueExtraGameJoinContext();
       enqueueResponse("players.select.maybeSingle", {
         data: { id: "g-player", status: "penalized", type: "guest" },
         error: null,
@@ -808,7 +846,7 @@ describe("supabaseService", () => {
       enqueueResponse("game_registrations.insert.await", { error: null });
 
       const success = await joinGame(
-        "wednesday-2026-06-10",
+        "other-2026-06-10",
         "g-player",
         "main",
         null,
@@ -816,7 +854,7 @@ describe("supabaseService", () => {
       );
 
       expect(success).toBe(true);
-      expect(hoisted.callLog.insert[0]?.payload?.slot).toBe("main");
+      expect(hoisted.callLog.insert[0]?.payload?.slot).toBe("waitlist");
     });
   });
 

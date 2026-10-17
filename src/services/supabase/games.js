@@ -9,16 +9,10 @@ export async function getGames() {
   if (error) return [];
 
   const games = data || [];
-  const [currentWednesdayId, currentSundayId] = await Promise.all([
-    getCurrentGameIdForDay("wednesday"),
-    getCurrentGameIdForDay("sunday"),
-  ]);
+  const currentSundayId = pickCurrentGameIdForDay("sunday", games);
 
   const currentFixedGameIds = new Map(
-    [
-      ["wednesday", currentWednesdayId],
-      ["sunday", currentSundayId],
-    ].filter(([, gameId]) => Boolean(gameId)),
+    [["sunday", currentSundayId]].filter(([, gameId]) => Boolean(gameId)),
   );
 
   return games
@@ -120,7 +114,7 @@ export function normalizeGameDate(value) {
 }
 
 export function isFixedDay(day) {
-  return day === "wednesday" || day === "sunday";
+  return day === "sunday";
 }
 
 function formatLocalDate(value) {

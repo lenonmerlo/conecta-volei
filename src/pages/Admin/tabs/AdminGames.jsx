@@ -23,7 +23,6 @@ function getDayValueFromDate(dateValue) {
   if (Number.isNaN(date.getTime())) return null;
 
   const weekDay = date.getUTCDay();
-  if (weekDay === 3) return "wednesday";
   if (weekDay === 0) return "sunday";
   return "other";
 }
@@ -90,7 +89,6 @@ function AdminGames() {
         (game) =>
           !(
             game.status === "cancelled" &&
-            game.day !== "wednesday" &&
             game.day !== "sunday"
           ),
       );

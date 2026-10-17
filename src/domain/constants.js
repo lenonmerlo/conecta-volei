@@ -3,13 +3,7 @@ export const PLAYERS_PER_TEAM = 7;
 export const TOTAL_TEAMS = 3;
 
 export const GAME_DAYS = {
-  WEDNESDAY: "wednesday",
   SUNDAY: "sunday",
-};
-
-export const LIST_OPEN_TIMES = {
-  WEDNESDAY: { day: "monday", hour: 19 },
-  SUNDAY: { day: "thursday", hour: 19 },
 };
 
 export const MEMBER_PRIORITY_WINDOW = {

@@ -101,7 +101,7 @@ function formatCountdown(targetDate, now) {
 function isGameVisible(game) {
   const normalizedDate = String(game?.date || "").split("T")[0] || "";
   const today = getTodayDateString();
-  const isFixed = game.day === "wednesday" || game.day === "sunday";
+  const isFixed = game.day === "sunday";
   if (isFixed) {
     if (game.status !== "active") return false;
     if (!normalizedDate) return false;

@@ -188,16 +188,10 @@ export async function getGameRegistrations(
 export async function getRegistrationCountsByGame() {
   const games = await getGames();
 
-  const [currentWednesdayId, currentSundayId] = await Promise.all([
-    getCurrentGameIdForDay("wednesday"),
-    getCurrentGameIdForDay("sunday"),
-  ]);
+  const currentSundayId = await getCurrentGameIdForDay("sunday");
 
   const currentFixedByDay = new Map(
-    [
-      ["wednesday", currentWednesdayId],
-      ["sunday", currentSundayId],
-    ].filter(([, gameId]) => Boolean(gameId)),
+    [["sunday", currentSundayId]].filter(([, gameId]) => Boolean(gameId)),
   );
 
   const { data: allGames } = await supabase

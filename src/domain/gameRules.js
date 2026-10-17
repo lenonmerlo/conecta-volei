@@ -28,18 +28,6 @@ function isListOpenForSpecificGame(game, now = new Date()) {
   const gameDate = parseGameDate(game.date);
   if (!gameDate) return isListOpen(game.day, now);
 
-  if (game.day === GAME_DAYS.WEDNESDAY) {
-    const openAt = new Date(gameDate);
-    openAt.setDate(openAt.getDate() - 2);
-    openAt.setHours(19, 0, 0, 0);
-
-    const closeAt = new Date(gameDate);
-    closeAt.setDate(closeAt.getDate() + 1);
-    closeAt.setHours(0, 0, 0, 0);
-
-    return now >= openAt && now < closeAt;
-  }
-
   if (game.day === GAME_DAYS.SUNDAY) {
     const openAt = new Date(gameDate);
     openAt.setDate(openAt.getDate() - 3);
@@ -64,14 +52,6 @@ export function isListOpen(gameOrDay, now = new Date()) {
   const gameDay = gameOrDay;
   const day = now.getDay(); // 0=dom, 1=seg, 2=ter, 3=qua, 4=qui, 5=sex, 6=sab
   const hour = now.getHours();
-
-  if (gameDay === GAME_DAYS.WEDNESDAY) {
-    // Abre segunda as 19h, fecha na quarta a meia-noite
-    if (day === 1 && hour >= 19) return true; // segunda apos 19h
-    if (day === 2) return true; // terca
-    if (day === 3) return true; // quarta
-    return false;
-  }
 
   if (gameDay === GAME_DAYS.SUNDAY) {
     // Abre quinta as 19h, fecha no domingo a meia-noite
@@ -139,27 +119,3 @@ export function canJoinSundayList(player) {
   return true;
 }
 
-export function canJoinWednesdayList(player) {
-  if (player.status === PLAYER_STATUS.BLOCKED) return false;
-  return true;
-}
-
-export function getNextGameDate(gameDay, now = new Date()) {
-  const today = new Date(now);
-  const dayOfWeek = today.getDay(); // 0=dom, 1=seg... 6=sab
-
-  const targetDay = gameDay === "wednesday" ? 3 : 0; // 3=quarta, 0=domingo
-
-  let daysUntilTarget = targetDay - dayOfWeek;
-  // No proprio dia do jogo, mantem a data atual.
-  // So avanca para a semana seguinte apos virar para o dia seguinte.
-  if (daysUntilTarget < 0) daysUntilTarget += 7;
-
-  const nextDate = new Date(today);
-  nextDate.setDate(today.getDate() + daysUntilTarget);
-
-  const year = nextDate.getFullYear();
-  const month = String(nextDate.getMonth() + 1).padStart(2, "0");
-  const day = String(nextDate.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
