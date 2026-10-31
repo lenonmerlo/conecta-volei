@@ -1,6 +1,16 @@
 .admin-scoring {
   display: grid;
   gap: 1rem;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.admin-scoring *,
+.admin-scoring *::before,
+.admin-scoring *::after {
+  box-sizing: border-box;
 }
 
 .admin-scoring header h3,
@@ -21,6 +31,9 @@
 
 .admin-scoring select,
 .admin-scoring input {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 46px;
   border: 1px solid #cbd5e1;
   border-radius: 12px;
@@ -32,6 +45,8 @@
 .admin-scoring__code-row {
   display: flex;
   gap: 0.6rem;
+  width: 100%;
+  min-width: 0;
 }
 
 .admin-scoring__code-row input {
@@ -49,6 +64,8 @@
   background: #eff6ff;
   color: #102a43;
   overflow-wrap: anywhere;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .admin-scoring__share a {
