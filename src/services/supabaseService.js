@@ -92,3 +92,14 @@ export {
   saveMatchStatistics,
   unpublishMatchStatistics,
 } from "./supabase/matchStatistics.js";
+
+export {
+  configureMatchScoring,
+  disableMatchScoring,
+  joinMatchScoring,
+  leaveMatchScoring,
+  recordMatchStat,
+  subscribeToMatchStatistics,
+  touchMatchScorer,
+  undoLastMatchStat,
+} from "./supabase/liveScoring.js";
