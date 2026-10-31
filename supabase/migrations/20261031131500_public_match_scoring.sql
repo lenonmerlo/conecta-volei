@@ -184,18 +184,18 @@ begin
     raise exception 'Função de anotador inválida.';
   end if;
 
-  update public.match_scorers
+  update public.match_scorers as ms
   set active = false
-  where game_id = p_game_id
-    and active = true
-    and last_seen_at < now() - interval '5 minutes';
+  where ms.game_id = p_game_id
+    and ms.active = true
+    and ms.last_seen_at < now() - interval '5 minutes';
 
   if exists (
     select 1
-    from public.match_scorers
-    where game_id = p_game_id
-      and scorer_role = p_scorer_role
-      and active = true
+    from public.match_scorers as ms
+    where ms.game_id = p_game_id
+      and ms.scorer_role = p_scorer_role
+      and ms.active = true
   ) then
     raise exception 'Essa função já está ocupada por outro anotador.';
   end if;
