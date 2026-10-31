@@ -159,7 +159,9 @@ export default function AdminScoring() {
       {scoringUrl && (
         <div className="admin-scoring__share">
           <span>Link público</span>
-          <strong>{scoringUrl}</strong>
+          <a href={scoringUrl} target="_blank" rel="noreferrer">
+            {scoringUrl}
+          </a>
           <span>Código: {accessCode}</span>
         </div>
       )}
