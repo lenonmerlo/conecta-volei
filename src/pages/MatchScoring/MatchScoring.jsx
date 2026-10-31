@@ -80,6 +80,26 @@ function formatGameDate(game) {
   return `${day}/${month}/${year}`;
 }
 
+function shortTeamName(team) {
+  return String(team?.team_name || "Time").replace(/^Time\s+/i, "");
+}
+
+function buildMatchups(teams) {
+  const matchups = [];
+
+  for (let first = 0; first < teams.length; first += 1) {
+    for (let second = first + 1; second < teams.length; second += 1) {
+      matchups.push({
+        key: `${teams[first].id}-${teams[second].id}`,
+        label: `${shortTeamName(teams[first])} × ${shortTeamName(teams[second])}`,
+        teamIds: [teams[first].id, teams[second].id],
+      });
+    }
+  }
+
+  return matchups;
+}
+
 export default function MatchScoring() {
   const { gameId } = useParams();
   const navigate = useNavigate();
@@ -171,6 +191,7 @@ export default function MatchScoring() {
     () => mergeParticipants(registrations, statistics),
     [registrations, statistics],
   );
+  const matchups = useMemo(() => buildMatchups(teams), [teams]);
 
   const visibleParticipants = useMemo(() => {
     if (!selectedTeams.length) return participants;
@@ -182,12 +203,11 @@ export default function MatchScoring() {
     return participants.filter((participant) => keys.has(participant.key));
   }, [participants, selectedTeams, teams]);
 
-  function toggleTeam(teamId) {
-    setSelectedTeams((current) => {
-      if (current.includes(teamId)) return current.filter((id) => id !== teamId);
-      if (current.length >= 2) return [current[1], teamId];
-      return [...current, teamId];
-    });
+  function isSelectedMatchup(teamIds) {
+    return (
+      selectedTeams.length === teamIds.length &&
+      teamIds.every((teamId) => selectedTeams.includes(teamId))
+    );
   }
 
   async function handleJoin(event) {
@@ -398,14 +418,14 @@ export default function MatchScoring() {
           >
             Todos
           </button>
-          {teams.map((team) => (
+          {matchups.map((matchup) => (
             <button
-              key={team.id}
+              key={matchup.key}
               type="button"
-              className={selectedTeams.includes(team.id) ? "active" : ""}
-              onClick={() => toggleTeam(team.id)}
+              className={isSelectedMatchup(matchup.teamIds) ? "active" : ""}
+              onClick={() => setSelectedTeams(matchup.teamIds)}
             >
-              {String(team.team_name || "Time").replace(/^Time\s+/i, "")}
+              {matchup.label}
             </button>
           ))}
         </section>
