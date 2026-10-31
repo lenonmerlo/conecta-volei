@@ -157,6 +157,7 @@ Crie um arquivo `.env` na raiz do projeto:
 ```env
 VITE_SUPABASE_URL=https://SEU-PROJETO.supabase.co
 VITE_SUPABASE_ANON_KEY=SUA_ANON_KEY
+VITE_PUBLIC_APP_URL=https://conecta-volei.vercel.app
 
 VITE_FIREBASE_API_KEY=SUA_FIREBASE_API_KEY
 VITE_FIREBASE_AUTH_DOMAIN=SEU-PROJETO.firebaseapp.com

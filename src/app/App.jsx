@@ -17,6 +17,7 @@ const GameDetail = lazy(() => import("../pages/GameDetail/GameDetail"));
 const Home = lazy(() => import("../pages/Home/Home"));
 const IconLab = lazy(() => import("../pages/IconLab/IconLab"));
 const Login = lazy(() => import("../pages/Login/Login"));
+const MatchScoring = lazy(() => import("../pages/MatchScoring/MatchScoring"));
 const Profile = lazy(() => import("../pages/Profile/Profile"));
 const Rules = lazy(() => import("../pages/Rules/Rules"));
 const Teams = lazy(() => import("../pages/Teams/Teams"));
@@ -34,6 +35,17 @@ function AppShell() {
     retrySessionCheck,
     logout,
   } = useAuth();
+
+  if (window.location.pathname.startsWith("/score/")) {
+    return (
+      <Suspense fallback={<RoutesFallback />}>
+        <Routes>
+          <Route path="/score/:gameId" element={<MatchScoring />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
+    );
+  }
 
   if (checkingSession) {
     return <RoutesFallback />;

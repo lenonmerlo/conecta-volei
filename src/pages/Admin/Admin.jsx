@@ -14,6 +14,7 @@ import AdminLevels from "./tabs/AdminLevels";
 import AdminPending from "./tabs/AdminPending";
 import AdminPlayers from "./tabs/AdminPlayers";
 import AdminPresence from "./tabs/AdminPresence";
+import AdminScoring from "./tabs/AdminScoring";
 import AdminStatistics from "./tabs/AdminStatistics";
 
 function Admin() {
@@ -51,6 +52,7 @@ function Admin() {
     { key: "announcements", label: "Avisos" },
     { key: "presence", label: "Presenças" },
     { key: "statistics", label: "Estatísticas" },
+    { key: "scoring", label: "Anotadores" },
     { key: "audit", label: "Auditoria" },
     ...(userIsSuperAdmin ? [{ key: "levels", label: "Níveis" }] : []),
     { key: "draw", label: "Sorteio" },
@@ -112,6 +114,7 @@ function Admin() {
         {activeTab === "announcements" && <AdminAnnouncements />}
         {activeTab === "presence" && <AdminPresence />}
         {activeTab === "statistics" && <AdminStatistics />}
+        {activeTab === "scoring" && <AdminScoring />}
         {activeTab === "audit" && <AdminAudit refreshKey={auditRefreshKey} />}
         {activeTab === "levels" && userIsSuperAdmin && (
           <AdminLevels
