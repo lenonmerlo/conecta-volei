@@ -26,36 +26,32 @@ export function isRegistrationInCurrentCycle(registration, game) {
   return registeredAt.getTime() >= openAt.getTime();
 }
 
-function getDateInSaoPaulo(now = new Date()) {
-  const parts = Object.fromEntries(
-    new Intl.DateTimeFormat("en-US", {
-      timeZone: "America/Sao_Paulo",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    })
-      .formatToParts(now)
-      .filter((part) => part.type !== "literal")
-      .map((part) => [part.type, Number(part.value)]),
-  );
-
-  return new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
-}
-
-export function isGuestMigrationWindowOpen(game, now = new Date()) {
-  if (game?.day !== "sunday" || !game?.date) return false;
+export function getGuestMigrationOpenAt(game) {
+  if (game?.day !== "sunday" || !game?.date) return null;
 
   const [year, month, day] = String(game.date)
     .slice(0, 10)
     .split("-")
     .map(Number);
 
-  if (!year || !month || !day) return false;
+  if (!year || !month || !day) return null;
 
-  const saturday = new Date(Date.UTC(year, month - 1, day));
-  saturday.setUTCDate(saturday.getUTCDate() - 1);
+  // Meia-noite de sábado em São Paulo corresponde a 03h UTC.
+  const migrationOpenAt = new Date(
+    Date.UTC(year, month - 1, day, 3, 0, 0, 0),
+  );
 
-  return getDateInSaoPaulo(now).getTime() >= saturday.getTime();
+  migrationOpenAt.setUTCDate(migrationOpenAt.getUTCDate() - 1);
+
+  return migrationOpenAt;
+}
+
+export function isGuestMigrationWindowOpen(game, now = new Date()) {
+  const migrationOpenAt = getGuestMigrationOpenAt(game);
+
+  if (!migrationOpenAt) return false;
+
+  return now.getTime() >= migrationOpenAt.getTime();
 }
 
 function resolveSundaySlot({

@@ -618,7 +618,7 @@ describe("integration flows", () => {
     vi.useRealTimers();
   });
 
-  it("cenario 7: membro que ja aguardava fica na frente do convidado migrado", async () => {
+  it("cenario 7: membro ativo fica antes do convidado e penalizado fica no final", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-26T03:00:00Z"));
 
@@ -633,12 +633,20 @@ describe("integration flows", () => {
       status: "active",
     });
 
-    hoisted.db.players.push({
-      id: "penalized-member",
-      name: "Membro penalizado",
-      type: "member",
-      status: "penalized",
-    });
+    hoisted.db.players.push(
+      {
+        id: "penalized-member",
+        name: "Membro penalizado",
+        type: "member",
+        status: "penalized",
+      },
+      {
+        id: "active-member",
+        name: "Membro ativo",
+        type: "member",
+        status: "active",
+      },
+    );
 
     hoisted.db.guests.push({
       id: "guest-1",
@@ -665,6 +673,14 @@ describe("integration flows", () => {
         left_at: null,
       },
       {
+        id: "active-member-registration",
+        game_id: gameId,
+        player_id: "active-member",
+        slot: "waitlist",
+        registered_at: "2026-09-24T22:25:00Z",
+        left_at: null,
+      },
+      {
         id: "guest-registration",
         game_id: gameId,
         guest_id: "guest-1",
@@ -688,11 +704,18 @@ describe("integration flows", () => {
     });
     expect(
       hoisted.db.game_registrations.find(
-        (row) => row.id === "penalized-registration",
+        (row) => row.id === "active-member-registration",
       ),
     ).toMatchObject({
       slot: "main",
       slot_entered_at: expect.any(String),
+    });
+    expect(
+      hoisted.db.game_registrations.find(
+        (row) => row.id === "penalized-registration",
+      ),
+    ).toMatchObject({
+      slot: "waitlist",
     });
 
     const activeMain = hoisted.db.game_registrations.filter(

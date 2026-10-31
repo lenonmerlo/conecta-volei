@@ -12,6 +12,7 @@ import {
 } from "./games.js";
 import { addWarning, getPlayerById, isSaturdayAfter21h } from "./players.js";
 import {
+  getGuestMigrationOpenAt,
   isGuestMigrationWindowOpen,
   isRegistrationInCurrentCycle,
   resolveJoinSlot,
@@ -23,13 +24,50 @@ function getSlotEnteredAt(registration) {
   return registration?.slot_entered_at || registration?.registered_at || "";
 }
 
+function isPenalizedMember(registration) {
+  return (
+    Boolean(registration?.player_id) &&
+    registration?.player?.type === "member" &&
+    registration?.player?.status === "penalized"
+  );
+}
+
+function getWaitlistPriority(registration) {
+  if (registration?.slot !== "waitlist") return 0;
+
+  return isPenalizedMember(registration) ? 1 : 0;
+}
+
 function compareByCurrentSlotOrder(a, b) {
+  const priorityCompare = getWaitlistPriority(a) - getWaitlistPriority(b);
+
+  if (priorityCompare !== 0) return priorityCompare;
+
   const dateCompare = String(getSlotEnteredAt(a)).localeCompare(
     String(getSlotEnteredAt(b)),
   );
 
   if (dateCompare !== 0) return dateCompare;
   return String(a?.id || "").localeCompare(String(b?.id || ""));
+}
+
+function getGuestWaitlistEnteredAt(game, registration, index = 0) {
+  const migrationOpenAt = getGuestMigrationOpenAt(game);
+  const registeredAt = new Date(registration?.registered_at || "");
+
+  const migrationOpenTime = migrationOpenAt?.getTime();
+  const registeredAtTime = registeredAt.getTime();
+
+  const baseTime = Number.isFinite(migrationOpenTime)
+    ? Math.max(
+        migrationOpenTime,
+        Number.isFinite(registeredAtTime)
+          ? registeredAtTime
+          : migrationOpenTime,
+      )
+    : Date.now();
+
+  return new Date(baseTime + index).toISOString();
 }
 
 async function getRegistrationRowsByGameIds(
@@ -123,16 +161,19 @@ export async function autoMigrateGuests(
     (registration) => registration.slot === "guests",
   );
 
-  // Os convidados entram depois de quem já estava na lista de espera.
+  // Convidados inscritos antes de sábado entram na espera a partir de 0h.
+  // Quem se inscrever depois disso conserva a ordem real de inscrição.
   // O registered_at original permanece preservado como histórico.
-  const migrationStartedAt = Date.now();
-
   for (const [index, registration] of guestRegistrations.entries()) {
     const { error: updateError } = await supabase
       .from("game_registrations")
       .update({
         slot: "waitlist",
-        slot_entered_at: new Date(migrationStartedAt + index).toISOString(),
+        slot_entered_at: getGuestWaitlistEnteredAt(
+          baseGame,
+          registration,
+          index,
+        ),
       })
       .eq("id", registration.id);
 
@@ -574,11 +615,6 @@ export async function promoteFromWaitlist(gameId) {
   const resolvedGameId = await resolveGameId(gameId);
   const game = await getGameById(resolvedGameId);
 
-  const isPenalizedMember = (registration) =>
-    registration.player_id &&
-    registration.player?.type === "member" &&
-    registration.player?.status === "penalized";
-
   // Para domingo, penalizados só podem subir a partir de sábado, 0h.
   const canPromotePenalized =
     game?.day === "sunday" && isGuestMigrationWindowOpen(game);
@@ -624,7 +660,12 @@ export async function promoteFromWaitlist(gameId) {
 }
 
 export async function migrateGuestsToWaitlist(gameId) {
-  const equivalentGameIds = await resolveEquivalentGameIds(gameId);
+  const canonicalGameId = await resolveGameId(gameId);
+
+  const [equivalentGameIds, game] = await Promise.all([
+    resolveEquivalentGameIds(gameId),
+    getGameById(canonicalGameId),
+  ]);
 
   const { data, error } = await getRegistrationRowsByGameIds(
     equivalentGameIds,
@@ -638,21 +679,22 @@ export async function migrateGuestsToWaitlist(gameId) {
     (registration) => registration.slot === "guests",
   );
 
-  const migrationStartedAt = Date.now();
-
   for (const [index, registration] of guestRegistrations.entries()) {
     const { error: updateError } = await supabase
       .from("game_registrations")
       .update({
         slot: "waitlist",
-        slot_entered_at: new Date(migrationStartedAt + index).toISOString(),
+        slot_entered_at: getGuestWaitlistEnteredAt(
+          game,
+          registration,
+          index,
+        ),
       })
       .eq("id", registration.id);
 
     if (updateError) return false;
   }
 
-  const canonicalGameId = await resolveGameId(gameId);
   await fillMainListFromWaitlist(canonicalGameId);
 
   return true;
